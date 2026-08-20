@@ -163,9 +163,11 @@ src/app/
 ### Task 0: Install Dexie.js Dependency
 
 **Files:**
+
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Produces: `dexie` package available in node_modules
 
 - [ ] **Step 1: Install Dexie.js**
@@ -188,9 +190,11 @@ git commit -m "chore: add dexie.js for IndexedDB persistence"
 ### Task 1: Database Service (Dexie.js Setup)
 
 **Files:**
+
 - Create: `src/app/core/services/database.service.ts`
 
 **Interfaces:**
+
 - Consumes: None (new service)
 - Produces: `DatabaseService` with `projects`, `scenes`, `tiles`, `sprites`, `sessions` tables
 
@@ -292,6 +296,7 @@ git commit -m "feat: add DatabaseService with IndexedDB schema"
 ### Task 2: Domain Models
 
 **Files:**
+
 - Create: `src/app/shared/models/project.model.ts`
 - Create: `src/app/shared/models/scene.model.ts`
 - Create: `src/app/shared/models/tile.model.ts`
@@ -300,6 +305,7 @@ git commit -m "feat: add DatabaseService with IndexedDB schema"
 - Modify: `src/app/shared/models/README.md`
 
 **Interfaces:**
+
 - Consumes: None (pure types)
 - Produces: All domain model types exported from `shared/models/`
 
@@ -333,10 +339,12 @@ git commit -m "feat: add domain models for project, scene, tile, sprite, session
 ### Task 3: Project Service (CRUD Operations)
 
 **Files:**
+
 - Create: `src/app/features/dashboard/services/project.service.ts`
 - Create: `src/app/features/dashboard/services/project.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `DatabaseService` (projects table)
 - Produces: `ProjectService` with CRUD methods
 
@@ -488,6 +496,7 @@ git commit -m "feat: add ProjectService with CRUD and cascade delete"
 ### Task 4: Routing Setup
 
 **Files:**
+
 - Modify: `src/app/app.routes.ts`
 - Create: `src/app/features/dashboard/dashboard.routes.ts`
 - Create: `src/app/features/project/project.routes.ts`
@@ -496,6 +505,7 @@ git commit -m "feat: add ProjectService with CRUD and cascade delete"
 - Create: `src/app/features/sprite-editor/sprite-editor.routes.ts`
 
 **Interfaces:**
+
 - Consumes: None
 - Produces: Lazy-loaded routes for each feature
 
@@ -514,8 +524,7 @@ export const routes: Routes = [
   },
   {
     path: 'project/:id',
-    loadChildren: () =>
-      import('./features/project/project.routes').then((m) => m.PROJECT_ROUTES),
+    loadChildren: () => import('./features/project/project.routes').then((m) => m.PROJECT_ROUTES),
   },
   { path: '**', redirectTo: '' },
 ];
@@ -552,10 +561,12 @@ git commit -m "feat: setup lazy-loaded routing for dashboard and project feature
 ### Task 5: Shared Confirm Dialog
 
 **Files:**
+
 - Create: `src/app/shared/components/confirm-dialog/confirm-dialog.component.ts`
 - Create: `src/app/shared/components/confirm-dialog/confirm-dialog.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: Angular CDK Dialog (or simple component)
 - Produces: `rk-confirm-dialog` component with confirm/cancel outputs
 
@@ -617,12 +628,14 @@ git commit -m "feat: add shared confirm dialog component"
 ### Task 6: Dashboard Page (List Projects)
 
 **Files:**
+
 - Create: `src/app/features/dashboard/pages/dashboard/dashboard.component.ts`
 - Create: `src/app/features/dashboard/pages/dashboard/dashboard.component.scss`
 - Create: `src/app/features/dashboard/components/project-card/project-card.component.ts`
 - Create: `src/app/features/dashboard/components/project-form/project-form.component.ts`
 
 **Interfaces:**
+
 - Consumes: `ProjectService`, `ConfirmDialogComponent`
 - Produces: Dashboard page with project list, create, delete
 
@@ -644,7 +657,9 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="tw-min-h-screen tw-bg-background tw-text-foreground">
-      <header class="tw-flex tw-items-center tw-justify-between tw-px-6 tw-py-4 tw-border-b tw-border-border">
+      <header
+        class="tw-flex tw-items-center tw-justify-between tw-px-6 tw-py-4 tw-border-b tw-border-border"
+      >
         <h1 class="tw-text-2xl tw-font-bold">River King Engine</h1>
         <button
           type="button"
@@ -658,7 +673,9 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 
       <main class="tw-p-6">
         @if (projects().length === 0) {
-          <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-20 tw-text-muted-foreground">
+          <div
+            class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-20 tw-text-muted-foreground"
+          >
             <span class="material-symbols tw-text-6xl tw-mb-4">folder_open</span>
             <p class="tw-text-lg">No projects yet</p>
             <p>Create your first project to get started</p>
@@ -677,21 +694,22 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
       </main>
 
       @if (showCreateForm()) {
-        <div class="tw-fixed tw-inset-0 tw-bg-black/50 tw-flex tw-items-center tw-justify-center tw-z-50">
-          <rk-project-form
-            (submit)="createProject($event)"
-            (cancel)="showCreateForm.set(false)"
-          />
+        <div
+          class="tw-fixed tw-inset-0 tw-bg-black/50 tw-flex tw-items-center tw-justify-center tw-z-50"
+        >
+          <rk-project-form (submit)="createProject($event)" (cancel)="showCreateForm.set(false)" />
         </div>
       }
 
       @if (projectToDelete()) {
-        <div class="tw-fixed tw-inset-0 tw-bg-black/50 tw-flex tw-items-center tw-justify-center tw-z-50">
+        <div
+          class="tw-fixed tw-inset-0 tw-bg-black/50 tw-flex tw-items-center tw-justify-center tw-z-50"
+        >
           <rk-confirm-dialog
             [data]="{
               title: 'Delete Project',
               message: 'Are you sure you want to delete this project? This cannot be undone.',
-              confirmLabel: 'Delete'
+              confirmLabel: 'Delete',
             }"
             (confirmed)="deleteProject(projectToDelete()!)"
             (cancelled)="projectToDelete.set(null)"
@@ -763,11 +781,13 @@ git commit -m "feat: add dashboard with project CRUD"
 ### Task 7: Project Shell (Sidebar Navigation)
 
 **Files:**
+
 - Create: `src/app/features/project/pages/project-shell/project-shell.component.ts`
 - Create: `src/app/features/project/components/project-sidebar/project-sidebar.component.ts`
 - Modify: `src/app/features/project/project.routes.ts`
 
 **Interfaces:**
+
 - Consumes: ActivatedRoute
 - Produces: Project shell layout with sidebar
 
@@ -807,7 +827,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   imports: [RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="tw-w-64 tw-h-full tw-border-r tw-border-border tw-bg-card-bg tw-p-4 tw-flex tw-flex-col tw-gap-2">
+    <nav
+      class="tw-w-64 tw-h-full tw-border-r tw-border-border tw-bg-card-bg tw-p-4 tw-flex tw-flex-col tw-gap-2"
+    >
       <a
         [routerLink]="['scenes']"
         routerLinkActive="tw-bg-primary/10 tw-text-primary tw-border-primary"
@@ -850,9 +872,21 @@ export const PROJECT_ROUTES: Routes = [
     path: '',
     component: ProjectShellComponent,
     children: [
-      { path: 'scenes', loadChildren: () => import('../scene-editor/scene-editor.routes').then(m => m.SCENE_EDITOR_ROUTES) },
-      { path: 'tiles', loadChildren: () => import('../tile-manager/tile-manager.routes').then(m => m.TILE_MANAGER_ROUTES) },
-      { path: 'sprites', loadChildren: () => import('../sprite-editor/sprite-editor.routes').then(m => m.SPRITE_EDITOR_ROUTES) },
+      {
+        path: 'scenes',
+        loadChildren: () =>
+          import('../scene-editor/scene-editor.routes').then((m) => m.SCENE_EDITOR_ROUTES),
+      },
+      {
+        path: 'tiles',
+        loadChildren: () =>
+          import('../tile-manager/tile-manager.routes').then((m) => m.TILE_MANAGER_ROUTES),
+      },
+      {
+        path: 'sprites',
+        loadChildren: () =>
+          import('../sprite-editor/sprite-editor.routes').then((m) => m.SPRITE_EDITOR_ROUTES),
+      },
       { path: '', redirectTo: 'scenes', pathMatch: 'full' },
     ],
   },
@@ -871,12 +905,14 @@ git commit -m "feat: add project shell with sidebar navigation"
 ### Task 8: Scene Editor (Map Canvas)
 
 **Files:**
+
 - Create: `src/app/features/scene-editor/pages/scene-editor/scene-editor.component.ts`
 - Create: `src/app/features/scene-editor/components/map-canvas/map-canvas.component.ts`
 - Create: `src/app/features/scene-editor/components/scene-list/scene-list.component.ts`
 - Create: `src/app/features/scene-editor/components/tile-palette/tile-palette.component.ts`
 
 **Interfaces:**
+
 - Consumes: ProjectService (for tiles), Scene, Canvas API
 - Produces: Interactive map editor
 
@@ -951,6 +987,7 @@ export class SceneEditorComponent {
 - [ ] **Step 2: Implement MapCanvasComponent**
 
 This is the core canvas rendering component. It should:
+
 - Render a grid of tiles from scene.tileData
 - Support pan (middle mouse or click-drag) and zoom (mouse wheel)
 - Show tile outlines (grid)
@@ -958,19 +995,20 @@ This is the core canvas rendering component. It should:
 - Use requestAnimationFrame for smooth rendering
 
 Key canvas rendering logic:
+
 ```typescript
 render() {
   const ctx = canvas.getContext('2d')!;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
+
   ctx.save();
   ctx.translate(this.cameraX, this.cameraY);
   ctx.scale(this.zoom, this.zoom);
-  
+
   // Draw grid
   // Draw tiles from tileData
   // Draw tile outlines
-  
+
   ctx.restore();
 }
 ```
@@ -987,10 +1025,12 @@ git commit -m "feat: add scene editor with map canvas"
 ### Task 9: Session Persistence Service
 
 **Files:**
+
 - Create: `src/app/shared/services/session.service.ts`
 - Create: `src/app/shared/services/session.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: DatabaseService (sessions table)
 - Produces: SessionService for CRUD operations
 
@@ -1031,11 +1071,13 @@ git commit -m "feat: add session persistence service"
 ### Task 10: Tile Manager
 
 **Files:**
+
 - Create: `src/app/features/tile-manager/pages/tile-manager/tile-manager.component.ts`
 - Create: `src/app/features/tile-manager/components/tile-list/tile-list.component.ts`
 - Create: `src/app/features/tile-manager/components/tile-properties/tile-properties.component.ts`
 
 **Interfaces:**
+
 - Consumes: ProjectService, DatabaseService
 - Produces: Tile CRUD with properties form
 
@@ -1082,6 +1124,7 @@ export class TileManagerComponent {
 - [ ] **Step 2: Implement TilePropertiesComponent**
 
 Form with Angular reactive controls for:
+
 - name (text input)
 - type (static/animated select)
 - animationSpeed (number input, ms)
@@ -1104,12 +1147,14 @@ git commit -m "feat: add tile manager with properties editor"
 ### Task 11: Sprite Editor
 
 **Files:**
+
 - Create: `src/app/features/sprite-editor/pages/sprite-editor/sprite-editor.component.ts`
 - Create: `src/app/features/sprite-editor/components/pixel-canvas/pixel-canvas.component.ts`
 - Create: `src/app/features/sprite-editor/components/palette-manager/palette-manager.component.ts`
 - Create: `src/app/features/sprite-editor/components/drawing-tools/drawing-tools.component.ts`
 
 **Interfaces:**
+
 - Consumes: Project palette, Canvas API
 - Produces: Pixel art editor with tools
 
@@ -1134,31 +1179,31 @@ git commit -m "feat: add tile manager with properties editor"
 })
 export class PixelCanvasComponent {
   @ViewChild('canvas') canvasRef!: ElementRef<HTMLCanvasElement>;
-  
+
   sprite = input.required<Sprite>();
   palette = input.required<string[]>();
   selectedColorIndex = input.required<number>();
   tool = input.required<'brush' | 'eraser' | 'fill'>();
-  
+
   readonly canvasWidth = 256; // 16 tiles * 16px, scaled up
   readonly canvasHeight = 256;
   readonly scale = 16; // Each pixel rendered as 16x16 on screen
-  
+
   isDrawing = false;
-  
+
   ngOnChanges() {
     this.render();
   }
-  
+
   render() {
     const canvas = this.canvasRef?.nativeElement;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
-    
+
     // Clear
     ctx.fillStyle = '#2a2a2a'; // Dark checkerboard background
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     // Draw grid
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
@@ -1174,31 +1219,31 @@ export class PixelCanvasComponent {
       ctx.lineTo(canvas.width, y * this.scale);
       ctx.stroke();
     }
-    
+
     // Draw pixels from sprite data
     // ... decode base64, drawImage or direct pixel manipulation
   }
-  
+
   startDrawing(event: MouseEvent) {
     this.isDrawing = true;
     this.drawPixel(event);
   }
-  
+
   draw(event: MouseEvent) {
     if (!this.isDrawing) return;
     this.drawPixel(event);
   }
-  
+
   stopDrawing() {
     this.isDrawing = false;
   }
-  
+
   drawPixel(event: MouseEvent) {
     const canvas = this.canvasRef.nativeElement;
     const rect = canvas.getBoundingClientRect();
     const x = Math.floor((event.clientX - rect.left) / this.scale);
     const y = Math.floor((event.clientY - rect.top) / this.scale);
-    
+
     if (this.tool() === 'brush') {
       // Set pixel to selectedColorIndex
     } else if (this.tool() === 'eraser') {
@@ -1206,7 +1251,7 @@ export class PixelCanvasComponent {
     } else if (this.tool() === 'fill') {
       // Flood fill algorithm
     }
-    
+
     this.render();
   }
 }
@@ -1240,7 +1285,7 @@ export class PaletteManagerComponent {
   palette = input.required<string[]>();
   selectedIndex = input.required<number>();
   selectedIndexChange = output<number>();
-  
+
   selectColor(index: number) {
     this.selectedIndexChange.emit(index);
   }
@@ -1260,20 +1305,20 @@ git commit -m "feat: add sprite editor with pixel canvas and palette"
 
 ### 1. Spec Coverage
 
-| Requirement | Task |
-|------------|------|
-| Standalone (no backend) | Global Constraints |
-| Project list/create/delete | Task 6 |
-| Scene map editor with canvas | Task 8 |
-| Folder organization for scenes | Task 8 (SceneListComponent with folderPath) |
-| Tile manager with properties | Task 10 |
-| Collision properties | Task 10 (TileProperties) |
-| Animated tiles | Task 10 (type, animationSpeed, spriteIds) |
-| Sprite editor (paint) | Task 11 |
-| Customizable palette per project | Task 0.2 (Project.palette) + Task 11 |
-| Session persistence | Task 9 |
-| Confirmation modals | Task 5 + used in Tasks 6, 10 |
-| Drag & drop scenes | Not yet covered - add to Task 8 |
+| Requirement                      | Task                                        |
+| -------------------------------- | ------------------------------------------- |
+| Standalone (no backend)          | Global Constraints                          |
+| Project list/create/delete       | Task 6                                      |
+| Scene map editor with canvas     | Task 8                                      |
+| Folder organization for scenes   | Task 8 (SceneListComponent with folderPath) |
+| Tile manager with properties     | Task 10                                     |
+| Collision properties             | Task 10 (TileProperties)                    |
+| Animated tiles                   | Task 10 (type, animationSpeed, spriteIds)   |
+| Sprite editor (paint)            | Task 11                                     |
+| Customizable palette per project | Task 0.2 (Project.palette) + Task 11        |
+| Session persistence              | Task 9                                      |
+| Confirmation modals              | Task 5 + used in Tasks 6, 10                |
+| Drag & drop scenes               | Not yet covered - add to Task 8             |
 
 ### 2. Placeholder Scan
 
