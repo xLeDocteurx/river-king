@@ -38,7 +38,6 @@ import type { Tile } from '../../../../shared/models/tile.model';
 })
 export class TileListComponent {
   tiles = input.required<Tile[]>();
-  projectId = input.required<string>();
   selectedTileId = input<number | null>(null);
   tileSelect = output<number>();
   tileCreate = output<void>();

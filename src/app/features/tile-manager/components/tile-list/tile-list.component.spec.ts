@@ -31,7 +31,6 @@ describe('TileListComponent', () => {
   it('should render tile names', async () => {
     const fixture = TestBed.createComponent(TileListComponent);
     fixture.componentRef.setInput('tiles', [createMockTile({ id: 1, name: 'Grass' }), createMockTile({ id: 2, name: 'Water' })]);
-    fixture.componentRef.setInput('projectId', 'proj-1');
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -47,7 +46,6 @@ describe('TileListComponent', () => {
     const fixture = TestBed.createComponent(TileListComponent);
     const tiles = [createMockTile({ id: 1, name: 'Grass' }), createMockTile({ id: 2, name: 'Water' })];
     fixture.componentRef.setInput('tiles', tiles);
-    fixture.componentRef.setInput('projectId', 'proj-1');
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -66,7 +64,6 @@ describe('TileListComponent', () => {
   it('should emit tileCreate when add button is clicked', async () => {
     const fixture = TestBed.createComponent(TileListComponent);
     fixture.componentRef.setInput('tiles', []);
-    fixture.componentRef.setInput('projectId', 'proj-1');
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -86,7 +83,6 @@ describe('TileListComponent', () => {
   it('should show empty message when no tiles', async () => {
     const fixture = TestBed.createComponent(TileListComponent);
     fixture.componentRef.setInput('tiles', []);
-    fixture.componentRef.setInput('projectId', 'proj-1');
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -98,7 +94,6 @@ describe('TileListComponent', () => {
     const fixture = TestBed.createComponent(TileListComponent);
     const tiles = [createMockTile({ id: 1, name: 'Grass' }), createMockTile({ id: 2, name: 'Water' })];
     fixture.componentRef.setInput('tiles', tiles);
-    fixture.componentRef.setInput('projectId', 'proj-1');
     fixture.componentRef.setInput('selectedTileId', 2);
     await fixture.whenStable();
     fixture.detectChanges();

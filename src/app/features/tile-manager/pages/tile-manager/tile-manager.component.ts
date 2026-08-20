@@ -1,5 +1,6 @@
-import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DestroyRef, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TileService } from '../../services/tile.service';
 import { TileListComponent } from '../../components/tile-list/tile-list.component';
 import { TilePropertiesComponent } from '../../components/tile-properties/tile-properties.component';
@@ -16,7 +17,6 @@ import type { Tile } from '../../../../shared/models/tile.model';
     <div class="tw-flex tw-h-full">
       <rk-tile-list
         class="tw-w-64 tw-shrink-0 tw-border-r tw-border-border"
-        [projectId]="projectId()"
         [tiles]="tiles()"
         [selectedTileId]="selectedTileId()"
         (tileSelect)="selectTile($event)"
@@ -47,7 +47,8 @@ import type { Tile } from '../../../../shared/models/tile.model';
       >
         <rk-confirm-dialog
           class="tw-bg-card tw-rounded-lg tw-shadow-lg"
-          [data]="deleteDialogData()"
+          [data]="deleteDialogData"
+          (click)="$event.stopPropagation()"
           (confirmed)="deleteTile(tileToDelete()!)"
           (cancelled)="tileToDelete.set(null)"
         />
@@ -58,6 +59,7 @@ import type { Tile } from '../../../../shared/models/tile.model';
 export class TileManagerComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly tileService = inject(TileService);
+  private readonly destroyRef = inject(DestroyRef);
 
   projectId = signal<string>('');
   tiles = signal<Tile[]>([]);
@@ -65,15 +67,17 @@ export class TileManagerComponent implements OnInit {
   selectedTile = signal<Tile | null>(null);
   tileToDelete = signal<number | null>(null);
 
-  deleteDialogData = signal<ConfirmDialogData>({
+  readonly deleteDialogData: ConfirmDialogData = {
     title: 'Delete Tile',
     message: 'Are you sure you want to delete this tile? This action cannot be undone.',
     confirmLabel: 'Delete',
     cancelLabel: 'Cancel',
-  });
+  };
 
   ngOnInit() {
-    this.route.parent?.params.subscribe((params) => {
+    this.route.parent?.params.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((params) => {
       const id = params['id'];
       if (id) {
         this.projectId.set(id);

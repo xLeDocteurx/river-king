@@ -152,7 +152,7 @@ export class TilePropertiesComponent {
       ...this.tile(),
       name: value.name ?? '',
       type: value.type ?? 'static',
-      animationSpeed: Number(value.animationSpeed ?? 200),
+      animationSpeed: Number(value.animationSpeed || 200),
       properties: {
         collision: value.properties?.collision ?? false,
         solid: value.properties?.solid ?? false,
