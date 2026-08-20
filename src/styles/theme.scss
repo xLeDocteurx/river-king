@@ -1,0 +1,99 @@
+/*
+ * Theme Tokens – CSS custom properties driven by Tailwind config.
+ * Use data-theme="dark" on <html> to toggle dark mode.
+ * Usage: class="tw-bg-background tw-text-foreground tw-border tw-border-border"
+ */
+
+:root {
+  /* Surface & content */
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+
+  /* Cards */
+  --color-card-bg: #ffffff;
+  --color-card-fg: #0f172a;
+
+  /* Brand – Primary (Blue) */
+  --color-primary: #0ea5e9;
+  --color-primary-foreground: #ffffff;
+
+  /* Brand – Secondary (Slate) */
+  --color-secondary: #64748b;
+  --color-secondary-foreground: #ffffff;
+
+  /* Brand – Accent (Amber) */
+  --color-accent: #f59e0b;
+  --color-accent-foreground: #ffffff;
+
+  /* Muted / subtle */
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+
+  /* Destructive / Error */
+  --color-destructive: #ef4444;
+
+  /* Borders & inputs */
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+}
+
+.dark,
+[data-theme='dark'] {
+  /* Surface & content */
+  --color-background: #0f172a;
+  --color-foreground: #f8fafc;
+
+  /* Cards */
+  --color-card-bg: #1e293b;
+  --color-card-fg: #f8fafc;
+
+  /* Brand – Primary (lightened for contrast) */
+  --color-primary: #38bdf8;
+  --color-primary-foreground: #0f172a;
+
+  /* Brand – Secondary */
+  --color-secondary: #94a3b8;
+  --color-secondary-foreground: #0f172a;
+
+  /* Brand – Accent */
+  --color-accent: #fbbf24;
+  --color-accent-foreground: #0f172a;
+
+  /* Muted / subtle */
+  --color-muted: #1e293b;
+  --color-muted-foreground: #94a3b8;
+
+  /* Destructive / Error */
+  --color-destructive: #f87171;
+
+  /* Borders & inputs */
+  --color-border: #334155;
+  --color-input: #334155;
+}
+
+/* Material Symbols variable font setup (modern Google Icons) */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url('../../node_modules/@material-symbols/font-400/material-symbols-outlined.woff2')
+    format('woff2');
+}
+
+.material-symbols {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.5rem;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}

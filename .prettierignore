@@ -1,0 +1,17 @@
+# Build output
+/dist
+/tmp
+/out-tsc
+
+# Dependencies
+/node_modules
+
+# Angular cache
+/.angular/cache
+
+# Coverage
+/coverage
+
+# Generated files
+*.generated.ts
+*.d.ts
