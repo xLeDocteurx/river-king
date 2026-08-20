@@ -70,7 +70,7 @@ All files pass linting.
 
 ## Git Commit
 
-**Hash:** `TBD` (to be filled after commit)
+**Hash:** `1496e62`
 
 **Message:** `feature-8-scene-editor: add scene editor with map canvas, scene list, and tile palette`
 
