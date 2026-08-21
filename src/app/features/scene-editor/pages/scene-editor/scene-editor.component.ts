@@ -6,48 +6,35 @@ import { SceneListComponent } from '../../components/scene-list/scene-list.compo
 import { TilePaletteComponent } from '../../components/tile-palette/tile-palette.component';
 import type { Scene } from '../../../../shared/models/scene.model';
 
+/**
+ * Main page component for the Scene Editor feature.
+ * Orchestrates scene selection, tile placement, and scene group management.
+ */
 @Component({
   selector: 'rk-scene-editor',
   standalone: true,
   providers: [SceneService],
   imports: [MapCanvasComponent, SceneListComponent, TilePaletteComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="tw-flex tw-h-full">
-      <rk-scene-list
-        class="tw-w-64 tw-shrink-0"
-        [scenes]="scenes()"
-        [selectedSceneId]="selectedSceneId()"
-        (sceneSelect)="selectScene($event)"
-        (createScene)="onCreateScene()"
-      />
-      <div class="tw-flex-1 tw-relative tw-overflow-hidden">
-        <rk-map-canvas
-          [scene]="selectedScene()"
-          [selectedTileId]="selectedTileId()"
-          (tilePlaced)="onTilePlaced($event)"
-        />
-      </div>
-      <rk-tile-palette
-        class="tw-w-64 tw-shrink-0"
-        [projectId]="projectId()"
-        [selectedTileId]="selectedTileId()"
-        (tileSelect)="selectedTileId.set($event)"
-      />
-    </div>
-  `,
+  templateUrl: './scene-editor.component.html',
+  styleUrl: './scene-editor.component.scss',
 })
 export class SceneEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly sceneService = inject(SceneService);
 
+  /** Currently active project id derived from route params. */
   projectId = signal<string>('');
+  /** List of all scenes for the current project. */
   scenes = signal<Scene[]>([]);
+  /** Id of the currently selected scene. */
   selectedSceneId = signal<string | null>(null);
+  /** Full object of the currently selected scene. */
   selectedScene = signal<Scene | null>(null);
+  /** Id of the tile currently selected in the palette. */
   selectedTileId = signal<number | null>(null);
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.route.parent?.params.subscribe((params) => {
       const id = params['id'];
       if (id) {
@@ -57,18 +44,28 @@ export class SceneEditorComponent implements OnInit {
     });
   }
 
-  async loadScenes() {
+  /**
+   * Loads all scenes for the current project from IndexedDB.
+   */
+  async loadScenes(): Promise<void> {
     const scenes = await this.sceneService.getScenes(this.projectId());
     this.scenes.set(scenes);
   }
 
-  async selectScene(sceneId: string) {
+  /**
+   * Selects a scene by id and loads its full data.
+   * @param sceneId The id of the scene to select.
+   */
+  async selectScene(sceneId: string): Promise<void> {
     this.selectedSceneId.set(sceneId);
     const scene = await this.sceneService.getScene(sceneId);
     this.selectedScene.set(scene ?? null);
   }
 
-  async onCreateScene() {
+  /**
+   * Creates a new scene for the current project and refreshes the list.
+   */
+  async onCreateScene(): Promise<void> {
     await this.sceneService.createScene(
       this.projectId(),
       `Scene ${this.scenes().length + 1}`,
@@ -78,7 +75,20 @@ export class SceneEditorComponent implements OnInit {
     await this.loadScenes();
   }
 
-  async onTilePlaced(event: { x: number; y: number; tileId: number }) {
+  /**
+   * Updates the folder path of a scene and refreshes the list.
+   * @param event Object containing the scene id and target folder path.
+   */
+  async onSceneFolderChange(event: { sceneId: string; folderPath: string }): Promise<void> {
+    await this.sceneService.updateSceneFolder(event.sceneId, event.folderPath);
+    await this.loadScenes();
+  }
+
+  /**
+   * Handles a tile placement event from the map canvas.
+   * @param event Object containing x, y coordinates and the placed tile id.
+   */
+  async onTilePlaced(event: { x: number; y: number; tileId: number }): Promise<void> {
     const scene = this.selectedScene();
     if (!scene) return;
 

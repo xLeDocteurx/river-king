@@ -1,0 +1,40 @@
+<div
+  class="tw-group tw-relative tw-p-4 tw-rounded-lg tw-border tw-border-border tw-bg-card tw-transition hover:tw-border-primary hover:tw-shadow-md"
+>
+  <div class="tw-flex tw-items-start tw-justify-between tw-mb-2">
+    <div class="tw-flex tw-items-center tw-gap-2">
+      <span class="material-symbols tw-text-primary" aria-hidden="true">videogame_asset</span>
+      <h3 class="tw-text-lg tw-font-semibold tw-text-foreground">{{ project().name }}</h3>
+    </div>
+    <div class="tw-flex tw-gap-1 tw-opacity-0 group-hover:tw-opacity-100 tw-transition">
+      <button
+        type="button"
+        (click)="open.emit(project().id); $event.stopPropagation()"
+        class="tw-p-1 tw-rounded-md hover:tw-bg-muted"
+        title="Open"
+      >
+        <span class="material-symbols tw-text-sm" aria-hidden="true">open_in_new</span>
+      </button>
+      <button
+        type="button"
+        (click)="delete.emit(project().id); $event.stopPropagation()"
+        class="tw-p-1 tw-rounded-md tw-text-destructive hover:tw-bg-destructive/10"
+        title="Delete"
+      >
+        <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
+      </button>
+    </div>
+  </div>
+  <div class="tw-flex tw-items-center tw-gap-2 tw-text-sm tw-text-muted-foreground">
+    <span class="material-symbols tw-text-xs" aria-hidden="true">calendar_today</span>
+    <span>{{ formatDate(project().updatedAt) }}</span>
+  </div>
+  <div class="tw-flex tw-gap-1 tw-mt-3">
+    @for (color of project().palette.slice(0, 8); track $index) {
+      <div
+        class="tw-w-4 tw-h-4 tw-rounded-sm tw-border tw-border-border/50"
+        [style.background-color]="color"
+      ></div>
+    }
+  </div>
+</div>

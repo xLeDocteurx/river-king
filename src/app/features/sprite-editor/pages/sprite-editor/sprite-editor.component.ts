@@ -6,6 +6,8 @@ import {
   OnInit,
   ChangeDetectionStrategy,
   computed,
+  viewChild,
+  effect,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -18,103 +20,20 @@ import { ProjectService } from '../../../../features/dashboard/services/project.
 import { NotificationService } from '../../../../shared/services/notification.service';
 import type { Sprite } from '../../../../shared/models/sprite.model';
 
+/**
+ * Main page component for the sprite editor feature.
+ *
+ * Displays a list of sprites on the left, a pixel canvas in the center,
+ * and drawing tools with palette manager on the right.
+ */
 @Component({
   selector: 'rk-sprite-editor',
   standalone: true,
   providers: [SpriteService],
   imports: [PixelCanvasComponent, PaletteManagerComponent, DrawingToolsComponent, ConfirmDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="tw-flex tw-h-full">
-      <!-- Left: Sprite List -->
-      <div class="tw-w-64 tw-shrink-0 tw-border-r tw-border-border tw-bg-card tw-flex tw-flex-col">
-        <div class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-3 tw-border-b tw-border-border">
-          <h3 class="tw-font-semibold tw-text-foreground">Sprites</h3>
-          <button
-            type="button"
-            (click)="createSprite()"
-            class="tw-p-1 tw-rounded-md hover:tw-bg-muted"
-            title="New Sprite"
-          >
-            <span class="material-symbols" aria-hidden="true">add</span>
-          </button>
-        </div>
-        <div class="tw-flex-1 tw-overflow-auto tw-p-2 tw-flex tw-flex-col tw-gap-1">
-          @for (sprite of sprites(); track sprite.id) {
-            <div class="tw-flex tw-items-center tw-gap-1">
-              <button
-                type="button"
-                (click)="selectSprite(sprite.id)"
-                [class.tw-bg-primary/10]="selectedSpriteId() === sprite.id"
-                class="tw-flex-1 tw-text-left tw-px-3 tw-py-2 tw-rounded-md tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
-              >
-                <span class="material-symbols tw-text-muted-foreground" aria-hidden="true">image</span>
-                <span>{{ sprite.name }}</span>
-              </button>
-              <button
-                type="button"
-                (click)="requestDelete(sprite.id); $event.stopPropagation()"
-                class="tw-p-1 tw-rounded-md tw-text-destructive hover:tw-bg-destructive/10"
-                title="Delete"
-              >
-                <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
-              </button>
-            </div>
-          } @empty {
-            <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">No sprites yet</div>
-          }
-        </div>
-      </div>
-
-      <!-- Center: Canvas -->
-      <div class="tw-flex-1 tw-flex tw-items-center tw-justify-center tw-bg-background tw-p-4">
-        @if (selectedSprite() && paletteIndices(); as indices) {
-          <rk-pixel-canvas
-            [paletteIndices]="indices"
-            [palette]="projectPalette()"
-            [selectedColorIndex]="selectedColorIndex()"
-            [tool]="selectedTool()"
-            (indicesChange)="onCanvasChange($event)"
-          />
-        } @else {
-          <div class="tw-text-muted-foreground tw-text-center tw-py-20">
-            Select a sprite to edit
-          </div>
-        }
-      </div>
-
-      <!-- Right: Tools -->
-      <div class="tw-w-56 tw-shrink-0 tw-border-l tw-border-border tw-bg-card tw-p-4 tw-flex tw-flex-col tw-gap-4">
-        <rk-palette-manager
-          [palette]="projectPalette()"
-          [selectedIndex]="selectedPaletteIndex()"
-          (selectedIndexChange)="selectedPaletteIndex.set($event)"
-        />
-        <rk-drawing-tools
-          [tool]="selectedTool()"
-          (toolChange)="selectedTool.set($event)"
-        />
-      </div>
-    </div>
-
-    @if (spriteToDelete()) {
-      <div
-        class="tw-fixed tw-inset-0 tw-bg-black/50 tw-flex tw-items-center tw-justify-center tw-z-50"
-        tabindex="0"
-        (click)="spriteToDelete.set(null)"
-        (keydown.enter)="spriteToDelete.set(null)"
-        (keydown.escape)="spriteToDelete.set(null)"
-      >
-        <rk-confirm-dialog
-          class="tw-bg-card tw-rounded-lg tw-shadow-lg"
-          [data]="deleteDialogData"
-          (click)="$event.stopPropagation()"
-          (confirmed)="deleteSprite(spriteToDelete()!)"
-          (cancelled)="spriteToDelete.set(null)"
-        />
-      </div>
-    }
-  `,
+  templateUrl: './sprite-editor.component.html',
+  styleUrl: './sprite-editor.component.scss',
 })
 export class SpriteEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -123,19 +42,40 @@ export class SpriteEditorComponent implements OnInit {
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
+  /** Reference to the confirm dialog component. */
+  private readonly confirmDialogRef = viewChild.required(ConfirmDialogComponent);
+
+  /** Reactive signal holding the current project ID. */
   projectId = signal<string>('');
+
+  /** Reactive signal holding the project's color palette. */
   projectPalette = signal<string[]>([]);
+
+  /** Reactive signal holding the list of sprites. */
   sprites = signal<Sprite[]>([]);
+
+  /** Reactive signal holding the ID of the currently selected sprite. */
   selectedSpriteId = signal<number | null>(null);
+
+  /** Reactive signal holding the currently selected sprite data. */
   selectedSprite = signal<Sprite | null>(null);
+
+  /** Reactive signal holding the selected palette color index. */
   selectedPaletteIndex = signal<number>(0);
+
+  /** Reactive signal holding the selected drawing tool. */
   selectedTool = signal<DrawingTool>('brush');
+
+  /** Reactive signal tracking which sprite is pending deletion confirmation. */
   spriteToDelete = signal<number | null>(null);
 
+  /** Reactive signal holding the decoded palette indices for the canvas. */
   paletteIndices = signal<number[][] | null>(null);
 
+  /** Computed signal deriving the selected color index (palette index + 1). */
   readonly selectedColorIndex = computed(() => this.selectedPaletteIndex() + 1);
 
+  /** Static configuration for the delete confirmation dialog. */
   readonly deleteDialogData: ConfirmDialogData = {
     title: 'Delete Sprite',
     message: 'Are you sure you want to delete this sprite? This action cannot be undone.',
@@ -143,6 +83,16 @@ export class SpriteEditorComponent implements OnInit {
     cancelLabel: 'Cancel',
   };
 
+  constructor() {
+    effect(() => {
+      const id = this.spriteToDelete();
+      if (id !== null) {
+        this.confirmDialogRef().open();
+      }
+    });
+  }
+
+  /** Initializes component, subscribing to route params to load project data. */
   ngOnInit() {
     this.route.parent?.params.pipe(
       takeUntilDestroyed(this.destroyRef)
@@ -156,6 +106,7 @@ export class SpriteEditorComponent implements OnInit {
     });
   }
 
+  /** Loads the project's color palette from the project service. */
   async loadProjectPalette() {
     try {
       const project = await this.projectService.getById(this.projectId());
@@ -166,6 +117,7 @@ export class SpriteEditorComponent implements OnInit {
     }
   }
 
+  /** Loads all sprites for the current project from the sprite service. */
   async loadSprites() {
     try {
       const sprites = await this.spriteService.getSprites(this.projectId());
@@ -176,6 +128,10 @@ export class SpriteEditorComponent implements OnInit {
     }
   }
 
+  /**
+   * Selects a sprite by ID and loads its pixel data.
+   * @param spriteId - The ID of the sprite to select.
+   */
   async selectSprite(spriteId: number) {
     try {
       this.selectedSpriteId.set(spriteId);
@@ -201,6 +157,7 @@ export class SpriteEditorComponent implements OnInit {
     }
   }
 
+  /** Creates a new sprite for the current project. */
   async createSprite() {
     try {
       const count = this.sprites().length;
@@ -218,6 +175,10 @@ export class SpriteEditorComponent implements OnInit {
     }
   }
 
+  /**
+   * Handles canvas changes by encoding and saving pixel data.
+   * @param updatedIndices - The updated 2D array of palette indices.
+   */
   async onCanvasChange(updatedIndices: number[][]) {
     try {
       const sprite = this.selectedSprite();
@@ -239,10 +200,18 @@ export class SpriteEditorComponent implements OnInit {
     }
   }
 
+  /**
+   * Requests deletion confirmation for the specified sprite.
+   * @param spriteId - The ID of the sprite to delete.
+   */
   requestDelete(spriteId: number) {
     this.spriteToDelete.set(spriteId);
   }
 
+  /**
+   * Deletes the specified sprite after confirmation.
+   * @param spriteId - The ID of the sprite to delete.
+   */
   async deleteSprite(spriteId: number) {
     try {
       await this.spriteService.deleteSprite(spriteId);

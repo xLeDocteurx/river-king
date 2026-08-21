@@ -2,52 +2,29 @@ import { Component, input, output, ChangeDetectionStrategy } from '@angular/core
 
 export type DrawingTool = 'brush' | 'eraser' | 'fill';
 
+/**
+ * Drawing tools component for selecting the active tool in the sprite editor.
+ *
+ * Provides buttons for brush, eraser, and fill tools.
+ */
 @Component({
   selector: 'rk-drawing-tools',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="tw-flex tw-flex-col tw-gap-2">
-      <h3 class="tw-text-sm tw-font-semibold">Tools</h3>
-      <div class="tw-flex tw-gap-1">
-        <button
-          type="button"
-          data-testid="tool-brush"
-          (click)="selectTool('brush')"
-          [class.tw-bg-primary/10]="tool() === 'brush'"
-          class="tw-p-2 tw-rounded-md tw-border tw-border-border tw-transition hover:tw-bg-muted"
-          title="Brush"
-        >
-          <span class="material-symbols" aria-hidden="true">brush</span>
-        </button>
-        <button
-          type="button"
-          data-testid="tool-eraser"
-          (click)="selectTool('eraser')"
-          [class.tw-bg-primary/10]="tool() === 'eraser'"
-          class="tw-p-2 tw-rounded-md tw-border tw-border-border tw-transition hover:tw-bg-muted"
-          title="Eraser"
-        >
-          <span class="material-symbols" aria-hidden="true">ink_eraser</span>
-        </button>
-        <button
-          type="button"
-          data-testid="tool-fill"
-          (click)="selectTool('fill')"
-          [class.tw-bg-primary/10]="tool() === 'fill'"
-          class="tw-p-2 tw-rounded-md tw-border tw-border-border tw-transition hover:tw-bg-muted"
-          title="Fill"
-        >
-          <span class="material-symbols" aria-hidden="true">format_color_fill</span>
-        </button>
-      </div>
-    </div>
-  `,
+  templateUrl: './drawing-tools.component.html',
+  styleUrl: './drawing-tools.component.scss',
 })
 export class DrawingToolsComponent {
+  /** Required currently selected drawing tool. */
   tool = input.required<DrawingTool>();
+
+  /** Emits the newly selected drawing tool. */
   toolChange = output<DrawingTool>();
 
+  /**
+   * Selects the specified drawing tool.
+   * @param selected - The drawing tool to activate.
+   */
   selectTool(selected: DrawingTool) {
     this.toolChange.emit(selected);
   }

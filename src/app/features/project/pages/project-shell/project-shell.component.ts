@@ -2,18 +2,15 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ProjectSidebarComponent } from '../../components/project-sidebar/project-sidebar.component';
 
+/**
+ * Root layout for the project workspace, hosting the sidebar and router outlet.
+ */
 @Component({
   selector: 'rk-project-shell',
   standalone: true,
   imports: [RouterOutlet, ProjectSidebarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="tw-flex tw-h-screen tw-bg-background tw-text-foreground">
-      <rk-project-sidebar projectId="" />
-      <main class="tw-flex-1 tw-overflow-auto tw-p-4">
-        <router-outlet />
-      </main>
-    </div>
-  `,
+  templateUrl: './project-shell.component.html',
+  styleUrl: './project-shell.component.scss',
 })
 export class ProjectShellComponent {}

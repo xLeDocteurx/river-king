@@ -1,0 +1,8 @@
+.rk-dialog {
+  @apply tw-rounded-lg tw-border tw-border-border tw-bg-background tw-text-foreground tw-shadow-xl;
+  @apply tw-p-0 tw-max-w-lg tw-w-full;
+
+  &::backdrop {
+    @apply tw-bg-black/50;
+  }
+}

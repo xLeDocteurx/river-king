@@ -55,4 +55,12 @@ describe('SceneService', () => {
     const result = await service.getScene(scene.id);
     expect(result).toBeUndefined();
   });
+
+  it('should update scene folderPath', async () => {
+    const scene = await service.createScene('proj-1', 'Movable', 10, 10);
+    expect(scene.folderPath).toBe('');
+    await service.updateSceneFolder(scene.id, 'new-folder');
+    const updated = await service.getScene(scene.id);
+    expect(updated?.folderPath).toBe('new-folder');
+  });
 });

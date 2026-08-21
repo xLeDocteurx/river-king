@@ -1,0 +1,59 @@
+<div class="tw-flex tw-flex-col tw-h-full tw-bg-card tw-border-r tw-border-border">
+  <div class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-3 tw-border-b tw-border-border">
+    <h3 class="tw-font-semibold tw-text-foreground">Scenes</h3>
+    <div class="tw-flex tw-gap-1">
+      <button
+        type="button"
+        (click)="onCreateGroup()"
+        class="tw-p-1 tw-rounded-md hover:tw-bg-muted"
+        title="New Group"
+      >
+        <span class="material-symbols" aria-hidden="true">create_new_folder</span>
+      </button>
+      <button
+        type="button"
+        (click)="createScene.emit()"
+        class="tw-p-1 tw-rounded-md hover:tw-bg-muted"
+        title="New Scene"
+      >
+        <span class="material-symbols" aria-hidden="true">add</span>
+      </button>
+    </div>
+  </div>
+  <div class="tw-flex-1 tw-overflow-auto tw-p-2">
+    <div cdkDropListGroup>
+      @for (group of groups(); track group.folderPath) {
+        <div class="tw-mb-3">
+          <div
+            class="tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-xs tw-font-semibold tw-text-muted-foreground tw-uppercase"
+          >
+            <span class="material-symbols tw-text-sm" aria-hidden="true">folder</span>
+            <span>{{ group.folderPath || 'Ungrouped' }}</span>
+          </div>
+          <div
+            cdkDropList
+            [cdkDropListData]="group.scenes"
+            (cdkDropListDropped)="onDrop($event, group.folderPath)"
+            class="tw-flex tw-flex-col tw-gap-1"
+          >
+            @for (scene of group.scenes; track scene.id) {
+              <button
+                cdkDrag
+                [cdkDragData]="scene"
+                type="button"
+                (click)="sceneSelect.emit(scene.id)"
+                [class.tw-bg-primary/10]="selectedSceneId() === scene.id"
+                class="tw-w-full tw-text-left tw-px-3 tw-py-2 tw-rounded-md tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
+              >
+                <span class="material-symbols tw-text-muted-foreground" aria-hidden="true">map</span>
+                <span>{{ scene.name }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      } @empty {
+        <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">No scenes yet</div>
+      }
+    </div>
+  </div>
+</div>

@@ -9,29 +9,36 @@ import {
   effect,
 } from '@angular/core';
 
+/**
+ * Pixel canvas component for drawing and editing sprite pixel data.
+ *
+ * Renders a 16x16 grid using HTML5 Canvas and supports brush, eraser,
+ * and flood-fill tools. Emits updated palette indices on change.
+ */
 @Component({
   selector: 'rk-pixel-canvas',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <canvas
-      #canvas
-      class="tw-cursor-crosshair"
-      (mousedown)="onMouseDown($event)"
-      (mousemove)="onMouseMove($event)"
-      (mouseup)="onMouseUp()"
-      (mouseleave)="onMouseLeave()"
-    ></canvas>
-  `,
+  templateUrl: './pixel-canvas.component.html',
+  styleUrl: './pixel-canvas.component.scss',
 })
 export class PixelCanvasComponent implements AfterViewInit {
+  /** Reference to the underlying HTML canvas element. */
   canvasRef = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
 
+  /** Required 2D array of palette indices representing the sprite pixels. */
   paletteIndices = input.required<number[][]>();
+
+  /** Required array of hex color strings defining the project palette. */
   palette = input.required<string[]>();
+
+  /** Required index of the currently selected color in the palette. */
   selectedColorIndex = input.required<number>();
+
+  /** Required active drawing tool. */
   tool = input.required<'brush' | 'eraser' | 'fill'>();
 
+  /** Emits updated palette indices whenever the canvas is modified. */
   indicesChange = output<number[][]>();
 
   readonly canvasWidth = 256;
@@ -50,6 +57,7 @@ export class PixelCanvasComponent implements AfterViewInit {
     });
   }
 
+  /** Lifecycle hook called after view initialization. Sets up canvas dimensions. */
   ngAfterViewInit() {
     const ref = this.canvasRef();
     if (!ref) return;
@@ -59,6 +67,7 @@ export class PixelCanvasComponent implements AfterViewInit {
     this.render();
   }
 
+  /** Renders the pixel grid, background, and pixel data onto the canvas. */
   private render() {
     const canvas = this.canvasRef()?.nativeElement;
     if (!canvas) return;
@@ -103,6 +112,11 @@ export class PixelCanvasComponent implements AfterViewInit {
     }
   }
 
+  /**
+   * Converts a mouse event into pixel grid coordinates.
+   * @param event - The mouse event to convert.
+   * @returns Grid coordinates { x, y } clamped to the sprite bounds.
+   */
   private getPixelCoordinates(event: MouseEvent): { x: number; y: number } {
     if (!this.rectCache) {
       return { x: -1, y: -1 };
@@ -112,6 +126,10 @@ export class PixelCanvasComponent implements AfterViewInit {
     return { x, y };
   }
 
+  /**
+   * Handles mouse down on the canvas to start drawing.
+   * @param event - The mouse down event.
+   */
   onMouseDown(event: MouseEvent) {
     this.isDrawing = true;
     const ref = this.canvasRef();
@@ -121,15 +139,21 @@ export class PixelCanvasComponent implements AfterViewInit {
     this.applyTool(event);
   }
 
+  /**
+   * Handles mouse move to continue drawing while dragging.
+   * @param event - The mouse move event.
+   */
   onMouseMove(event: MouseEvent) {
     if (!this.isDrawing) return;
     this.applyTool(event);
   }
 
+  /** Handles mouse up to stop drawing. */
   onMouseUp() {
     this.isDrawing = false;
   }
 
+  /** Handles mouse leaving the canvas to stop drawing. */
   onMouseLeave() {
     this.isDrawing = false;
     this.rectCache = null;

@@ -1,4 +1,17 @@
 import 'fake-indexeddb/auto';
+import { vi } from 'vitest';
+
+if (!('showModal' in HTMLDialogElement.prototype)) {
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+    value: vi.fn(),
+    writable: true,
+  });
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+    value: vi.fn(),
+    writable: true,
+  });
+}
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';

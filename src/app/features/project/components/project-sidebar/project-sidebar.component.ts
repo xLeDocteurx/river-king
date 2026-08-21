@@ -1,45 +1,18 @@
 import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
+/**
+ * Sidebar navigation for the project workspace (Scenes, Tiles, Sprites).
+ */
 @Component({
   selector: 'rk-project-sidebar',
   standalone: true,
   imports: [RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <nav class="tw-w-64 tw-h-full tw-border-r tw-border-border tw-bg-card tw-p-4 tw-flex tw-flex-col tw-gap-1">
-      <div class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-mb-2">
-        <span class="material-symbols tw-text-primary" aria-hidden="true">construction</span>
-        <span class="tw-font-semibold tw-text-foreground">Workspace</span>
-      </div>
-
-      <a
-        [routerLink]="['scenes']"
-        routerLinkActive="tw-bg-primary/10 tw-text-primary tw-border-l-2 tw-border-primary"
-        class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-md tw-transition hover:tw-bg-muted tw-text-muted-foreground"
-      >
-        <span class="material-symbols" aria-hidden="true">map</span>
-        Scenes
-      </a>
-      <a
-        [routerLink]="['tiles']"
-        routerLinkActive="tw-bg-primary/10 tw-text-primary tw-border-l-2 tw-border-primary"
-        class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-md tw-transition hover:tw-bg-muted tw-text-muted-foreground"
-      >
-        <span class="material-symbols" aria-hidden="true">grid_view</span>
-        Tiles
-      </a>
-      <a
-        [routerLink]="['sprites']"
-        routerLinkActive="tw-bg-primary/10 tw-text-primary tw-border-l-2 tw-border-primary"
-        class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-md tw-transition hover:tw-bg-muted tw-text-muted-foreground"
-      >
-        <span class="material-symbols" aria-hidden="true">brush</span>
-        Sprites
-      </a>
-    </nav>
-  `,
+  templateUrl: './project-sidebar.component.html',
+  styleUrl: './project-sidebar.component.scss',
 })
 export class ProjectSidebarComponent {
+  /** Required project identifier from the parent route. */
   projectId = input.required<string>();
 }
