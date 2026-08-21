@@ -10,10 +10,12 @@
 Task 7. Previous tasks 1-6 complete. This task replaces the placeholder project-shell component from Task 4 and creates a sidebar navigation for the project workspace. The sidebar links to Scenes, Tiles, and Sprites sections within a project.
 
 **Interfaces:**
+
 - Consumes: `ActivatedRoute` (for project ID)
 - Produces: ProjectShellComponent layout + ProjectSidebarComponent navigation
 
 **Global Constraints:**
+
 - ChangeDetectionStrategy.OnPush
 - Standalone components
 - Use signals (input())
@@ -37,7 +39,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   imports: [RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="tw-w-64 tw-h-full tw-border-r tw-border-border tw-bg-card tw-p-4 tw-flex tw-flex-col tw-gap-1">
+    <nav
+      class="tw-w-64 tw-h-full tw-border-r tw-border-border tw-bg-card tw-p-4 tw-flex tw-flex-col tw-gap-1"
+    >
       <div class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-mb-2">
         <span class="material-symbols tw-text-primary" aria-hidden="true">construction</span>
         <span class="tw-font-semibold tw-text-foreground">Workspace</span>
@@ -112,6 +116,7 @@ Note: The sidebar doesn't actually need the projectId for navigation since the r
 Create: `src/app/features/project/components/project-sidebar/project-sidebar.component.spec.ts`
 
 Test cases:
+
 1. Should render 3 navigation links (Scenes, Tiles, Sprites)
 2. Should have correct routerLink paths
 3. Should use Material Symbols icons
@@ -142,6 +147,7 @@ git commit -m "feature-7-project-shell: add project workspace shell with sidebar
 ---
 
 **Report file:** Write to `docs/superpowers/plans/task-7-report.md`:
+
 - Status: DONE / DONE_WITH_CONCERNS / BLOCKED
 - Files created/modified
 - Test results

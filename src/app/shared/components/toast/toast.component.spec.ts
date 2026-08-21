@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ToastComponent } from './toast.component';
-import { NotificationService } from '../../services/notification.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 describe('ToastComponent', () => {
   let fixture: ReturnType<typeof TestBed.createComponent<ToastComponent>>;

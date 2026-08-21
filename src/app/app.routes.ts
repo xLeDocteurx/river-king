@@ -8,8 +8,7 @@ export const routes: Routes = [
   },
   {
     path: 'project/:id',
-    loadChildren: () =>
-      import('./features/project/project.routes').then((m) => m.PROJECT_ROUTES),
+    loadChildren: () => import('./features/project/project.routes').then((m) => m.PROJECT_ROUTES),
   },
   { path: '**', redirectTo: '' },
 ];

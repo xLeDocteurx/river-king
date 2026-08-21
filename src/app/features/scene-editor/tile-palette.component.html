@@ -1,0 +1,15 @@
+<div class="tw-flex tw-flex-col tw-h-full tw-bg-card tw-border-l tw-border-border tw-p-4">
+  <h3 class="tw-font-semibold tw-text-foreground tw-mb-3">Tiles</h3>
+  <div class="tw-flex tw-flex-wrap tw-gap-2">
+    @for (tileId of availableTiles(); track tileId) {
+      <button
+        type="button"
+        (click)="tileSelect.emit(tileId)"
+        [class.tw-ring-2]="selectedTileId() === tileId"
+        class="tw-w-10 tw-h-10 tw-rounded-md tw-border tw-border-border tw-transition hover:tw-border-primary"
+        [style.background-color]="getTileColor(tileId)"
+        title="Tile {{ tileId }}"
+      ></button>
+    }
+  </div>
+</div>

@@ -1,14 +1,17 @@
 # Task 6 Report: Dashboard Page
 
 ## Status
+
 DONE
 
 ## Files Created/Modified
 
 ### Modified
+
 - `src/app/features/dashboard/pages/dashboard/dashboard.component.ts` — Replaced placeholder with full implementation including project list, create form modal, and delete confirmation modal.
 
 ### Created
+
 - `src/app/features/dashboard/pages/dashboard/dashboard.component.scss` — Minimal SCSS file (Tailwind handles inline styling).
 - `src/app/features/dashboard/components/project-card/project-card.component.ts` — Presentational component for individual project cards with palette preview, date, open/delete actions.
 - `src/app/features/dashboard/components/project-card/project-card.component.spec.ts` — Vitest unit tests for ProjectCardComponent (4 test cases).
@@ -17,10 +20,10 @@ DONE
 
 Command: `devbox run npm run test`
 
-| File | Pass | Fail |
-|---|---|---|
-| `src/app/features/dashboard/components/project-card/project-card.component.spec.ts` | 4 | 0 |
-| All other spec files | 16 | 0 |
+| File                                                                                | Pass | Fail |
+| ----------------------------------------------------------------------------------- | ---- | ---- |
+| `src/app/features/dashboard/components/project-card/project-card.component.spec.ts` | 4    | 0    |
+| All other spec files                                                                | 16   | 0    |
 
 Total: **20 passed, 0 failed** across 5 test files.
 
@@ -39,6 +42,7 @@ Command: `devbox run npm run build`
 Result: **PASS**
 
 Build output:
+
 - Initial chunk: 223.69 kB
 - Dashboard lazy chunk: 107.18 kB
 

@@ -9,10 +9,12 @@
 This is Task 3 of a multi-task Angular 22 game engine build. Task 1 (DatabaseService) and Task 2 (Domain Models) are complete. This service provides CRUD operations for projects with cascade delete.
 
 **Interfaces:**
+
 - Consumes: `DatabaseService.projects` table, `Project` type from `shared/models/project.model.ts`
 - Produces: `ProjectService` with async CRUD methods
 
 **Global Constraints (apply to all tasks):**
+
 - Angular 22 standalone components, ChangeDetectionStrategy.OnPush
 - Prefer signals over RxJS Subject/BehaviorSubject
 - Tailwind prefix required: `tw-`
@@ -182,10 +184,7 @@ export class ProjectService {
     return this.db.projects.get(id);
   }
 
-  async update(
-    id: string,
-    changes: Partial<Omit<Project, 'id' | 'createdAt'>>,
-  ): Promise<void> {
+  async update(id: string, changes: Partial<Omit<Project, 'id' | 'createdAt'>>): Promise<void> {
     await this.db.projects.update(id, { ...changes, updatedAt: Date.now() });
   }
 
@@ -225,6 +224,7 @@ git commit -m "feature-3-project-service: add ProjectService with CRUD and casca
 **Verification:** Run `git log --oneline -3` and print the latest commit hash.
 
 **Report file:** Write a brief status report to `docs/superpowers/plans/task-3-report.md` including:
+
 - Status: DONE / DONE_WITH_CONCERNS / BLOCKED
 - Files created/modified
 - Test results (pass/fail + count)

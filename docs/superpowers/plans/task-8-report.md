@@ -34,15 +34,15 @@ DONE
 
 ### Per-file breakdown
 
-| File | Tests | Status |
-|------|-------|--------|
-| `src/app/app.spec.ts` | 1 | PASS |
-| `src/app/core/services/database.service.spec.ts` | 4 | PASS |
-| `src/app/features/dashboard/services/project.service.spec.ts` | 6 | PASS |
-| `src/app/features/project/components/project-sidebar/project-sidebar.component.spec.ts` | 4 | PASS |
-| `src/app/features/dashboard/components/project-card/project-card.component.spec.ts` | 2 | PASS |
-| `src/app/shared/components/confirm-dialog/confirm-dialog.component.spec.ts` | 6 | PASS |
-| `src/app/features/scene-editor/services/scene.service.spec.ts` | 5 | PASS |
+| File                                                                                    | Tests | Status |
+| --------------------------------------------------------------------------------------- | ----- | ------ |
+| `src/app/app.spec.ts`                                                                   | 1     | PASS   |
+| `src/app/core/services/database.service.spec.ts`                                        | 4     | PASS   |
+| `src/app/features/dashboard/services/project.service.spec.ts`                           | 6     | PASS   |
+| `src/app/features/project/components/project-sidebar/project-sidebar.component.spec.ts` | 4     | PASS   |
+| `src/app/features/dashboard/components/project-card/project-card.component.spec.ts`     | 2     | PASS   |
+| `src/app/shared/components/confirm-dialog/confirm-dialog.component.spec.ts`             | 6     | PASS   |
+| `src/app/features/scene-editor/services/scene.service.spec.ts`                          | 5     | PASS   |
 
 ---
 

@@ -3,8 +3,7 @@ import { Routes } from '@angular/router';
 export const PROJECT_ROUTES: Routes = [
   {
     path: '',
-    loadComponent: () =>
-      import('./pages/project-shell/project-shell.component').then((m) => m.ProjectShellComponent),
+    loadComponent: () => import('./project-shell.component').then((m) => m.ProjectShellComponent),
     children: [
       {
         path: 'scenes',

@@ -13,6 +13,7 @@ DONE
 
 Command: `devbox run npm run test`
 Output summary:
+
 - Initial run failed because `project.service.ts` did not exist yet (expected TDD failure).
 - Second run failed because fake-indexeddb state was shared across test files, causing `getAll` to see 3 projects instead of 2.
 - Added table cleanup (`clear()`) in `beforeEach` to ensure test isolation.

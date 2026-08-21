@@ -1,6 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { ConfirmDialogComponent } from './confirm-dialog.component';
 
+// jsdom does not implement HTMLDialogElement methods
+const dialogProto = HTMLDialogElement.prototype as unknown as Record<string, unknown>;
+if (typeof dialogProto['showModal'] !== 'function') {
+  dialogProto['showModal'] = function () {
+    // no-op
+  };
+}
+if (typeof dialogProto['close'] !== 'function') {
+  dialogProto['close'] = function (returnValue?: string) {
+    (this as unknown as HTMLDialogElement).returnValue = returnValue ?? '';
+    (this as unknown as HTMLDialogElement).dispatchEvent(new Event('close'));
+  };
+}
+
 describe('ConfirmDialogComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -20,7 +34,7 @@ describe('ConfirmDialogComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h2')?.textContent?.trim()).toBe('Delete Project');
     expect(compiled.querySelector('p')?.textContent?.trim()).toBe(
-      'Are you sure you want to delete this project?'
+      'Are you sure you want to delete this project?',
     );
   });
 

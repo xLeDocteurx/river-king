@@ -34,10 +34,7 @@ export class ProjectService {
     return this.db.projects.get(id);
   }
 
-  async update(
-    id: string,
-    changes: Partial<Omit<Project, 'id' | 'createdAt'>>,
-  ): Promise<void> {
+  async update(id: string, changes: Partial<Omit<Project, 'id' | 'createdAt'>>): Promise<void> {
     await this.db.projects.update(id, { ...changes, updatedAt: Date.now() });
   }
 
