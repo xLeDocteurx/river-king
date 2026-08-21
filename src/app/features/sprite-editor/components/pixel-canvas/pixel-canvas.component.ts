@@ -20,12 +20,12 @@ import {
       (mousedown)="onMouseDown($event)"
       (mousemove)="onMouseMove($event)"
       (mouseup)="onMouseUp()"
-      (mouseleave)="onMouseUp()"
+      (mouseleave)="onMouseLeave()"
     ></canvas>
   `,
 })
 export class PixelCanvasComponent implements AfterViewInit {
-  canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
+  canvasRef = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
 
   paletteIndices = input.required<number[][]>();
   palette = input.required<string[]>();
@@ -41,6 +41,7 @@ export class PixelCanvasComponent implements AfterViewInit {
 
   private isDrawing = false;
   private localPaletteIndices: number[][] = [];
+  private rectCache: DOMRect | null = null;
 
   constructor() {
     effect(() => {
@@ -50,7 +51,9 @@ export class PixelCanvasComponent implements AfterViewInit {
   }
 
   ngAfterViewInit() {
-    const canvas = this.canvasRef().nativeElement;
+    const ref = this.canvasRef();
+    if (!ref) return;
+    const canvas = ref.nativeElement;
     canvas.width = this.canvasWidth;
     canvas.height = this.canvasHeight;
     this.render();
@@ -101,15 +104,20 @@ export class PixelCanvasComponent implements AfterViewInit {
   }
 
   private getPixelCoordinates(event: MouseEvent): { x: number; y: number } {
-    const canvas = this.canvasRef().nativeElement;
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((event.clientX - rect.left) / this.scale);
-    const y = Math.floor((event.clientY - rect.top) / this.scale);
+    if (!this.rectCache) {
+      return { x: -1, y: -1 };
+    }
+    const x = Math.floor((event.clientX - this.rectCache.left) / this.scale);
+    const y = Math.floor((event.clientY - this.rectCache.top) / this.scale);
     return { x, y };
   }
 
   onMouseDown(event: MouseEvent) {
     this.isDrawing = true;
+    const ref = this.canvasRef();
+    if (ref) {
+      this.rectCache = ref.nativeElement.getBoundingClientRect();
+    }
     this.applyTool(event);
   }
 
@@ -120,6 +128,11 @@ export class PixelCanvasComponent implements AfterViewInit {
 
   onMouseUp() {
     this.isDrawing = false;
+  }
+
+  onMouseLeave() {
+    this.isDrawing = false;
+    this.rectCache = null;
   }
 
   private applyTool(event: MouseEvent) {

@@ -38,17 +38,27 @@ import type { Sprite } from '../../../../shared/models/sprite.model';
             <span class="material-symbols" aria-hidden="true">add</span>
           </button>
         </div>
-        <div class="tw-flex-1 tw-overflow-auto tw-p-2">
+        <div class="tw-flex-1 tw-overflow-auto tw-p-2 tw-flex tw-flex-col tw-gap-1">
           @for (sprite of sprites(); track sprite.id) {
-            <button
-              type="button"
-              (click)="selectSprite(sprite.id)"
-              [class.tw-bg-primary/10]="selectedSpriteId() === sprite.id"
-              class="tw-w-full tw-text-left tw-px-3 tw-py-2 tw-rounded-md tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
-            >
-              <span class="material-symbols tw-text-muted-foreground" aria-hidden="true">image</span>
-              <span>{{ sprite.name }}</span>
-            </button>
+            <div class="tw-flex tw-items-center tw-gap-1">
+              <button
+                type="button"
+                (click)="selectSprite(sprite.id)"
+                [class.tw-bg-primary/10]="selectedSpriteId() === sprite.id"
+                class="tw-flex-1 tw-text-left tw-px-3 tw-py-2 tw-rounded-md tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
+              >
+                <span class="material-symbols tw-text-muted-foreground" aria-hidden="true">image</span>
+                <span>{{ sprite.name }}</span>
+              </button>
+              <button
+                type="button"
+                (click)="requestDelete(sprite.id); $event.stopPropagation()"
+                class="tw-p-1 tw-rounded-md tw-text-destructive hover:tw-bg-destructive/10"
+                title="Delete"
+              >
+                <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
+              </button>
+            </div>
           } @empty {
             <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">No sprites yet</div>
           }

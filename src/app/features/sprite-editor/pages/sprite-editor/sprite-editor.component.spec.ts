@@ -96,11 +96,16 @@ describe('SpriteEditorComponent', () => {
     const service = TestBed.inject(SpriteService);
     const sprite = await service.createSprite('test-proj', 'To Delete', 1);
     await fixture.componentInstance.loadSprites();
-    await fixture.componentInstance.selectSprite(sprite.id);
     fixture.detectChanges();
 
-    fixture.componentInstance.requestDelete(sprite.id);
+    const compiled = fixture.nativeElement as HTMLElement;
+    const deleteButton = compiled.querySelector('button[title="Delete"]') as HTMLButtonElement;
+    expect(deleteButton).toBeTruthy();
+    deleteButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     fixture.detectChanges();
+
+    // Confirm dialog should now be open with spriteToDelete set
+    expect(fixture.componentInstance.spriteToDelete()).toBe(sprite.id);
 
     await fixture.componentInstance.deleteSprite(sprite.id);
     fixture.detectChanges();
