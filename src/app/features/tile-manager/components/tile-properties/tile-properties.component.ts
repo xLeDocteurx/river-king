@@ -44,7 +44,7 @@ import type { Tile } from '../../../../shared/models/tile.model';
       </label>
 
       <label class="tw-flex tw-flex-col tw-gap-1">
-        <span class="tw-text-sm tw-font-medium">Animation Speed (ms)</span>
+        <span class="tw-text-sm tw-font-medium">Animation Speed (fps)</span>
         <input
           type="number"
           formControlName="animationSpeed"
@@ -118,7 +118,7 @@ export class TilePropertiesComponent {
   form = this.fb.group({
     name: [''],
     type: ['static' as 'static' | 'animated'],
-    animationSpeed: [200],
+    animationSpeed: [8],
     properties: this.fb.group({
       collision: [false],
       solid: [false],
@@ -152,7 +152,7 @@ export class TilePropertiesComponent {
       ...this.tile(),
       name: value.name ?? '',
       type: value.type ?? 'static',
-      animationSpeed: value.animationSpeed != null ? Number(value.animationSpeed) : 200,
+      animationSpeed: value.animationSpeed != null ? Number(value.animationSpeed) : 8,
       properties: {
         collision: value.properties?.collision ?? false,
         solid: value.properties?.solid ?? false,

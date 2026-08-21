@@ -4,7 +4,7 @@ export interface Tile {
   name: string;
   type: 'static' | 'animated';
   spriteIds: number[]; // references to Sprite.id
-  animationSpeed: number; // ms per frame, default 200
+  animationSpeed: number; // fps (frames per second), default 8
   properties: TileProperties;
 }
 

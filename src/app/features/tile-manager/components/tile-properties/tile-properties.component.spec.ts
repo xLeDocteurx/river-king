@@ -9,7 +9,7 @@ function createMockTile(overrides: Partial<Tile> = {}): Tile {
     name: 'Test Tile',
     type: 'static',
     spriteIds: [],
-    animationSpeed: 200,
+    animationSpeed: 8,
     properties: {
       collision: false,
       solid: false,
@@ -30,7 +30,7 @@ describe('TilePropertiesComponent', () => {
 
   it('should render form fields with tile values', async () => {
     const fixture = TestBed.createComponent(TilePropertiesComponent);
-    const tile = createMockTile({ name: 'Grass', type: 'animated', animationSpeed: 300 });
+    const tile = createMockTile({ name: 'Grass', type: 'animated', animationSpeed: 12 });
     fixture.componentRef.setInput('tile', tile);
     await fixture.whenStable();
     fixture.detectChanges();

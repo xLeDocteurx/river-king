@@ -16,7 +16,7 @@ export class TileService {
       name,
       type: 'static',
       spriteIds: [],
-      animationSpeed: 200,
+      animationSpeed: 8,
       properties: {
         collision: false,
         solid: false,
