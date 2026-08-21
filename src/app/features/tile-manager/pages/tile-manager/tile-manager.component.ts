@@ -5,6 +5,7 @@ import { TileService } from '../../services/tile.service';
 import { TileListComponent } from '../../components/tile-list/tile-list.component';
 import { TilePropertiesComponent } from '../../components/tile-properties/tile-properties.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { NotificationService } from '../../../../shared/services/notification.service';
 import type { Tile } from '../../../../shared/models/tile.model';
 
 @Component({
@@ -59,6 +60,7 @@ import type { Tile } from '../../../../shared/models/tile.model';
 export class TileManagerComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly tileService = inject(TileService);
+  private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
   projectId = signal<string>('');
@@ -87,31 +89,52 @@ export class TileManagerComponent implements OnInit {
   }
 
   async loadTiles() {
-    const tiles = await this.tileService.getTiles(this.projectId());
-    this.tiles.set(tiles);
+    try {
+      const tiles = await this.tileService.getTiles(this.projectId());
+      this.tiles.set(tiles);
+    } catch (e) {
+      this.notification.error('Failed to load tiles');
+      console.error(e);
+    }
   }
 
   async selectTile(tileId: number) {
-    this.selectedTileId.set(tileId);
-    const tile = await this.tileService.getTile(tileId);
-    this.selectedTile.set(tile ?? null);
+    try {
+      this.selectedTileId.set(tileId);
+      const tile = await this.tileService.getTile(tileId);
+      this.selectedTile.set(tile ?? null);
+    } catch (e) {
+      this.notification.error('Failed to load tile');
+      console.error(e);
+    }
   }
 
   async createTile() {
-    await this.tileService.createTile(this.projectId(), `Tile ${this.tiles().length + 1}`);
-    await this.loadTiles();
+    try {
+      await this.tileService.createTile(this.projectId(), `Tile ${this.tiles().length + 1}`);
+      await this.loadTiles();
+      this.notification.success('Tile created');
+    } catch (e) {
+      this.notification.error('Failed to create tile');
+      console.error(e);
+    }
   }
 
   async saveTile(tile: Tile) {
-    await this.tileService.updateTile(tile.id, {
-      name: tile.name,
-      type: tile.type,
-      animationSpeed: tile.animationSpeed,
-      properties: tile.properties,
-    });
-    await this.loadTiles();
-    const updated = await this.tileService.getTile(tile.id);
-    this.selectedTile.set(updated ?? null);
+    try {
+      await this.tileService.updateTile(tile.id, {
+        name: tile.name,
+        type: tile.type,
+        animationSpeed: tile.animationSpeed,
+        properties: tile.properties,
+      });
+      await this.loadTiles();
+      const updated = await this.tileService.getTile(tile.id);
+      this.selectedTile.set(updated ?? null);
+    } catch (e) {
+      this.notification.error('Failed to save tile');
+      console.error(e);
+    }
   }
 
   requestDelete(tileId: number) {
@@ -119,12 +142,17 @@ export class TileManagerComponent implements OnInit {
   }
 
   async deleteTile(tileId: number) {
-    await this.tileService.deleteTile(tileId);
-    this.tileToDelete.set(null);
-    if (this.selectedTileId() === tileId) {
-      this.selectedTileId.set(null);
-      this.selectedTile.set(null);
+    try {
+      await this.tileService.deleteTile(tileId);
+      this.tileToDelete.set(null);
+      if (this.selectedTileId() === tileId) {
+        this.selectedTileId.set(null);
+        this.selectedTile.set(null);
+      }
+      await this.loadTiles();
+    } catch (e) {
+      this.notification.error('Failed to delete tile');
+      console.error(e);
     }
-    await this.loadTiles();
   }
 }

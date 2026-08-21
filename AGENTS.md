@@ -119,6 +119,7 @@ Every folder above contains a `README.md` that describes its purpose and convent
 - **Reactive forms preferred:** Use Angular Signals–based reactive forms (`FormBuilder` + signals) when inputs and validation are required.
 - **Headless components (shared):** Shared UI components should not bake in visual styles. Accept a `class` input to let consumers apply Tailwind utilities.
 - **Global state:** Keep global reactive state in `core/services/` and expose it via signals. Never expose raw RxJS Observables to components when a signal will do.
+- **Error handling:** Application-level errors must be shown to the user via `NotificationService` (toast notifications, 5s auto-dismiss, dismissible). Wrap async IndexedDB operations in `try/catch` and call `notification.error(message)`.
 
 ---
 
@@ -167,6 +168,14 @@ theme.toggle();
 
 ```html
 <span class="material-symbols" aria-hidden="true">home</span>
+```
+
+**Show a toast notification:**
+
+```ts
+const notification = inject(NotificationService);
+notification.error('Failed to save');
+notification.success('Saved successfully');
 ```
 
 ---

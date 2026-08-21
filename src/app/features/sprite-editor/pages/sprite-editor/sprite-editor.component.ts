@@ -14,7 +14,8 @@ import { PixelCanvasComponent } from '../../components/pixel-canvas/pixel-canvas
 import { PaletteManagerComponent } from '../../components/palette-manager/palette-manager.component';
 import { DrawingToolsComponent, type DrawingTool } from '../../components/drawing-tools/drawing-tools.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
-import { DatabaseService } from '../../../../core/services/database.service';
+import { ProjectService } from '../../../../features/dashboard/services/project.service';
+import { NotificationService } from '../../../../shared/services/notification.service';
 import type { Sprite } from '../../../../shared/models/sprite.model';
 
 @Component({
@@ -118,7 +119,8 @@ import type { Sprite } from '../../../../shared/models/sprite.model';
 export class SpriteEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly spriteService = inject(SpriteService);
-  private readonly db = inject(DatabaseService);
+  private readonly projectService = inject(ProjectService);
+  private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
   projectId = signal<string>('');
@@ -155,61 +157,86 @@ export class SpriteEditorComponent implements OnInit {
   }
 
   async loadProjectPalette() {
-    const project = await this.db.projects.get(this.projectId());
-    this.projectPalette.set(project?.palette ?? []);
+    try {
+      const project = await this.projectService.getById(this.projectId());
+      this.projectPalette.set(project?.palette ?? []);
+    } catch (e) {
+      this.notification.error('Failed to load project');
+      console.error(e);
+    }
   }
 
   async loadSprites() {
-    const sprites = await this.spriteService.getSprites(this.projectId());
-    this.sprites.set(sprites);
+    try {
+      const sprites = await this.spriteService.getSprites(this.projectId());
+      this.sprites.set(sprites);
+    } catch (e) {
+      this.notification.error('Failed to load sprites');
+      console.error(e);
+    }
   }
 
   async selectSprite(spriteId: number) {
-    this.selectedSpriteId.set(spriteId);
-    const sprite = await this.spriteService.getSprite(spriteId);
-    this.selectedSprite.set(sprite ?? null);
+    try {
+      this.selectedSpriteId.set(spriteId);
+      const sprite = await this.spriteService.getSprite(spriteId);
+      this.selectedSprite.set(sprite ?? null);
 
-    if (sprite?.paletteIndices && sprite.paletteIndices.length > 0) {
-      this.paletteIndices.set(sprite.paletteIndices.map((row) => [...row]));
-    } else if (sprite) {
-      const decoded = await this.spriteService.decodePixelData(
-        sprite.pixelData,
-        this.projectPalette(),
-        sprite.width,
-        sprite.height,
-      );
-      this.paletteIndices.set(decoded);
-    } else {
-      this.paletteIndices.set(null);
+      if (sprite?.paletteIndices && sprite.paletteIndices.length > 0) {
+        this.paletteIndices.set(sprite.paletteIndices.map((row) => [...row]));
+      } else if (sprite) {
+        const decoded = await this.spriteService.decodePixelData(
+          sprite.pixelData,
+          this.projectPalette(),
+          sprite.width,
+          sprite.height,
+        );
+        this.paletteIndices.set(decoded);
+      } else {
+        this.paletteIndices.set(null);
+      }
+    } catch (e) {
+      this.notification.error('Failed to load sprite');
+      console.error(e);
     }
   }
 
   async createSprite() {
-    const count = this.sprites().length;
-    const sprite = await this.spriteService.createSprite(
-      this.projectId(),
-      `Sprite ${count + 1}`,
-      0, // unassigned tile
-    );
-    await this.loadSprites();
-    await this.selectSprite(sprite.id);
+    try {
+      const count = this.sprites().length;
+      const sprite = await this.spriteService.createSprite(
+        this.projectId(),
+        `Sprite ${count + 1}`,
+        0,
+      );
+      await this.loadSprites();
+      await this.selectSprite(sprite.id);
+      this.notification.success('Sprite created');
+    } catch (e) {
+      this.notification.error('Failed to create sprite');
+      console.error(e);
+    }
   }
 
   async onCanvasChange(updatedIndices: number[][]) {
-    const sprite = this.selectedSprite();
-    if (!sprite) return;
+    try {
+      const sprite = this.selectedSprite();
+      if (!sprite) return;
 
-    const pixelData = this.spriteService.encodePixelData(updatedIndices, this.projectPalette());
-    await this.spriteService.updateSprite(sprite.id, {
-      paletteIndices: updatedIndices,
-      pixelData,
-    });
+      const pixelData = this.spriteService.encodePixelData(updatedIndices, this.projectPalette());
+      await this.spriteService.updateSprite(sprite.id, {
+        paletteIndices: updatedIndices,
+        pixelData,
+      });
 
-    // Optimistically update local state
-    this.paletteIndices.set(updatedIndices.map((row) => [...row]));
-    this.selectedSprite.update((s) =>
-      s ? { ...s, paletteIndices: updatedIndices.map((row) => [...row]), pixelData } : null,
-    );
+      this.paletteIndices.set(updatedIndices.map((row) => [...row]));
+      this.selectedSprite.update((s) =>
+        s ? { ...s, paletteIndices: updatedIndices.map((row) => [...row]), pixelData } : null,
+      );
+    } catch (e) {
+      this.notification.error('Failed to save sprite');
+      console.error(e);
+    }
   }
 
   requestDelete(spriteId: number) {
@@ -217,13 +244,18 @@ export class SpriteEditorComponent implements OnInit {
   }
 
   async deleteSprite(spriteId: number) {
-    await this.spriteService.deleteSprite(spriteId);
-    this.spriteToDelete.set(null);
-    if (this.selectedSpriteId() === spriteId) {
-      this.selectedSpriteId.set(null);
-      this.selectedSprite.set(null);
-      this.paletteIndices.set(null);
+    try {
+      await this.spriteService.deleteSprite(spriteId);
+      this.spriteToDelete.set(null);
+      if (this.selectedSpriteId() === spriteId) {
+        this.selectedSpriteId.set(null);
+        this.selectedSprite.set(null);
+        this.paletteIndices.set(null);
+      }
+      await this.loadSprites();
+    } catch (e) {
+      this.notification.error('Failed to delete sprite');
+      console.error(e);
     }
-    await this.loadSprites();
   }
 }
