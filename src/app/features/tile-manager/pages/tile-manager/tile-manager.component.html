@@ -1,0 +1,29 @@
+<div class="tw-flex tw-h-full">
+  <rk-tile-list
+    class="tw-w-64 tw-shrink-0 tw-border-r tw-border-border"
+    [tiles]="tiles()"
+    [selectedTileId]="selectedTileId()"
+    (tileSelect)="selectTile($event)"
+    (tileCreate)="createTile()"
+  />
+  <div class="tw-flex-1 tw-p-4 tw-overflow-auto">
+    @if (selectedTile()) {
+      <rk-tile-properties
+        [tile]="selectedTile()!"
+        (save)="saveTile($event)"
+        (delete)="requestDelete($event)"
+      />
+    } @else {
+      <div class="tw-text-muted-foreground tw-text-center tw-py-20">
+        Select a tile to edit its properties
+      </div>
+    }
+  </div>
+</div>
+
+<rk-confirm-dialog
+  #confirmDialog
+  [data]="deleteDialogData"
+  (confirmed)="deleteTile(tileToDelete()!)"
+  (cancelled)="tileToDelete.set(null)"
+/>

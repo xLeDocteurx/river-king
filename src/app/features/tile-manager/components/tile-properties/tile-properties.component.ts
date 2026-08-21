@@ -2,119 +2,34 @@ import { Component, input, output, ChangeDetectionStrategy, inject, effect } fro
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import type { Tile } from '../../../../shared/models/tile.model';
 
+/**
+ * Tile properties form component.
+ *
+ * Displays a reactive form for editing a tile's name, type,
+ * animation speed, and boolean / enum properties. Emits
+ * save and delete events to the parent.
+ */
 @Component({
   selector: 'rk-tile-properties',
   standalone: true,
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="tw-flex tw-flex-col tw-gap-4 tw-max-w-lg">
-      <div class="tw-flex tw-items-center tw-justify-between">
-        <h2 class="tw-text-xl tw-font-bold tw-text-foreground">Tile Properties</h2>
-        <button
-          type="button"
-          (click)="delete.emit(tile().id)"
-          class="tw-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1.5 tw-rounded-md tw-bg-destructive tw-text-white tw-transition hover:tw-opacity-90"
-        >
-          <span class="material-symbols" aria-hidden="true">delete</span>
-          Delete
-        </button>
-      </div>
-
-      <label class="tw-flex tw-flex-col tw-gap-1">
-        <span class="tw-text-sm tw-font-medium">Name</span>
-        <input
-          type="text"
-          formControlName="name"
-          name="name"
-          class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
-        />
-      </label>
-
-      <label class="tw-flex tw-flex-col tw-gap-1">
-        <span class="tw-text-sm tw-font-medium">Type</span>
-        <select
-          formControlName="type"
-          name="type"
-          class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
-        >
-          <option value="static">Static</option>
-          <option value="animated">Animated</option>
-        </select>
-      </label>
-
-      <label class="tw-flex tw-flex-col tw-gap-1">
-        <span class="tw-text-sm tw-font-medium">Animation Speed (fps)</span>
-        <input
-          type="number"
-          formControlName="animationSpeed"
-          name="animationSpeed"
-          class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
-        />
-      </label>
-
-      <div class="tw-flex tw-flex-col tw-gap-2" formGroupName="properties">
-        <span class="tw-text-sm tw-font-medium">Properties</span>
-
-        <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-          <input type="checkbox" formControlName="collision" name="collision" class="tw-w-4 tw-h-4" />
-          <span>Collision</span>
-        </label>
-
-        <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-          <input type="checkbox" formControlName="solid" name="solid" class="tw-w-4 tw-h-4" />
-          <span>Solid</span>
-        </label>
-
-        <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-          <input type="checkbox" formControlName="interactable" name="interactable" class="tw-w-4 tw-h-4" />
-          <span>Interactable</span>
-        </label>
-
-        <div class="tw-flex tw-flex-col tw-gap-1">
-          <span class="tw-text-sm tw-font-medium">Layer</span>
-          <div class="tw-flex tw-gap-4">
-            <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-              <input type="radio" formControlName="layer" name="layer" value="background" />
-              <span>Background</span>
-            </label>
-            <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-              <input type="radio" formControlName="layer" name="layer" value="foreground" />
-              <span>Foreground</span>
-            </label>
-          </div>
-        </div>
-
-        <label class="tw-flex tw-flex-col tw-gap-1">
-          <span class="tw-text-sm tw-font-medium">Event Script</span>
-          <textarea
-            formControlName="eventScript"
-            name="eventScript"
-            rows="4"
-            class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring tw-font-mono tw-text-sm"
-            placeholder="Optional JavaScript event script"
-          ></textarea>
-        </label>
-      </div>
-
-      <div class="tw-flex tw-justify-end">
-        <button
-          type="submit"
-          class="tw-px-4 tw-py-2 tw-rounded-md tw-bg-primary tw-text-primary-foreground tw-transition hover:tw-opacity-90"
-        >
-          Save
-        </button>
-      </div>
-    </form>
-  `,
+  templateUrl: './tile-properties.component.html',
+  styleUrl: './tile-properties.component.scss',
 })
 export class TilePropertiesComponent {
+  /** The tile to edit. */
   tile = input.required<Tile>();
+
+  /** Emitted when the form is submitted with valid data. */
   save = output<Tile>();
+
+  /** Emitted when the delete button is clicked. */
   delete = output<number>();
 
   private readonly fb = inject(FormBuilder);
 
+  /** Reactive form backing the tile property inputs. */
   form = this.fb.group({
     name: [''],
     type: ['static' as 'static' | 'animated'],
@@ -146,7 +61,10 @@ export class TilePropertiesComponent {
     });
   }
 
-  onSubmit() {
+  /**
+   * Builds an updated {@link Tile} from the form values and emits it via `save`.
+   */
+  onSubmit(): void {
     const value = this.form.getRawValue();
     const updated: Tile = {
       ...this.tile(),
