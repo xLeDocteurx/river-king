@@ -11,13 +11,15 @@
     <rk-map-canvas
       [scene]="selectedScene()"
       [selectedTileId]="selectedTileId()"
+      [palette]="projectPalette()"
       (tilePlaced)="onTilePlaced($event)"
     />
   </div>
   <rk-tile-palette
     class="tw-w-64 tw-shrink-0"
-    [projectId]="projectId()"
+    [tiles]="projectTiles()"
     [selectedTileId]="selectedTileId()"
+    [palette]="projectPalette()"
     (tileSelect)="selectedTileId.set($event)"
   />
 </div>

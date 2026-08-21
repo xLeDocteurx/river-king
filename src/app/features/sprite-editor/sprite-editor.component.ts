@@ -174,7 +174,6 @@ export class SpriteEditorComponent implements OnInit {
       );
       await this.loadSprites();
       await this.selectSprite(sprite.id);
-      this.notification.success('Sprite created');
     } catch (e) {
       this.notification.error('Failed to create sprite');
       console.error(e);

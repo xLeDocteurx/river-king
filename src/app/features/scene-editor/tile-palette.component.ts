@@ -1,7 +1,9 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
+import type { Tile } from '../../shared/models/tile.model';
 
 /**
- * Displays a palette of available tiles for selection.
+ * Displays a palette of project tiles for selection.
+ * Uses the project's palette colors to represent each tile visually.
  */
 @Component({
   selector: 'rk-tile-palette',
@@ -11,31 +13,24 @@ import { Component, input, output, ChangeDetectionStrategy } from '@angular/core
   styleUrl: './tile-palette.component.scss',
 })
 export class TilePaletteComponent {
-  /** Id of the project this palette belongs to. */
-  projectId = input.required<string>();
+  /** List of tiles available for placement. */
+  tiles = input<Tile[]>([]);
+  /** Project palette colors used for visual representation. */
+  palette = input<string[]>([]);
   /** Id of the currently selected tile. */
   selectedTileId = input<number | null>(null);
-  /** List of available tile ids to display. */
-  availableTiles = input<number[]>([0, 1, 2, 3, 4, 5, 6, 7]);
   /** Emitted when a tile is selected. */
   tileSelect = output<number>();
 
   /**
    * Returns a color hex value for a given tile id.
+   * Cycles through the project palette.
    * @param tileId The tile id to get a color for.
    * @returns A CSS hex color string.
    */
   getTileColor(tileId: number): string {
-    const colors = [
-      '#FF004D',
-      '#FFA300',
-      '#FFEC27',
-      '#00E436',
-      '#29ADFF',
-      '#83769C',
-      '#FF77A8',
-      '#FFCCAA',
-    ];
+    const colors = this.palette();
+    if (colors.length === 0) return '#94b0c2';
     return colors[tileId % colors.length];
   }
 }

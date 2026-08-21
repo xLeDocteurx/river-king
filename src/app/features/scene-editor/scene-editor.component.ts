@@ -1,10 +1,12 @@
 import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { DatabaseService } from '../../core/services/database.service';
 import { SceneService } from './services/scene.service';
 import { MapCanvasComponent } from './map-canvas.component';
 import { SceneListComponent } from './scene-list.component';
 import { TilePaletteComponent } from './tile-palette.component';
 import type { Scene } from '../../shared/models/scene.model';
+import type { Tile } from '../../shared/models/tile.model';
 
 /**
  * Main page component for the Scene Editor feature.
@@ -22,9 +24,14 @@ import type { Scene } from '../../shared/models/scene.model';
 export class SceneEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly sceneService = inject(SceneService);
+  private readonly db = inject(DatabaseService);
 
   /** Currently active project id derived from route params. */
   projectId = signal<string>('');
+  /** Palette colors defined for the current project. */
+  projectPalette = signal<string[]>([]);
+  /** Tiles belonging to the current project. */
+  projectTiles = signal<Tile[]>([]);
   /** List of all scenes for the current project. */
   scenes = signal<Scene[]>([]);
   /** Id of the currently selected scene. */
@@ -39,9 +46,26 @@ export class SceneEditorComponent implements OnInit {
       const id = params['id'];
       if (id) {
         this.projectId.set(id);
+        this.loadProjectData();
         this.loadScenes();
       }
     });
+  }
+
+  /**
+   * Loads project palette and tiles for the current project.
+   */
+  async loadProjectData(): Promise<void> {
+    try {
+      const project = await this.db.projects.get(this.projectId());
+      if (project) {
+        this.projectPalette.set(project.palette);
+      }
+      const tiles = await this.db.tiles.where('projectId').equals(this.projectId()).toArray();
+      this.projectTiles.set(tiles);
+    } catch (e) {
+      console.error('Failed to load project data:', e);
+    }
   }
 
   /**
