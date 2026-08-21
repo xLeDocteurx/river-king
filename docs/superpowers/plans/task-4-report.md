@@ -3,10 +3,13 @@
 ## Status: DONE
 
 ## Files Modified
+
 - `src/app/app.routes.ts` — Updated with lazy-loaded route definitions for dashboard and project features.
 
 ## Files Created
+
 ### Route files
+
 - `src/app/features/dashboard/dashboard.routes.ts`
 - `src/app/features/project/project.routes.ts`
 - `src/app/features/scene-editor/scene-editor.routes.ts`
@@ -14,6 +17,7 @@
 - `src/app/features/sprite-editor/sprite-editor.routes.ts`
 
 ### Placeholder component files
+
 - `src/app/features/dashboard/pages/dashboard/dashboard.component.ts`
 - `src/app/features/project/pages/project-shell/project-shell.component.ts`
 - `src/app/features/scene-editor/pages/scene-editor/scene-editor.component.ts`
@@ -27,6 +31,7 @@ devbox run npm run build
 ```
 
 Output showed successful lazy chunk generation:
+
 - `chunk-HKy5ZrXh.js` (project-routes)
 - `chunk-BJxUIzwa.js` (sprite-editor-component)
 - `chunk-CzMQ5kDr.js` (tile-manager-component)

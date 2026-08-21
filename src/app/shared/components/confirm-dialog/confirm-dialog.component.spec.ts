@@ -34,7 +34,7 @@ describe('ConfirmDialogComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h2')?.textContent?.trim()).toBe('Delete Project');
     expect(compiled.querySelector('p')?.textContent?.trim()).toBe(
-      'Are you sure you want to delete this project?'
+      'Are you sure you want to delete this project?',
     );
   });
 

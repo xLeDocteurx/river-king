@@ -1,7 +1,3 @@
-<dialog
-  #dialog
-  class="rk-dialog {{ dialogClass() }}"
-  (close)="onDialogClose()"
->
+<dialog #dialog class="rk-dialog {{ dialogClass() }}" (close)="onDialogClose()">
   <ng-content />
 </dialog>

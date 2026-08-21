@@ -1,10 +1,4 @@
-import {
-  Component,
-  ChangeDetectionStrategy,
-  viewChild,
-  input,
-  output,
-} from '@angular/core';
+import { Component, ChangeDetectionStrategy, viewChild, input, output } from '@angular/core';
 import { DialogComponent } from '../dialog/dialog.component';
 
 /**

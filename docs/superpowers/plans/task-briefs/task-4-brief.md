@@ -13,6 +13,7 @@
 This is Task 4 of a multi-task Angular 22 game engine build. Tasks 1-3 are complete (DatabaseService, Domain Models, ProjectService). This task wires up lazy-loaded routing for the entire application. The routes reference components that will be created in later tasks (Task 6: Dashboard, Task 7: Project Shell, Task 8: Scene Editor, Task 10: Tile Manager, Task 11: Sprite Editor). Angular lazy-loading means the component files don't need to exist yet — they will be created in their respective tasks.
 
 **Global Constraints:**
+
 - Angular standalone components
 - Lazy loading via `loadComponent` and `loadChildren`
 - Component selectors prefixed with `rk`
@@ -36,8 +37,7 @@ export const routes: Routes = [
   },
   {
     path: 'project/:id',
-    loadChildren: () =>
-      import('./features/project/project.routes').then((m) => m.PROJECT_ROUTES),
+    loadChildren: () => import('./features/project/project.routes').then((m) => m.PROJECT_ROUTES),
   },
   { path: '**', redirectTo: '' },
 ];
@@ -166,6 +166,7 @@ git commit -m "feature-4-routing-setup: add lazy-loaded routes for all features"
 ---
 
 **Report file:** Write to `docs/superpowers/plans/task-4-report.md`:
+
 - Status: DONE / DONE_WITH_CONCERNS / BLOCKED
 - Files created/modified
 - Build results

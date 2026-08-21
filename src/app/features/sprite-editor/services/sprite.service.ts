@@ -71,7 +71,12 @@ export class SpriteService {
     return canvas.toDataURL('image/png');
   }
 
-  async decodePixelData(pixelData: string, palette: string[], width: number, height: number): Promise<number[][]> {
+  async decodePixelData(
+    pixelData: string,
+    palette: string[],
+    width: number,
+    height: number,
+  ): Promise<number[][]> {
     if (!pixelData || pixelData === 'data:image/png;base64,' || !pixelData.startsWith('data:')) {
       return Array.from({ length: height }, () => Array(width).fill(0));
     }
@@ -135,7 +140,10 @@ export class SpriteService {
   private normalizeColor(color: string): string {
     const hex = color.replace('#', '');
     if (hex.length === 3) {
-      return `#${hex.split('').map((c) => c + c).join('')}`;
+      return `#${hex
+        .split('')
+        .map((c) => c + c)
+        .join('')}`;
     }
     return color.toLowerCase();
   }

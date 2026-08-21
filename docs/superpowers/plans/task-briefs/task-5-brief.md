@@ -9,6 +9,7 @@
 This is Task 5 of an Angular 22 game engine build. Tasks 1-4 are complete (Database, Models, ProjectService, Routing). This component is a reusable confirmation dialog used before any deletion in the app. Per project constraints: ALL deletions require a confirmation modal.
 
 **Global Constraints (apply):**
+
 - ChangeDetectionStrategy.OnPush
 - Standalone components (imports in @Component())
 - Tailwind CSS prefix: `tw-`
@@ -78,6 +79,7 @@ export class ConfirmDialogComponent {
 Create: `src/app/shared/components/confirm-dialog/confirm-dialog.component.spec.ts`
 
 Test cases:
+
 1. Should render title and message from input
 2. Should emit `confirmed` when confirm button clicked
 3. Should emit `cancelled` when cancel button clicked
@@ -109,6 +111,7 @@ git commit -m "feature-5-confirm-dialog: add shared confirm dialog component"
 ---
 
 **Report file:** Write to `docs/superpowers/plans/task-5-report.md`:
+
 - Status: DONE / DONE_WITH_CONCERNS / BLOCKED
 - Files created/modified
 - Test results: pass/fail + count

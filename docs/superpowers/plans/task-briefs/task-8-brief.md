@@ -13,10 +13,12 @@
 Task 8. Previous tasks 1-7 complete. This is the core feature of the engine - a scene map editor with canvas-based rendering. Users can view scenes, pan around, zoom, and place tiles.
 
 **Interfaces:**
+
 - Consumes: `DatabaseService` (scenes table), `ProjectService` (project data)
 - Produces: Scene editor with interactive canvas, scene list, tile palette
 
 **Global Constraints:**
+
 - ChangeDetectionStrategy.OnPush
 - Standalone components
 - Use signals (signal(), input(), output())
@@ -44,7 +46,12 @@ export class SceneService {
     return this.db.scenes.where('projectId').equals(projectId).toArray();
   }
 
-  async createScene(projectId: string, name: string, width: number, height: number): Promise<Scene> {
+  async createScene(
+    projectId: string,
+    name: string,
+    width: number,
+    height: number,
+  ): Promise<Scene> {
     const scene: Scene = {
       id: crypto.randomUUID(),
       projectId,
@@ -75,6 +82,7 @@ export class SceneService {
 Create tests: `src/app/features/scene-editor/services/scene.service.spec.ts`
 
 Test cases:
+
 1. Should be created
 2. Should create a scene with empty tileData (all -1)
 3. Should list scenes by projectId
@@ -90,6 +98,7 @@ Use `fake-indexeddb/auto` and clean up tables in `beforeEach`.
 Create: `src/app/features/scene-editor/components/map-canvas/map-canvas.component.ts`
 
 This is the core interactive canvas component. Features:
+
 - Render scene tileData array
 - Display tile grid (optional)
 - Pan camera (middle mouse or click-drag)
@@ -98,7 +107,17 @@ This is the core interactive canvas component. Features:
 - Canvas size fills container
 
 ```typescript
-import { Component, input, output, viewChild, signal, effect, ChangeDetectionStrategy, AfterViewInit, ElementRef } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  viewChild,
+  signal,
+  effect,
+  ChangeDetectionStrategy,
+  AfterViewInit,
+  ElementRef,
+} from '@angular/core';
 import type { Scene } from '../../../../shared/models/scene.model';
 
 @Component({
@@ -204,7 +223,16 @@ export class MapCanvasComponent implements AfterViewInit {
   }
 
   private getTileColor(tileId: number): string {
-    const colors = ['#FF004D', '#FFA300', '#FFEC27', '#00E436', '#29ADFF', '#83769C', '#FF77A8', '#FFCCAA'];
+    const colors = [
+      '#FF004D',
+      '#FFA300',
+      '#FFEC27',
+      '#00E436',
+      '#29ADFF',
+      '#83769C',
+      '#FF77A8',
+      '#FFCCAA',
+    ];
     return colors[tileId % colors.length];
   }
 
@@ -245,8 +273,12 @@ export class MapCanvasComponent implements AfterViewInit {
   private placeTile(event: MouseEvent) {
     const canvas = this.canvasRef().nativeElement;
     const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((event.clientX - rect.left - this.cameraX()) / (this.tileSize * this.zoom()));
-    const y = Math.floor((event.clientY - rect.top - this.cameraY()) / (this.tileSize * this.zoom()));
+    const x = Math.floor(
+      (event.clientX - rect.left - this.cameraX()) / (this.tileSize * this.zoom()),
+    );
+    const y = Math.floor(
+      (event.clientY - rect.top - this.cameraY()) / (this.tileSize * this.zoom()),
+    );
     const scene = this.scene();
     const tileId = this.selectedTileId();
 
@@ -275,7 +307,9 @@ import type { Scene } from '../../../../shared/models/scene.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="tw-flex tw-flex-col tw-h-full tw-bg-card tw-border-r tw-border-border">
-      <div class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-3 tw-border-b tw-border-border">
+      <div
+        class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-3 tw-border-b tw-border-border"
+      >
         <h3 class="tw-font-semibold tw-text-foreground">Scenes</h3>
         <button
           type="button"
@@ -298,7 +332,9 @@ import type { Scene } from '../../../../shared/models/scene.model';
             <span>{{ scene.name }}</span>
           </button>
         } @empty {
-          <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">No scenes yet</div>
+          <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">
+            No scenes yet
+          </div>
         }
       </div>
     </div>
@@ -352,7 +388,16 @@ export class TilePaletteComponent {
   tileSelect = output<number>();
 
   getTileColor(tileId: number): string {
-    const colors = ['#FF004D', '#FFA300', '#FFEC27', '#00E436', '#29ADFF', '#83769C', '#FF77A8', '#FFCCAA'];
+    const colors = [
+      '#FF004D',
+      '#FFA300',
+      '#FFEC27',
+      '#00E436',
+      '#29ADFF',
+      '#83769C',
+      '#FF77A8',
+      '#FFCCAA',
+    ];
     return colors[tileId % colors.length];
   }
 }
@@ -484,6 +529,7 @@ git commit -m "feature-8-scene-editor: add scene editor with map canvas, scene l
 ---
 
 **Report file:** Write to `docs/superpowers/plans/task-8-report.md`:
+
 - Status: DONE / DONE_WITH_CONCERNS / BLOCKED
 - Files created/modified
 - Test results: pass/fail + count per file

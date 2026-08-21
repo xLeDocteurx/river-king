@@ -1,5 +1,8 @@
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
-import { NotificationService, type ToastMessage } from '../../services/notification.service';
+import {
+  NotificationService,
+  type ToastMessage,
+} from '../../../core/services/notification.service';
 
 /**
  * Renders floating toast notifications using the notification service.

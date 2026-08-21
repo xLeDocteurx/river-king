@@ -19,7 +19,12 @@ export class SceneService {
    * @param height Scene height in tiles.
    * @returns The created scene object.
    */
-  async createScene(projectId: string, name: string, width: number, height: number): Promise<Scene> {
+  async createScene(
+    projectId: string,
+    name: string,
+    width: number,
+    height: number,
+  ): Promise<Scene> {
     const scene: Scene = {
       id: crypto.randomUUID(),
       projectId,
