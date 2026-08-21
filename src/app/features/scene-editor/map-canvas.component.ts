@@ -4,6 +4,7 @@ import {
   output,
   viewChild,
   signal,
+  effect,
   ChangeDetectionStrategy,
   AfterViewInit,
   ElementRef,
@@ -29,6 +30,8 @@ export class MapCanvasComponent implements AfterViewInit {
   scene = input<Scene | null>(null);
   /** Id of the tile currently selected for placement. */
   selectedTileId = input<number | null>(null);
+  /** Project palette colors used for tile rendering. */
+  palette = input<string[]>([]);
   /** Emitted when a tile is placed on the canvas. */
   tilePlaced = output<{ x: number; y: number; tileId: number }>();
 
@@ -49,6 +52,14 @@ export class MapCanvasComponent implements AfterViewInit {
   private lastMouseY = 0;
   /** @internal Size of a single tile in pixels. */
   private readonly tileSize = 16;
+
+  constructor() {
+    effect(() => {
+      // Re-render whenever palette changes
+      this.palette();
+      this.render();
+    });
+  }
 
   ngAfterViewInit(): void {
     const canvas = this.canvasRef().nativeElement;
@@ -92,7 +103,6 @@ export class MapCanvasComponent implements AfterViewInit {
       for (let x = 0; x < scene.width; x++) {
         const tileId = scene.tileData[y]?.[x] ?? -1;
         if (tileId >= 0) {
-          // Placeholder: draw colored square based on tile ID
           ctx.fillStyle = this.getTileColor(tileId);
           ctx.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
         }
@@ -122,18 +132,10 @@ export class MapCanvasComponent implements AfterViewInit {
     }
   }
 
-  /** @internal Returns a pseudo-random color for a given tile id. */
+  /** @internal Returns a color from the project palette for a given tile id. */
   private getTileColor(tileId: number): string {
-    const colors = [
-      '#FF004D',
-      '#FFA300',
-      '#FFEC27',
-      '#00E436',
-      '#29ADFF',
-      '#83769C',
-      '#FF77A8',
-      '#FFCCAA',
-    ];
+    const colors = this.palette();
+    if (colors.length === 0) return '#94b0c2';
     return colors[tileId % colors.length];
   }
 

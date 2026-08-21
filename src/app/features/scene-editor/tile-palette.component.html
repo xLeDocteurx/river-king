@@ -1,15 +1,19 @@
 <div class="tw-flex tw-flex-col tw-h-full tw-bg-card tw-border-l tw-border-border tw-p-4">
   <h3 class="tw-font-semibold tw-text-foreground tw-mb-3">Tiles</h3>
-  <div class="tw-flex tw-flex-wrap tw-gap-2">
-    @for (tileId of availableTiles(); track tileId) {
-      <button
-        type="button"
-        (click)="tileSelect.emit(tileId)"
-        [class.tw-ring-2]="selectedTileId() === tileId"
-        class="tw-w-10 tw-h-10 tw-rounded-md tw-border tw-border-border tw-transition hover:tw-border-primary"
-        [style.background-color]="getTileColor(tileId)"
-        title="Tile {{ tileId }}"
-      ></button>
-    }
-  </div>
+  @if (tiles().length === 0) {
+    <p class="tw-text-sm tw-text-muted-foreground">No tiles in this project.</p>
+  } @else {
+    <div class="tw-flex tw-flex-wrap tw-gap-2">
+      @for (tile of tiles(); track tile.id) {
+        <button
+          type="button"
+          (click)="tileSelect.emit(tile.id)"
+          [class.tw-ring-2]="selectedTileId() === tile.id"
+          class="tw-w-10 tw-h-10 tw-rounded-md tw-border tw-border-border tw-transition hover:tw-border-primary"
+          [style.background-color]="getTileColor(tile.id)"
+          [title]="tile.name"
+        ></button>
+      }
+    </div>
+  }
 </div>

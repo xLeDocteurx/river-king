@@ -1,46 +1,41 @@
-import { Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { Router, RouterOutlet, RouterLink, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { ThemeService } from './core/services/theme.service';
 import { ToastComponent } from './shared/components/toast/toast.component';
 
+/**
+ * Root application component.
+ *
+ * Provides a global top bar with branding, contextual project navigation,
+ * and dark-mode toggle. Hosts the router outlet below.
+ */
 @Component({
-  imports: [RouterOutlet, ToastComponent],
+  imports: [RouterOutlet, RouterLink, ToastComponent],
   selector: 'rk-root',
-  styleUrl: './app.scss',
-  template: `
-    <div class="tw-min-h-screen tw-bg-background tw-text-foreground">
-      <header
-        class="tw-flex tw-items-center tw-justify-between tw-px-6 tw-py-4 tw-border-b tw-border-border"
-      >
-        <h1 class="tw-text-2xl tw-font-bold tw-tracking-tight">River King</h1>
-        <button
-          type="button"
-          (click)="theme.toggle()"
-          class="tw-inline-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-md tw-bg-primary tw-text-primary-foreground tw-transition hover:tw-opacity-90"
-        >
-          <span class="material-symbols" aria-hidden="true">
-            @if (theme.theme() === 'dark') {
-              light_mode
-            } @else {
-              dark_mode
-            }
-          </span>
-          <span>{{ theme.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
-        </button>
-      </header>
-
-      <main class="tw-p-6">
-        <p class="tw-text-muted-foreground">
-          App scaffoldée avec Angular {{ angularVersion }} + Tailwind CSS + Signals + Material
-          Symbols.
-        </p>
-        <router-outlet />
-      </main>
-    </div>
-    <rk-toast />
-  `,
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.scss',
 })
 export class App {
   protected readonly theme = inject(ThemeService);
-  protected readonly angularVersion = '22';
+  private readonly router = inject(Router);
+
+  /** Whether the current route is under /project/:id (shows workspace nav). */
+  isProjectRoute = signal(false);
+  /** Project id extracted from the current URL when inside a project. */
+  projectId = signal<string | null>(null);
+
+  constructor() {
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((event) => {
+      const nav = event as NavigationEnd;
+      const match = nav.urlAfterRedirects.match(/^\/project\/([^/]+)/);
+      if (match) {
+        this.projectId.set(match[1]);
+        this.isProjectRoute.set(true);
+      } else {
+        this.projectId.set(null);
+        this.isProjectRoute.set(false);
+      }
+    });
+  }
 }

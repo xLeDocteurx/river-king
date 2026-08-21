@@ -126,7 +126,6 @@ export class TileManagerComponent implements OnInit {
     try {
       await this.tileService.createTile(this.projectId(), `Tile ${this.tiles().length + 1}`);
       await this.loadTiles();
-      this.notification.success('Tile created');
     } catch (e) {
       this.notification.error('Failed to create tile');
       console.error(e);
