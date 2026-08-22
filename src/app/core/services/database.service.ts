@@ -5,6 +5,7 @@ import type { Scene } from '../../shared/models/scene.model';
 import type { Tile } from '../../shared/models/tile.model';
 import type { Sprite } from '../../shared/models/sprite.model';
 import type { Session } from '../../shared/models/session.model';
+import type { Folder } from '../../shared/models/folder.model';
 
 @Injectable({ providedIn: 'root' })
 export class DatabaseService extends Dexie {
@@ -13,6 +14,7 @@ export class DatabaseService extends Dexie {
   tiles!: Table<Tile, number>;
   sprites!: Table<Sprite, number>;
   sessions!: Table<Session, string>;
+  folders!: Table<Folder, string>;
 
   constructor() {
     super('RiverKingDB');
@@ -22,6 +24,9 @@ export class DatabaseService extends Dexie {
       tiles: '++id, projectId, name, type',
       sprites: '++id, projectId, tileId',
       sessions: 'projectId',
+    });
+    this.version(2).stores({
+      folders: 'id, projectId, path',
     });
   }
 }

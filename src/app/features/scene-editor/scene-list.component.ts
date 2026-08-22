@@ -1,10 +1,12 @@
-import { Component, input, output, computed, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CdkDropListGroup, CdkDropList, CdkDrag, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import type { Scene } from '../../shared/models/scene.model';
 
 /**
  * Displays scenes grouped by folderPath with drag-and-drop support.
  * Scenes can be moved between groups via Angular CDK drag-and-drop.
+ * Folder creation and scene deletion are delegated to the parent via outputs;
+ * persisted folders are provided through the `folders` input.
  */
 @Component({
   selector: 'rk-scene-list',
@@ -17,31 +19,34 @@ import type { Scene } from '../../shared/models/scene.model';
 export class SceneListComponent {
   /** All scenes to display, grouped by folderPath. */
   scenes = input.required<Scene[]>();
+  /** Persisted folder paths to display even when they contain no scene. */
+  folders = input<string[]>([]);
   /** Id of the currently selected scene. */
   selectedSceneId = input<string | null>(null);
   /** Emitted when a scene is selected. */
   sceneSelect = output<string>();
   /** Emitted when the user requests creation of a new scene. */
   createScene = output<void>();
+  /** Emitted when the user requests deletion of a scene (carries its id). */
+  sceneDelete = output<string>();
   /** Emitted when a scene is moved to a different folder. */
   sceneFolderChange = output<{ sceneId: string; folderPath: string }>();
+  /** Emitted when the user requests creation of a new folder (carries its path). */
+  createFolder = output<string>();
 
-  /** Locally created empty group names. */
-  customGroups = signal<string[]>([]);
-
-  /** Computed grouping of scenes by folderPath, including any empty custom groups. */
+  /** Computed grouping of scenes by folderPath, including persisted empty folders. */
   groups = computed<{ folderPath: string; scenes: Scene[] }[]>(() => {
     const map = new Map<string, Scene[]>();
+    for (const folder of this.folders()) {
+      if (!map.has(folder)) {
+        map.set(folder, []);
+      }
+    }
     for (const scene of this.scenes()) {
       const folder = scene.folderPath || '';
       const arr = map.get(folder) ?? [];
       arr.push(scene);
       map.set(folder, arr);
-    }
-    for (const group of this.customGroups()) {
-      if (!map.has(group)) {
-        map.set(group, []);
-      }
     }
     return Array.from(map.entries())
       .map(([folderPath, scenes]) => ({ folderPath, scenes }))
@@ -49,15 +54,15 @@ export class SceneListComponent {
   });
 
   /**
-   * Prompts the user for a group name and adds it to the local group list.
+   * Prompts the user for a group name and emits it for persistence.
+   * Emits nothing when the prompt is cancelled or the name already exists.
    */
   onCreateGroup(): void {
     const name = window.prompt('Enter group name:')?.trim();
     if (!name) return;
-    if (this.customGroups().includes(name)) return;
-    const existsInScenes = this.scenes().some((s) => s.folderPath === name);
-    if (existsInScenes) return;
-    this.customGroups.update((groups) => [...groups, name]);
+    if (this.folders().includes(name)) return;
+    if (this.scenes().some((s) => s.folderPath === name)) return;
+    this.createFolder.emit(name);
   }
 
   /**

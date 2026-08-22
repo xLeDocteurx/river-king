@@ -15,6 +15,9 @@ describe('SceneService', () => {
     await db.tiles.clear();
     await db.sprites.clear();
     await db.sessions.clear();
+    if ('folders' in db) {
+      await db.folders.clear();
+    }
   });
 
   it('should be created', () => {
@@ -62,5 +65,27 @@ describe('SceneService', () => {
     await service.updateSceneFolder(scene.id, 'new-folder');
     const updated = await service.getScene(scene.id);
     expect(updated?.folderPath).toBe('new-folder');
+  });
+
+  it('should persist a folder for a project', async () => {
+    await service.createFolder('proj-1', 'forest');
+    const folders = await service.getFolders('proj-1');
+    expect(folders).toHaveLength(1);
+    expect(folders[0].path).toBe('forest');
+    expect(folders[0].projectId).toBe('proj-1');
+  });
+
+  it('should not duplicate an existing folder path within the same project', async () => {
+    await service.createFolder('proj-1', 'forest');
+    await service.createFolder('proj-1', 'forest');
+    const folders = await service.getFolders('proj-1');
+    expect(folders).toHaveLength(1);
+  });
+
+  it('should allow the same folder path in different projects', async () => {
+    await service.createFolder('proj-1', 'forest');
+    await service.createFolder('proj-2', 'forest');
+    expect(await service.getFolders('proj-1')).toHaveLength(1);
+    expect(await service.getFolders('proj-2')).toHaveLength(1);
   });
 });

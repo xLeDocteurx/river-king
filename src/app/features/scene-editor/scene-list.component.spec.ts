@@ -7,6 +7,16 @@ describe('SceneListComponent', () => {
   let fixture: ComponentFixture<SceneListComponent>;
   let component: SceneListComponent;
 
+  const makeScene = (id: string, name: string, folderPath = ''): Scene => ({
+    id,
+    projectId: 'p1',
+    name,
+    folderPath,
+    width: 10,
+    height: 10,
+    tileData: [],
+  });
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SceneListComponent],
@@ -24,42 +34,10 @@ describe('SceneListComponent', () => {
 
   it('should render scenes grouped by folderPath', () => {
     const scenes: Scene[] = [
-      {
-        id: 's1',
-        projectId: 'p1',
-        name: 'Forest 1',
-        folderPath: 'forest',
-        width: 10,
-        height: 10,
-        tileData: [],
-      },
-      {
-        id: 's2',
-        projectId: 'p1',
-        name: 'Forest 2',
-        folderPath: 'forest',
-        width: 10,
-        height: 10,
-        tileData: [],
-      },
-      {
-        id: 's3',
-        projectId: 'p1',
-        name: 'Cave 1',
-        folderPath: 'caves',
-        width: 10,
-        height: 10,
-        tileData: [],
-      },
-      {
-        id: 's4',
-        projectId: 'p1',
-        name: 'Untitled',
-        folderPath: '',
-        width: 10,
-        height: 10,
-        tileData: [],
-      },
+      makeScene('s1', 'Forest 1', 'forest'),
+      makeScene('s2', 'Forest 2', 'forest'),
+      makeScene('s3', 'Cave 1', 'caves'),
+      makeScene('s4', 'Untitled'),
     ];
     fixture.componentRef.setInput('scenes', scenes);
     fixture.detectChanges();
@@ -74,23 +52,91 @@ describe('SceneListComponent', () => {
     expect(compiled.textContent).toContain('Untitled');
   });
 
+  it('should render persisted folders even when they contain no scene', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Untitled')]);
+    fixture.componentRef.setInput('folders', ['mountain']);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('mountain');
+    expect(component.groups().some((g) => g.folderPath === 'mountain')).toBe(true);
+  });
+
+  it('should emit createFolder (not keep local state) when onCreateGroup is invoked', () => {
+    fixture.componentRef.setInput('scenes', []);
+    fixture.detectChanges();
+
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('mountain');
+    const createSpy = vi.spyOn(component.createFolder, 'emit');
+
+    component.onCreateGroup();
+
+    expect(createSpy).toHaveBeenCalledWith('mountain');
+    expect(component.groups().some((g) => g.folderPath === 'mountain')).toBe(false);
+    promptSpy.mockRestore();
+  });
+
+  it('should not emit createFolder for a name that already exists in folders input', () => {
+    fixture.componentRef.setInput('scenes', []);
+    fixture.componentRef.setInput('folders', ['mountain']);
+    fixture.detectChanges();
+
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('mountain');
+    const createSpy = vi.spyOn(component.createFolder, 'emit');
+
+    component.onCreateGroup();
+
+    expect(createSpy).not.toHaveBeenCalled();
+    promptSpy.mockRestore();
+  });
+
+  it('should not emit createFolder for a name that exists as a scene folderPath', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'A', 'forest')]);
+    fixture.detectChanges();
+
+    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('forest');
+    const createSpy = vi.spyOn(component.createFolder, 'emit');
+
+    component.onCreateGroup();
+
+    expect(createSpy).not.toHaveBeenCalled();
+    promptSpy.mockRestore();
+  });
+
+  it('should give every drop list a minimum height so empty folders accept drops', () => {
+    fixture.componentRef.setInput('scenes', []);
+    fixture.componentRef.setInput('folders', ['mountain']);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const dropLists = compiled.querySelectorAll('[cdkDropList]');
+    expect(dropLists.length).toBeGreaterThan(0);
+    dropLists.forEach((list) => {
+      expect(list.className).toContain('tw-min-h-[2.5rem]');
+    });
+  });
+
+  it('should not use the bare tw-transition class on draggable items', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Draggable')]);
+    fixture.detectChanges();
+
+    const dragItems = (fixture.nativeElement as HTMLElement).querySelectorAll('[cdkDrag]');
+    expect(dragItems.length).toBe(1);
+    const rowButton = dragItems[0].querySelector('button');
+    // CDK clones the cdkDrag root as preview; a bare multi-property transition on it crashes
+    // CDK's transition parser (transition-property vs transition-duration list mismatch).
+    expect(dragItems[0].className).not.toMatch(/\btw-transition\b/);
+    expect(rowButton?.className).toContain('tw-transition-colors');
+  });
+
   it('should emit sceneSelect when a scene button is clicked', () => {
-    const scenes: Scene[] = [
-      {
-        id: 's1',
-        projectId: 'p1',
-        name: 'Scene A',
-        folderPath: '',
-        width: 10,
-        height: 10,
-        tileData: [],
-      },
-    ];
-    fixture.componentRef.setInput('scenes', scenes);
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Scene A')]);
     fixture.detectChanges();
 
     const selectSpy = vi.spyOn(component.sceneSelect, 'emit');
-    const button = fixture.nativeElement.querySelector('button[cdkDrag]') as HTMLButtonElement;
+    const button = fixture.nativeElement.querySelector(
+      '.cdk-drop-list button',
+    ) as HTMLButtonElement;
     button.click();
     expect(selectSpy).toHaveBeenCalledWith('s1');
   });
@@ -107,28 +153,22 @@ describe('SceneListComponent', () => {
     expect(createSpy).toHaveBeenCalled();
   });
 
-  it('should add a custom group when onCreateGroup is invoked', () => {
-    fixture.componentRef.setInput('scenes', []);
+  it('should emit sceneDelete with the scene id when the delete button is clicked', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Doomed')]);
     fixture.detectChanges();
 
-    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('mountain');
-    component.onCreateGroup();
-    expect(component.groups().some((g) => g.folderPath === 'mountain')).toBe(true);
-    promptSpy.mockRestore();
+    const deleteSpy = vi.spyOn(component.sceneDelete, 'emit');
+    const selectSpy = vi.spyOn(component.sceneSelect, 'emit');
+    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector(
+      'button[title="Delete scene"]',
+    ) as HTMLButtonElement;
+    deleteButton.click();
+    expect(deleteSpy).toHaveBeenCalledWith('s1');
+    expect(selectSpy).not.toHaveBeenCalled();
   });
 
   it('should emit sceneFolderChange when a scene is dropped in a different group', () => {
-    const scenes: Scene[] = [
-      {
-        id: 's1',
-        projectId: 'p1',
-        name: 'Scene A',
-        folderPath: 'old',
-        width: 10,
-        height: 10,
-        tileData: [],
-      },
-    ];
+    const scenes: Scene[] = [makeScene('s1', 'Scene A', 'old')];
     fixture.componentRef.setInput('scenes', scenes);
     fixture.detectChanges();
 

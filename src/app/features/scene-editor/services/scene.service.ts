@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from '../../../core/services/database.service';
 import type { Scene } from '../../../shared/models/scene.model';
+import type { Folder } from '../../../shared/models/folder.model';
 
 @Injectable()
 export class SceneService {
@@ -68,5 +69,30 @@ export class SceneService {
    */
   async getScene(id: string): Promise<Scene | undefined> {
     return this.db.scenes.get(id);
+  }
+
+  /**
+   * Returns all folders belonging to a project.
+   * @param projectId The project id.
+   * @returns The list of persisted folders for this project.
+   */
+  async getFolders(projectId: string): Promise<Folder[]> {
+    return this.db.folders.where('projectId').equals(projectId).toArray();
+  }
+
+  /**
+   * Creates a folder for a project if the path does not already exist in it.
+   * @param projectId The project the folder belongs to.
+   * @param path The folder path to create.
+   */
+  async createFolder(projectId: string, path: string): Promise<void> {
+    const exists = await this.db.folders
+      .where('projectId')
+      .equals(projectId)
+      .and((f) => f.path === path)
+      .count();
+    if (exists > 0) return;
+    const folder: Folder = { id: crypto.randomUUID(), projectId, path };
+    await this.db.folders.add(folder);
   }
 }

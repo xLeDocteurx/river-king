@@ -230,3 +230,7 @@ confirmDialog().open(); // Uses native <dialog> element under the hood
 - `features/` should expose lazy-loaded routes (e.g., `loadChildren`) and keep internal services/components private to the feature.
 - **All singleton services** (DatabaseService, ThemeService, NotificationService, SessionService) must live in `core/services/`, never in `shared/services/`.
 - **Never inline templates** in `@Component({ template: \`...\` })`. Always use `templateUrl`and`styleUrl` pointing to separate files.
+
+## Collaboration preferences
+
+- The user likes to be **challenged** on their proposals: question assumptions, point out design risks, and suggest alternatives instead of implementing requests blindly.
