@@ -135,9 +135,8 @@ export class MapCanvasComponent implements AfterViewInit {
   }
 
   /**
-   * Renders the current scene onto the canvas. Each tile anchor is drawn once
-   * across its whole footprint; cells covered by another anchor's footprint
-   * are skipped so nothing paints twice.
+   * Renders the current scene onto the canvas. Each anchor is drawn exactly
+   * once across its full footprint.
    */
   render(): void {
     const ctx = this.ctx;
@@ -159,18 +158,11 @@ export class MapCanvasComponent implements AfterViewInit {
 
     const tileImages = this.loadedImages();
     const anchors: { x: number; y: number; tileId: number }[] = [];
-    const covered = new Set<string>();
     for (let y = 0; y < scene.height; y++) {
       for (let x = 0; x < scene.width; x++) {
         const tileId = scene.tileData[y]?.[x] ?? -1;
         if (tileId >= 0) {
           anchors.push({ x, y, tileId });
-          const { w, h } = getFootprint(tileId, this.tileFootprints());
-          for (let dy = 0; dy < h; dy++) {
-            for (let dx = 0; dx < w; dx++) {
-              covered.add(`${x + dx},${y + dy}`);
-            }
-          }
         }
       }
     }
