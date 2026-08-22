@@ -1,0 +1,34 @@
+<div class="tw-relative tw-flex tw-flex-col tw-gap-1" [class]="class()">
+  <input
+    type="text"
+    [ngModel]="query()"
+    (ngModelChange)="query.set($event)"
+    (input)="onInput($event)"
+    (focus)="open.set(true)"
+    (keydown.escape)="close()"
+    [placeholder]="placeholder()"
+    class="tw-w-full tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+    aria-label="Action"
+  />
+  @if (open()) {
+    <ul
+      role="listbox"
+      class="tw-absolute tw-top-full tw-z-10 tw-mt-1 tw-max-h-48 tw-w-full tw-overflow-auto tw-rounded-md tw-border tw-border-border tw-bg-background tw-shadow-md"
+    >
+      @for (option of filtered(); track option) {
+        <li>
+          <button
+            type="button"
+            role="option"
+            (click)="select(option)"
+            class="tw-w-full tw-text-left tw-px-3 tw-py-1.5 tw-text-sm hover:tw-bg-muted"
+          >
+            {{ option }}
+          </button>
+        </li>
+      } @empty {
+        <li class="tw-px-3 tw-py-1.5 tw-text-sm">No match</li>
+      }
+    </ul>
+  }
+</div>
