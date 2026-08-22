@@ -99,12 +99,27 @@ The constructor effect also tracks `tileSize()` and `tileFootprints()`.
   `clearOverlappedAnchors(...)`, then writes the anchor cell, then persists
   once via `sceneService.updateScene`.
 
-### 5. Data flow summary
+### 5. TilePaletteComponent previews (right sidebar)
+
+The tiles panel currently paints each tile button with a cycled palette color
+(`getTileColor`). It gains a real thumbnail per tile:
+
+- New input `tileImages = input<Record<number, string>>({})`.
+- Template: when `tileImages()[tile.id]` exists, render an `<img>` filling the
+  40x40 button (`tw-w-full tw-h-full tw-object-cover`, `alt=""`,
+  `[title]` unchanged); otherwise keep the existing palette-color background
+  as fallback.
+- `SceneEditorComponent` binds `[tileImages]="tileImages()"` on
+  `<rk-tile-palette>`. No service changes needed — the visuals are already
+  loaded once by the editor and shared with the canvas.
+
+### 6. Data flow summary
 
 ```
 MapTilesService.loadTileVisuals(projectId, projectTileSize)
         │
         ├─ images ───────► MapCanvas [tileImages]      (existing)
+        │              └─► TilePalette [tileImages]    (new binding)
         └─ footprints ───► MapCanvas [tileFootprints]
                         └─► SceneEditor (replace logic)
 project.tileSize ───────► MapCanvas [tileSize]
@@ -131,7 +146,7 @@ so no reactive invalidation is needed within the feature.
   `loadProjectData()`.
 - Placement persistence errors keep the current try/catch + toast behavior.
 
-## Testing (~8 new tests)
+## Testing (~11 new tests)
 
 - **map-tiles.service.spec.ts** (extend): footprints computed with ceil and
   min-1 clamp; custom `tileSizePx` respected; first-frame dims; `tileId <= 0`
@@ -144,5 +159,8 @@ so no reactive invalidation is needed within the feature.
 - **map-footprint.spec.ts** (new): `getFootprint` default + lookup;
   `clearOverlappedAnchors` removes only intersecting anchors, preserves
   others, does not mutate input.
+- **tile-palette.component.spec.ts** (new): renders an `<img>` with the
+  provided data URI when `tileImages` has an entry for the tile; falls back
+  to the palette-color background when it does not.
 - **scene-editor.component.spec.ts** (extend): placing a multi-cell tile
   clears an overlapping anchor and persists the merged result.
