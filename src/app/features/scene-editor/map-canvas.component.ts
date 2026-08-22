@@ -10,6 +10,8 @@ import {
   ElementRef,
 } from '@angular/core';
 import type { Scene } from '../../shared/models/scene.model';
+import { getFootprint } from './map-footprint';
+import type { TileFootprintMap } from './map-footprint';
 
 /**
  * Canvas-based map renderer for a single scene.
@@ -34,6 +36,10 @@ export class MapCanvasComponent implements AfterViewInit {
   palette = input<string[]>([]);
   /** Image sources (data URIs) for each tileId (first sprite frame). */
   tileImages = input<Record<number, string>>({});
+  /** Size of one grid cell in pixels (from the project settings). */
+  tileSize = input(16);
+  /** Grid-cell footprint of each tile id; missing entries mean 1x1. */
+  tileFootprints = input<TileFootprintMap>({});
   /** Emitted when a tile is placed on the canvas. */
   tilePlaced = output<{ x: number; y: number; tileId: number }>();
 
@@ -56,13 +62,13 @@ export class MapCanvasComponent implements AfterViewInit {
   private lastMouseX = 0;
   /** @internal Last mouse Y position for pan delta calculation. */
   private lastMouseY = 0;
-  /** @internal Size of a single tile in pixels. */
-  private readonly tileSize = 16;
 
   constructor() {
     effect(() => {
-      // Re-render whenever palette or tile image sources change
+      // Re-render whenever rendering inputs change
       this.palette();
+      this.tileSize();
+      this.tileFootprints();
       const sources = this.tileImages();
       void this.rebuildImageCache(sources);
       this.render();
@@ -129,39 +135,54 @@ export class MapCanvasComponent implements AfterViewInit {
   }
 
   /**
-   * Renders the current scene onto the canvas.
+   * Renders the current scene onto the canvas. Each tile anchor is drawn once
+   * across its whole footprint; cells covered by another anchor's footprint
+   * are skipped so nothing paints twice.
    */
   render(): void {
     const ctx = this.ctx;
     const canvas = this.canvasRef()?.nativeElement;
     if (!ctx || !canvas) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     const scene = this.scene();
     if (!scene) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const cell = this.tileSize();
 
     ctx.save();
     ctx.translate(this.cameraX(), this.cameraY());
     ctx.scale(this.zoom(), this.zoom());
 
-    // Draw grid background
-    this.drawGrid(ctx, scene.width, scene.height);
+    this.drawGrid(ctx, scene.width, scene.height, cell);
 
-    // Draw tiles
     const tileImages = this.loadedImages();
+    const anchors: { x: number; y: number; tileId: number }[] = [];
+    const covered = new Set<string>();
     for (let y = 0; y < scene.height; y++) {
       for (let x = 0; x < scene.width; x++) {
         const tileId = scene.tileData[y]?.[x] ?? -1;
         if (tileId >= 0) {
-          const img = tileImages[tileId];
-          if (img) {
-            ctx.drawImage(img, x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
-          } else {
-            ctx.fillStyle = this.getTileColor(tileId);
-            ctx.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
+          anchors.push({ x, y, tileId });
+          const { w, h } = getFootprint(tileId, this.tileFootprints());
+          for (let dy = 0; dy < h; dy++) {
+            for (let dx = 0; dx < w; dx++) {
+              covered.add(`${x + dx},${y + dy}`);
+            }
           }
         }
+      }
+    }
+
+    for (const { x, y, tileId } of anchors) {
+      const { w, h } = getFootprint(tileId, this.tileFootprints());
+      const img = tileImages[tileId];
+      if (img) {
+        ctx.drawImage(img, x * cell, y * cell, w * cell, h * cell);
+      } else {
+        ctx.fillStyle = this.getTileColor(tileId);
+        ctx.fillRect(x * cell, y * cell, w * cell, h * cell);
       }
     }
 
@@ -169,21 +190,26 @@ export class MapCanvasComponent implements AfterViewInit {
   }
 
   /** @internal Draws the grid behind the tiles. */
-  private drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+  private drawGrid(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    cell: number,
+  ): void {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.lineWidth = 1;
 
     for (let x = 0; x <= width; x++) {
       ctx.beginPath();
-      ctx.moveTo(x * this.tileSize, 0);
-      ctx.lineTo(x * this.tileSize, height * this.tileSize);
+      ctx.moveTo(x * cell, 0);
+      ctx.lineTo(x * cell, height * cell);
       ctx.stroke();
     }
 
     for (let y = 0; y <= height; y++) {
       ctx.beginPath();
-      ctx.moveTo(0, y * this.tileSize);
-      ctx.lineTo(width * this.tileSize, y * this.tileSize);
+      ctx.moveTo(0, y * cell);
+      ctx.lineTo(width * cell, y * cell);
       ctx.stroke();
     }
   }
@@ -244,20 +270,19 @@ export class MapCanvasComponent implements AfterViewInit {
     this.render();
   }
 
-  /** @internal Calculates grid coordinates and emits a tilePlaced event. */
+  /** @internal Calculates grid coordinates and emits a tilePlaced event. The whole footprint must fit inside the scene. */
   private placeTile(event: MouseEvent): void {
     const canvas = this.canvasRef().nativeElement;
     const rect = canvas.getBoundingClientRect();
-    const x = Math.floor(
-      (event.clientX - rect.left - this.cameraX()) / (this.tileSize * this.zoom()),
-    );
-    const y = Math.floor(
-      (event.clientY - rect.top - this.cameraY()) / (this.tileSize * this.zoom()),
-    );
+    const cell = this.tileSize();
+    const x = Math.floor((event.clientX - rect.left - this.cameraX()) / (cell * this.zoom()));
+    const y = Math.floor((event.clientY - rect.top - this.cameraY()) / (cell * this.zoom()));
     const scene = this.scene();
     const tileId = this.selectedTileId();
+    if (!scene || tileId === null) return;
 
-    if (scene && tileId !== null && x >= 0 && x < scene.width && y >= 0 && y < scene.height) {
+    const { w, h } = getFootprint(tileId, this.tileFootprints());
+    if (x >= 0 && y >= 0 && x + w <= scene.width && y + h <= scene.height) {
       this.tilePlaced.emit({ x, y, tileId });
     }
   }
