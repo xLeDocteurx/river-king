@@ -32,6 +32,8 @@ export class MapCanvasComponent implements AfterViewInit {
   selectedTileId = input<number | null>(null);
   /** Project palette colors used for tile rendering. */
   palette = input<string[]>([]);
+  /** Image sources (data URIs) for each tileId (first sprite frame). */
+  tileImages = input<Record<number, string>>({});
   /** Emitted when a tile is placed on the canvas. */
   tilePlaced = output<{ x: number; y: number; tileId: number }>();
 
@@ -44,6 +46,10 @@ export class MapCanvasComponent implements AfterViewInit {
 
   /** @internal Canvas 2D rendering context. */
   private ctx: CanvasRenderingContext2D | null = null;
+  /** @internal Decoded images ready to draw, keyed by tileId. */
+  private readonly loadedImages = signal<Record<number, HTMLImageElement>>({});
+  /** @internal Guards against stale async image-cache rebuilds. */
+  private imageCacheVersion = 0;
   /** @internal Whether the user is currently panning. */
   private isDragging = false;
   /** @internal Last mouse X position for pan delta calculation. */
@@ -55,9 +61,53 @@ export class MapCanvasComponent implements AfterViewInit {
 
   constructor() {
     effect(() => {
-      // Re-render whenever palette changes
+      // Re-render whenever palette or tile image sources change
       this.palette();
+      const sources = this.tileImages();
+      void this.rebuildImageCache(sources);
       this.render();
+    });
+  }
+
+  /**
+   * Rebuilds the internal HTMLImageElement cache from the given data URIs,
+   * then re-renders once every decodable image is ready. Images that fail
+   * to decode are skipped so tiles fall back to palette colors.
+   * @param sources - Map of tileId to image source string.
+   */
+  private async rebuildImageCache(sources: Record<number, string>): Promise<void> {
+    const version = ++this.imageCacheVersion;
+    if (Object.keys(sources).length === 0) {
+      this.loadedImages.set({});
+      return;
+    }
+    const entries = Object.entries(sources);
+    const pairs = await Promise.all(
+      entries.map(async ([tileId, src]) => ({
+        tileId: Number(tileId),
+        img: await this.loadImage(src),
+      })),
+    );
+    if (version !== this.imageCacheVersion) return; // a newer request superseded this one
+    const map: Record<number, HTMLImageElement> = {};
+    for (const { tileId, img } of pairs) {
+      if (img) map[tileId] = img;
+    }
+    this.loadedImages.set(map);
+    this.render();
+  }
+
+  /**
+   * Creates an HTMLImageElement and waits for it to load from the given source.
+   * @param src - Image source (typically a base64 data URI).
+   * @returns The loaded image element, or null when decoding fails.
+   */
+  private loadImage(src: string): Promise<HTMLImageElement | null> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
     });
   }
 
@@ -99,12 +149,18 @@ export class MapCanvasComponent implements AfterViewInit {
     this.drawGrid(ctx, scene.width, scene.height);
 
     // Draw tiles
+    const tileImages = this.loadedImages();
     for (let y = 0; y < scene.height; y++) {
       for (let x = 0; x < scene.width; x++) {
         const tileId = scene.tileData[y]?.[x] ?? -1;
         if (tileId >= 0) {
-          ctx.fillStyle = this.getTileColor(tileId);
-          ctx.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
+          const img = tileImages[tileId];
+          if (img) {
+            ctx.drawImage(img, x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
+          } else {
+            ctx.fillStyle = this.getTileColor(tileId);
+            ctx.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
+          }
         }
       }
     }

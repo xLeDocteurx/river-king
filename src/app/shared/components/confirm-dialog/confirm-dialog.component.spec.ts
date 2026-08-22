@@ -56,22 +56,23 @@ describe('ConfirmDialogComponent', () => {
     expect(emitted).toBe(true);
   });
 
-  it('should emit cancelled when cancel button clicked', async () => {
+  it('should emit cancelled exactly once when cancel button clicked', async () => {
     const fixture = TestBed.createComponent(ConfirmDialogComponent);
     fixture.componentRef.setInput('data', { title: 'Test', message: 'Test message' });
     await fixture.whenStable();
     fixture.detectChanges();
 
-    let emitted = false;
+    let count = 0;
     fixture.componentInstance.cancelled.subscribe(() => {
-      emitted = true;
+      count += 1;
     });
 
     const compiled = fixture.nativeElement as HTMLElement;
     const cancelButton = compiled.querySelectorAll('button')[0];
     cancelButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await fixture.whenStable();
 
-    expect(emitted).toBe(true);
+    expect(count).toBe(1);
   });
 
   it('should use default labels when not provided', async () => {

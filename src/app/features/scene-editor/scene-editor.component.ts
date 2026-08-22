@@ -11,6 +11,7 @@ import { ActivatedRoute } from '@angular/router';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SceneService } from './services/scene.service';
+import { MapTilesService } from './services/map-tiles.service';
 import { MapCanvasComponent } from './map-canvas.component';
 import { SceneListComponent } from './scene-list.component';
 import { TilePaletteComponent } from './tile-palette.component';
@@ -27,7 +28,7 @@ import type { ConfirmDialogData } from '../../shared/components/confirm-dialog/c
 @Component({
   selector: 'rk-scene-editor',
   standalone: true,
-  providers: [SceneService],
+  providers: [SceneService, MapTilesService],
   imports: [MapCanvasComponent, SceneListComponent, TilePaletteComponent, ConfirmDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './scene-editor.component.html',
@@ -38,6 +39,7 @@ export class SceneEditorComponent implements OnInit {
   private readonly sceneService = inject(SceneService);
   private readonly db = inject(DatabaseService);
   private readonly notification = inject(NotificationService);
+  private readonly mapTilesService = inject(MapTilesService);
   private readonly deleteConfirmDialog = viewChild.required(ConfirmDialogComponent);
 
   /** Currently active project id derived from route params. */
@@ -56,6 +58,8 @@ export class SceneEditorComponent implements OnInit {
   selectedScene = signal<Scene | null>(null);
   /** Id of the tile currently selected in the palette. */
   selectedTileId = signal<number | null>(null);
+  /** Cached tileId -> image source map for canvas rendering. */
+  tileImages = signal<Record<number, string>>({});
   /** Id of the scene pending deletion confirmation. */
   pendingDeleteSceneId = signal<string | null>(null);
 
@@ -84,7 +88,7 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Loads project palette and tiles for the current project.
+   * Loads project palette, tiles, and tile images for the current project.
    */
   async loadProjectData(): Promise<void> {
     try {
@@ -94,9 +98,23 @@ export class SceneEditorComponent implements OnInit {
       }
       const tiles = await this.db.tiles.where('projectId').equals(this.projectId()).toArray();
       this.projectTiles.set(tiles);
+      await this.loadTileImages();
     } catch (e) {
       console.error('Failed to load project data:', e);
       this.notification.error('Failed to load project data.');
+    }
+  }
+
+  /**
+   * Loads the first sprite image for each tile in the project.
+   */
+  async loadTileImages(): Promise<void> {
+    try {
+      const images = await this.mapTilesService.loadTileImages(this.projectId());
+      this.tileImages.set(images);
+    } catch (e) {
+      console.error('Failed to load tile images:', e);
+      this.notification.error('Failed to load tile images.');
     }
   }
 

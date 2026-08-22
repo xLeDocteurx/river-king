@@ -9,7 +9,7 @@ import {
   viewChild,
   effect,
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SpriteService } from './services/sprite.service';
 import { PixelCanvasComponent } from './pixel-canvas.component';
@@ -45,6 +45,7 @@ import type { Sprite } from '../../shared/models/sprite.model';
 })
 export class SpriteEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly spriteService = inject(SpriteService);
   private readonly projectService = inject(ProjectService);
   private readonly notification = inject(NotificationService);
@@ -55,6 +56,9 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Reactive signal holding the current project ID. */
   projectId = signal<string>('');
+
+  /** Whether the editor is in focus mode (entered via /sprites/:spriteId). */
+  focusMode = signal(false);
 
   /** Reactive signal holding the project's color palette. */
   projectPalette = signal<string[]>([]);
@@ -100,15 +104,35 @@ export class SpriteEditorComponent implements OnInit {
     });
   }
 
-  /** Initializes component, subscribing to route params to load project data. */
+  /** Initializes component, subscribing to route params to load project data and optional sprite focus. */
   ngOnInit() {
-    this.route.parent?.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+    const projectParams =
+      this.route.pathFromRoot?.find((r) => r.snapshot.paramMap.has('id'))?.params ??
+      this.route.parent?.params;
+    projectParams?.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const id = params['id'];
       if (id) {
         this.projectId.set(id);
         this.loadProjectPalette();
         this.loadSprites();
       }
+    });
+
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(async (params) => {
+      const raw = params['spriteId'];
+      if (raw === null || raw === undefined) {
+        this.focusMode.set(false);
+        return;
+      }
+      this.focusMode.set(true);
+      await this.loadSprites();
+      const sprite = await this.spriteService.getSprite(Number(raw));
+      if (!sprite) {
+        this.notification.error('Sprite not found');
+        this.backToTiles();
+        return;
+      }
+      await this.selectSprite(sprite.id);
     });
   }
 
@@ -203,6 +227,13 @@ export class SpriteEditorComponent implements OnInit {
       this.notification.error('Failed to save sprite');
       console.error(e);
     }
+  }
+
+  /**
+   * Navigates back to the tile manager for the current project.
+   */
+  backToTiles(): void {
+    this.router.navigate(['/project', this.projectId(), 'tiles']);
   }
 
   /**

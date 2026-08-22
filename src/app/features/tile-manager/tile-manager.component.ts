@@ -11,6 +11,8 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TileService } from './services/tile.service';
+import { TileSpritesService } from './services/tile-sprites.service';
+import { ProjectService } from '../../features/dashboard/services/project.service';
 import { TileListComponent } from './tile-list.component';
 import { TilePropertiesComponent } from './tile-properties.component';
 import {
@@ -30,7 +32,7 @@ import type { Tile } from '../../shared/models/tile.model';
 @Component({
   selector: 'rk-tile-manager',
   standalone: true,
-  providers: [TileService],
+  providers: [TileService, TileSpritesService],
   imports: [TileListComponent, TilePropertiesComponent, ConfirmDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tile-manager.component.html',
@@ -39,6 +41,8 @@ import type { Tile } from '../../shared/models/tile.model';
 export class TileManagerComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly tileService = inject(TileService);
+  private readonly tileSpritesService = inject(TileSpritesService);
+  private readonly projectService = inject(ProjectService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -47,6 +51,12 @@ export class TileManagerComponent implements OnInit {
 
   /** ID of the currently loaded project. */
   projectId = signal<string>('');
+
+  /** Tile size in pixels (loaded from project). */
+  tileSize = signal<number>(16);
+
+  /** Project palette hex colors (loaded from project). */
+  palette = signal<string[]>([]);
 
   /** List of tiles belonging to the current project. */
   tiles = signal<Tile[]>([]);
@@ -75,17 +85,41 @@ export class TileManagerComponent implements OnInit {
         this.confirmDialog().open();
       }
     });
+
+    // Reload dependent data when the sprite state service reports a mutation.
+    effect(() => {
+      const version = this.tileSpritesService.mutationVersion();
+      if (version === 0) return;
+      void this.reloadAfterSpriteMutation();
+    });
   }
 
-  /** Reads the project ID from the parent route and loads tiles. */
+  /** Reads the project ID from the parent route and loads tiles + project settings. */
   ngOnInit() {
     this.route.parent?.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const id = params['id'];
       if (id) {
         this.projectId.set(id);
-        this.loadTiles();
+        this.loadProject().then(() => this.loadTiles());
       }
     });
+  }
+
+  /**
+   * Loads the project so palette and tileSize are available for the editor.
+   * @returns Promise that resolves when the project is loaded.
+   */
+  async loadProject(): Promise<void> {
+    try {
+      const project = await this.projectService.getById(this.projectId());
+      if (project) {
+        this.tileSize.set(project.tileSize);
+        this.palette.set(project.palette);
+      }
+    } catch (e) {
+      this.notification.error('Failed to load project');
+      console.error(e);
+    }
   }
 
   /**
@@ -103,7 +137,7 @@ export class TileManagerComponent implements OnInit {
   }
 
   /**
-   * Selects a tile by ID and fetches its details.
+   * Selects a tile by ID and fetches its details plus linked sprites.
    * @param tileId - The ID of the tile to select.
    * @returns Promise that resolves when the tile is loaded.
    */
@@ -112,8 +146,27 @@ export class TileManagerComponent implements OnInit {
       this.selectedTileId.set(tileId);
       const tile = await this.tileService.getTile(tileId);
       this.selectedTile.set(tile ?? null);
+      await this.tileSpritesService.loadForTile(tileId);
     } catch (e) {
       this.notification.error('Failed to load tile');
+      console.error(e);
+    }
+  }
+
+  /**
+   * Reloads the tiles list and the selected tile object after the sprite
+   * state service reports a frame lifecycle or size mutation.
+   */
+  private async reloadAfterSpriteMutation(): Promise<void> {
+    try {
+      await this.loadTiles();
+      const id = this.selectedTileId();
+      if (id !== null) {
+        const tile = await this.tileService.getTile(id);
+        this.selectedTile.set(tile ?? null);
+      }
+    } catch (e) {
+      this.notification.error('Failed to refresh tiles');
       console.error(e);
     }
   }
@@ -144,6 +197,7 @@ export class TileManagerComponent implements OnInit {
         type: tile.type,
         animationSpeed: tile.animationSpeed,
         properties: tile.properties,
+        spriteIds: tile.spriteIds,
       });
       await this.loadTiles();
       const updated = await this.tileService.getTile(tile.id);
@@ -175,6 +229,7 @@ export class TileManagerComponent implements OnInit {
       if (this.selectedTileId() === tileId) {
         this.selectedTileId.set(null);
         this.selectedTile.set(null);
+        this.tileSpritesService.clearSelection();
       }
       await this.loadTiles();
     } catch (e) {
