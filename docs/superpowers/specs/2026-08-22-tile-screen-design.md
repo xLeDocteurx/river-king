@@ -160,6 +160,21 @@ la sélection met à jour `properties.actionId`.
 - Si la sprite n'existe plus (id inconnu) : notification d'erreur + retour auto
   vers tiles.
 
+## Aperçu des tuiles dans l'éditeur de scène
+
+Le rendu actuel de `MapCanvasComponent` (couleur `palette[tileId % palette.length]`,
+solution temporaire) est remplacé par l'image réelle de la tuile :
+
+- Pour chaque `tileId` présent dans `scene.tileData`, charger la tuile et sa
+  **première sprite** (`spriteIds[0]`) — statique comme animée.
+- Préchargement des images (`HTMLImageElement` depuis `pixelData`) dans un cache
+  par tileId ; re-render du canvas quand le cache change.
+- Rendu : `drawImage` aux coordonnées grille (le translate/scale caméra existant
+  s'applique), dimension = `tileSize` projet.
+- Tuile sans sprite ou image non encore chargée → case vide (comme `-1`).
+- Chargement fait côté scène (service du feature scene-editor), passé en input au
+  canvas : `MapCanvasComponent` reste un composant d'affichage.
+
 ## Gestion des erreurs
 
 Toutes les opérations IndexedDB ajoutées/modifiées sont wrappées try/catch avec
