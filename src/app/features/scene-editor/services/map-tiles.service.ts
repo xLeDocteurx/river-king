@@ -1,27 +1,33 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from '../../../core/services/database.service';
 import type { Sprite } from '../../../shared/models/sprite.model';
+import type { TileFootprintMap } from '../map-footprint';
 
 /**
- * Feature-private service responsible for loading the first frame
- * (lowest-id sprite) of every tile in a project as image source strings
- * (data URIs). Canvas rendering owns the actual HTMLImageElement cache.
+ * Feature-private service responsible for loading the visual data of every
+ * tile in a project: the first frame (lowest-id sprite) image source plus
+ * that sprite's footprint expressed in grid cells.
  */
 @Injectable()
 export class MapTilesService {
   private readonly db = inject(DatabaseService);
 
   /**
-   * Loads the first sprite for each tile in the project and returns its
-   * `pixelData` image source. Standalone sprites (tileId <= 0) are ignored;
-   * tiles whose frames fail to load simply stay absent so the canvas can
+   * Loads the first sprite for each tile in the project and returns both its
+   * `pixelData` image source and its footprint in grid cells. Footprints use
+   * ceil(sprite dimension / tileSizePx), clamped to at least one cell.
+   * Standalone sprites (tileId <= 0) are ignored so tiles without sprites can
    * fall back to a palette color.
    *
    * @param projectId - The project whose tiles should be loaded.
-   * @returns A record mapping tileId -> image source string (data URI).
+   * @param tileSizePx - Size of one grid cell in pixels (project setting).
+   * @returns Images (tileId -> data URI) and footprints (tileId -> cells).
    * @throws When the underlying database query fails.
    */
-  async loadTileImages(projectId: string): Promise<Record<number, string>> {
+  async loadTileVisuals(
+    projectId: string,
+    tileSizePx: number,
+  ): Promise<{ images: Record<number, string>; footprints: TileFootprintMap }> {
     const sprites = await this.db.sprites.where('projectId').equals(projectId).toArray();
 
     // Keep only the first sprite (lowest id) for each tileId.
@@ -35,9 +41,14 @@ export class MapTilesService {
     }
 
     const images: Record<number, string> = {};
+    const footprints: TileFootprintMap = {};
     for (const [tileId, sprite] of firstByTile) {
       images[tileId] = sprite.pixelData;
+      footprints[tileId] = {
+        w: Math.max(1, Math.ceil(sprite.width / tileSizePx)),
+        h: Math.max(1, Math.ceil(sprite.height / tileSizePx)),
+      };
     }
-    return images;
+    return { images, footprints };
   }
 }

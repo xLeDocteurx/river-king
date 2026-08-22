@@ -33,7 +33,7 @@ describe('MapTilesService', () => {
   }
 
   it('returns an empty record when the project has no sprites', async () => {
-    const images = await service.loadTileImages('proj-1');
+    const { images } = await service.loadTileVisuals('proj-1', 16);
     expect(images).toEqual({});
   });
 
@@ -42,7 +42,7 @@ describe('MapTilesService', () => {
     const second = await seedSprite({ tileId: 1, pixelData: 'data:image/png;base64,F2' });
     const other = await seedSprite({ tileId: 2, pixelData: 'data:image/png;base64,T2' });
 
-    const images = await service.loadTileImages('proj-1');
+    const { images } = await service.loadTileVisuals('proj-1', 16);
 
     expect(images[1]).toBe(first.pixelData);
     expect(images[1]).not.toBe(second.pixelData);
@@ -54,23 +54,49 @@ describe('MapTilesService', () => {
     await seedSprite({ tileId: 5, pixelData: 'data:image/png;base64,A' });
     await seedSprite({ tileId: 5, pixelData: 'data:image/png;base64,B' });
 
-    const images = await service.loadTileImages('proj-1');
+    const { images } = await service.loadTileVisuals('proj-1', 16);
 
     expect(Object.keys(images)).toEqual(['5']);
   });
 
   it('ignores standalone sprites (tileId <= 0)', async () => {
     await seedSprite({ tileId: 0 });
-    const images = await service.loadTileImages('proj-1');
+    const { images, footprints } = await service.loadTileVisuals('proj-1', 16);
     expect(images).toEqual({});
+    expect(footprints).toEqual({});
   });
 
   it('only returns sprites belonging to the requested project', async () => {
     const mine = await seedSprite({ projectId: 'proj-1', tileId: 3 });
     await seedSprite({ projectId: 'proj-2', tileId: 3, pixelData: 'data:image/png;base64,OTHER' });
 
-    const images = await service.loadTileImages('proj-1');
+    const { images } = await service.loadTileVisuals('proj-1', 16);
 
     expect(images[3]).toBe(mine.pixelData);
+  });
+
+  it('computes footprints in grid cells using ceil of sprite dimensions', async () => {
+    await seedSprite({ tileId: 1, width: 32, height: 40 });
+
+    const { images, footprints } = await service.loadTileVisuals('proj-1', 16);
+
+    expect(images[1]).toBeDefined();
+    expect(footprints[1]).toEqual({ w: 2, h: 3 });
+  });
+
+  it('clamps footprints to at least one cell', async () => {
+    await seedSprite({ tileId: 1, width: 8, height: 5 });
+
+    const { footprints } = await service.loadTileVisuals('proj-1', 16);
+
+    expect(footprints[1]).toEqual({ w: 1, h: 1 });
+  });
+
+  it('honours the provided tile size when computing footprints', async () => {
+    await seedSprite({ tileId: 1, width: 48, height: 16 });
+
+    const { footprints } = await service.loadTileVisuals('proj-1', 24);
+
+    expect(footprints[1]).toEqual({ w: 2, h: 1 });
   });
 });

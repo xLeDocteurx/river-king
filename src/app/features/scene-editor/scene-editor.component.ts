@@ -19,6 +19,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
 import type { Scene } from '../../shared/models/scene.model';
 import type { Tile } from '../../shared/models/tile.model';
 import type { ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import type { TileFootprintMap } from './map-footprint';
 
 /**
  * Main page component for the Scene Editor feature.
@@ -60,6 +61,10 @@ export class SceneEditorComponent implements OnInit {
   selectedTileId = signal<number | null>(null);
   /** Cached tileId -> image source map for canvas rendering. */
   tileImages = signal<Record<number, string>>({});
+  /** Grid-cell footprint of each tile, derived from its first sprite. */
+  tileFootprints = signal<TileFootprintMap>({});
+  /** Size of one grid cell in pixels, from the project settings. */
+  projectTileSize = signal<number>(16);
   /** Id of the scene pending deletion confirmation. */
   pendingDeleteSceneId = signal<string | null>(null);
 
@@ -95,10 +100,11 @@ export class SceneEditorComponent implements OnInit {
       const project = await this.db.projects.get(this.projectId());
       if (project) {
         this.projectPalette.set(project.palette);
+        this.projectTileSize.set(project.tileSize ?? 16);
       }
       const tiles = await this.db.tiles.where('projectId').equals(this.projectId()).toArray();
       this.projectTiles.set(tiles);
-      await this.loadTileImages();
+      await this.loadTileVisuals();
     } catch (e) {
       console.error('Failed to load project data:', e);
       this.notification.error('Failed to load project data.');
@@ -106,12 +112,16 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Loads the first sprite image for each tile in the project.
+   * Loads the first sprite image and footprint of each tile in the project.
    */
-  async loadTileImages(): Promise<void> {
+  async loadTileVisuals(): Promise<void> {
     try {
-      const images = await this.mapTilesService.loadTileImages(this.projectId());
+      const { images, footprints } = await this.mapTilesService.loadTileVisuals(
+        this.projectId(),
+        this.projectTileSize(),
+      );
       this.tileImages.set(images);
+      this.tileFootprints.set(footprints);
     } catch (e) {
       console.error('Failed to load tile images:', e);
       this.notification.error('Failed to load tile images.');
