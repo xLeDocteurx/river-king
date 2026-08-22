@@ -26,10 +26,12 @@
 ### Task 1: Game action registry
 
 **Files:**
+
 - Create: `src/app/core/actions/game-actions.ts`
 - Test: `src/app/core/actions/game-actions.spec.ts`
 
 **Interfaces:**
+
 - Produces: `GAME_ACTIONS: Record<string, () => void>`, `listGameActions(): string[]`, `runGameAction(id: string): void`
 
 - [ ] **Step 1: Write failing test**
@@ -108,6 +110,7 @@ git commit -m "feature-11-tile-screen-rework: add game action registry"
 ### Task 2: TileProperties model + Dexie v3 migration + reference cleanup
 
 **Files:**
+
 - Modify: `src/app/shared/models/tile.model.ts`
 - Modify: `src/app/core/services/database.service.ts`
 - Modify: `src/app/features/tile-manager/services/tile.service.ts`
@@ -116,6 +119,7 @@ git commit -m "feature-11-tile-screen-rework: add game action registry"
 - Test: extend `src/app/core/services/database.service.spec.ts` if absent create it
 
 **Interfaces:**
+
 - Produces: `TileProperties { blocking: boolean; interactable: boolean; actionId?: string }`, exported pure `migrateTileProperties(oldProps): TileProperties`
 
 - [ ] **Step 1: Failing migration tests**
@@ -182,9 +186,12 @@ export interface TileProperties {
 this.version(3)
   .stores({ folders: 'id, projectId, path' })
   .upgrade(async (tx) => {
-    await tx.table('tiles').toCollection().modify((tile: { properties?: Record<string, unknown> }) => {
-      tile.properties = migrateTileProperties(tile.properties);
-    });
+    await tx
+      .table('tiles')
+      .toCollection()
+      .modify((tile: { properties?: Record<string, unknown> }) => {
+        tile.properties = migrateTileProperties(tile.properties);
+      });
   });
 ```
 
@@ -223,8 +230,9 @@ properties: this.fb.group({
 ```
 
 effect patchValue uses `t.properties.blocking` / `t.properties.interactable`; onSubmit builds `{ blocking: …, interactable: …, actionId: value.properties?.interactable ? undefined : undefined }` — for now always omit actionId (Task 6 adds the dropdown).
-  - `tile-properties.component.html`: delete Collision/Solid/Layer/Event Script blocks (lines ~49–92), add single Blocking checkbox mirroring the old Collision markup (`formControlName="blocking"`, label "Blocking").
-  - Grep sweep: `grep -rn "eventScript\|\blayer\b\|\.collision\|\.solid" src/ --include=*.ts --include=*.html` — fix every remaining reference (specs included) by porting expectations to the new shape.
+
+- `tile-properties.component.html`: delete Collision/Solid/Layer/Event Script blocks (lines ~49–92), add single Blocking checkbox mirroring the old Collision markup (`formControlName="blocking"`, label "Blocking").
+- Grep sweep: `grep -rn "eventScript\|\blayer\b\|\.collision\|\.solid" src/ --include=*.ts --include=*.html` — fix every remaining reference (specs included) by porting expectations to the new shape.
 
 - [ ] **Step 6: Verify** — `devbox run npm run test` all PASS (update any old assertions about removed fields).
 - [ ] **Step 7: Format + commit**
@@ -239,11 +247,13 @@ git commit -m "feature-11-tile-screen-rework: merge collision/solid into blockin
 ### Task 3: Pixel data utilities extraction
 
 **Files:**
+
 - Create: `src/app/shared/utils/pixel-data.ts`
 - Create: `src/app/shared/utils/pixel-data.spec.ts`
 - Modify: `src/app/features/sprite-editor/services/sprite.service.ts` (delegate)
 
 **Interfaces:**
+
 - Produces: `encodePixelData(indices, palette): string`, `decodePixelData(dataUri, palette, w, h): Promise<number[][]>`, `blankIndices(w, h): number[][]`, `cropOrPadIndices(indices, newW, newH): number[][]`
 
 - [ ] **Step 1: Failing tests for NEW helpers** (encode/decode move with their existing sprite.service.spec cases — cut those two describe blocks from `sprite.service.spec.ts` into the new spec file unchanged, importing functions instead of service):
@@ -328,10 +338,12 @@ export function cropOrPadIndices(
 ### Task 4: rk-searchable-select shared component
 
 **Files:**
+
 - Create: `src/app/shared/components/searchable-select/searchable-select.component.{ts,html,scss}`
 - Test: `searchable-select.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: selector `rk-searchable-select`; inputs `options: string[]` (required), `value: string | null`, `placeholder: string` (default `'Select…'`), `class: string`; output `valueChange: string`
 
@@ -344,14 +356,24 @@ import { SearchableSelectComponent } from './searchable-select.component';
 
 describe('SearchableSelectComponent', () => {
   async function setup(opts: Partial<{ options: string[]; value: string | null }> = {}) {
-    await TestBed.configureTestingModule({ imports: [SearchableSelectComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [SearchableSelectComponent],
+    }).compileComponents();
     const f = fixture(CreateHost);
   }
   // Use a host component pattern:
-  it('renders all options when query is empty', () => { /* host with options ['walk','talk'] → list shows both */ });
-  it('filters case-insensitively', () => { /* type 'TA' → only 'talk' */ });
-  it('emits valueChange on option click and closes list', () => { /* click 'talk' → emitted 'talk', list hidden */ });
-  it('Escape closes the list', () => { /* dispatch keydown.escape on input → open signal false */ });
+  it('renders all options when query is empty', () => {
+    /* host with options ['walk','talk'] → list shows both */
+  });
+  it('filters case-insensitively', () => {
+    /* type 'TA' → only 'talk' */
+  });
+  it('emits valueChange on option click and closes list', () => {
+    /* click 'talk' → emitted 'talk', list hidden */
+  });
+  it('Escape closes the list', () => {
+    /* dispatch keydown.escape on input → open signal false */
+  });
 });
 ```
 
@@ -443,25 +465,25 @@ Template (`searchable-select.component.html`):
     aria-label="Action"
   />
   @if (open()) {
-    <ul
-      role="listbox"
-      class="tw-absolute tw-top-full tw-z-10 tw-mt-1 tw-max-h-48 tw-w-full tw-overflow-auto tw-rounded-md tw-border tw-border-border tw-bg-background tw-shadow-md"
-    >
-      @for (option of filtered(); track option) {
-        <li>
-          <button
-            type="button"
-            role="option"
-            (click)="select(option)"
-            class="tw-w-full tw-text-left tw-px-3 tw-py-1.5 tw-text-sm hover:tw-bg-muted"
-          >
-            {{ option }}
-          </button>
-        </li>
-      } @empty {
-        <li class="tw-px-3 tw-py-1.5 tw-text-sm tw-text-muted-foreground">No match</li>
-      }
-    </ul>
+  <ul
+    role="listbox"
+    class="tw-absolute tw-top-full tw-z-10 tw-mt-1 tw-max-h-48 tw-w-full tw-overflow-auto tw-rounded-md tw-border tw-border-border tw-bg-background tw-shadow-md"
+  >
+    @for (option of filtered(); track option) {
+    <li>
+      <button
+        type="button"
+        role="option"
+        (click)="select(option)"
+        class="tw-w-full tw-text-left tw-px-3 tw-py-1.5 tw-text-sm hover:tw-bg-muted"
+      >
+        {{ option }}
+      </button>
+    </li>
+    } @empty {
+    <li class="tw-px-3 tw-py-1.5 tw-text-sm tw-text-muted-foreground">No match</li>
+    }
+  </ul>
   }
 </div>
 ```
@@ -476,10 +498,12 @@ SCSS: `:host { display: block; }` only.
 ### Task 5: TileSpritesService (frame lifecycle + resize)
 
 **Files:**
+
 - Create: `src/app/features/tile-manager/services/tile-sprites.service.ts`
 - Test: `tile-sprites.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: Task 3 utils; DatabaseService tables
 - Produces:
   - `getTileSprites(tileId): Promise<Sprite[]>` (sorted by id ascending)
@@ -569,11 +593,13 @@ export class TileSpritesService {
 ### Task 6: Tile properties rework (thumbnails, frames, size, actions)
 
 **Files:**
+
 - Rewrite: `src/app/features/tile-manager/tile-properties.component.{ts,html}`
 - Append small additions to: `tile-properties.component.scss`
 - Rewrite: `tile-properties.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: Tasks 1/3/4/5 outputs; ConfirmDialogComponent; NotificationService
 - Produces inputs: `projectTileSize: number` (required), `projectPalette: string[]` (required), `tileSprites: Sprite[]` (required); outputs added: `navigateToSprite: number`, `tilesChanged: void` (save/delete unchanged)
 
@@ -631,6 +657,7 @@ Two dialog instances in template: `framesDialog` (data: title 'Delete Frames', m
 ### Task 7: Tile manager parent wiring
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/tile-manager.component.ts` (+providers `[TileService, TileSpritesService]`)
 - Modify: `tile-manager.component.html` (bind new inputs/outputs on `<rk-tile-properties>`)
 - Test: update `tile-manager.component.spec.ts`
@@ -662,6 +689,7 @@ New in TS: `tileSize = signal(16)` loaded with projectId via ProjectService.getB
 ### Task 8: Sprite editor focus mode
 
 **Files:**
+
 - Modify: `src/app/features/sprite-editor/sprite-editor.routes.ts` (add child route)
 - Modify: `sprite-editor.component.ts` + `.html` + `.scss`
 - Test: extend `sprite-editor.component.spec.ts`
@@ -708,13 +736,17 @@ HTML: wrap sidebar block (lines 2–42) in `@if (!focusMode()) { … }`; inside 
 
 ```html
 @if (focusMode()) {
-  <div class="tw-flex tw-items-center tw-gap-2">
-    <button type="button" (click)="backToTiles()" class="tw-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1.5 tw-rounded-md hover:tw-bg-muted">
-      <span class="material-symbols" aria-hidden="true">arrow_back</span>
-      Back to tiles
-    </button>
-    <h2 class="tw-font-semibold">{{ selectedSprite()?.name }}</h2>
-  </div>
+<div class="tw-flex tw-items-center tw-gap-2">
+  <button
+    type="button"
+    (click)="backToTiles()"
+    class="tw-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1.5 tw-rounded-md hover:tw-bg-muted"
+  >
+    <span class="material-symbols" aria-hidden="true">arrow_back</span>
+    Back to tiles
+  </button>
+  <h2 class="tw-font-semibold">{{ selectedSprite()?.name }}</h2>
+</div>
 }
 ```
 
@@ -725,6 +757,7 @@ HTML: wrap sidebar block (lines 2–42) in `@if (!focusMode()) { … }`; inside 
 ### Task 9: Real tile previews in scene editor map canvas
 
 **Files:**
+
 - Create: `src/app/features/scene-editor/services/map-tiles.service.ts` (+spec)
 - Modify: `map-canvas.component.ts` (+spec additions), `.ts` render loop lines ~104–107 & getTileColor (~135–139)
 - Modify: `scene-editor.component.ts`/`.html` (load + pass `tileImages`)

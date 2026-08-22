@@ -54,13 +54,16 @@ aucun changement de schéma d'index nécessaire. L'upgrade transforme les enregi
 
 ```ts
 this.version(3).upgrade(async (tx) => {
-  await tx.table('tiles').toCollection().modify((tile) => {
-    tile.properties = {
-      blocking: Boolean(tile.properties?.collision || tile.properties?.solid),
-      interactable: Boolean(tile.properties?.interactable),
-      actionId: undefined,
-    };
-  });
+  await tx
+    .table('tiles')
+    .toCollection()
+    .modify((tile) => {
+      tile.properties = {
+        blocking: Boolean(tile.properties?.collision || tile.properties?.solid),
+        interactable: Boolean(tile.properties?.interactable),
+        actionId: undefined,
+      };
+    });
 });
 ```
 
