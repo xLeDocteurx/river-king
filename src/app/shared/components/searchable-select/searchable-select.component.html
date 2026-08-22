@@ -20,6 +20,7 @@
           <button
             type="button"
             role="option"
+            [attr.aria-selected]="option === value()"
             (click)="select(option)"
             class="tw-w-full tw-text-left tw-px-3 tw-py-1.5 tw-text-sm hover:tw-bg-muted"
           >
