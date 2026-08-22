@@ -47,13 +47,8 @@
     <span class="tw-text-sm tw-font-medium">Properties</span>
 
     <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-      <input type="checkbox" formControlName="collision" name="collision" class="tw-w-4 tw-h-4" />
-      <span>Collision</span>
-    </label>
-
-    <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-      <input type="checkbox" formControlName="solid" name="solid" class="tw-w-4 tw-h-4" />
-      <span>Solid</span>
+      <input type="checkbox" formControlName="blocking" name="blocking" class="tw-w-4 tw-h-4" />
+      <span>Blocking</span>
     </label>
 
     <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
@@ -64,31 +59,6 @@
         class="tw-w-4 tw-h-4"
       />
       <span>Interactable</span>
-    </label>
-
-    <div class="tw-flex tw-flex-col tw-gap-1">
-      <span class="tw-text-sm tw-font-medium">Layer</span>
-      <div class="tw-flex tw-gap-4">
-        <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-          <input type="radio" formControlName="layer" name="layer" value="background" />
-          <span>Background</span>
-        </label>
-        <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-          <input type="radio" formControlName="layer" name="layer" value="foreground" />
-          <span>Foreground</span>
-        </label>
-      </div>
-    </div>
-
-    <label class="tw-flex tw-flex-col tw-gap-1">
-      <span class="tw-text-sm tw-font-medium">Event Script</span>
-      <textarea
-        formControlName="eventScript"
-        name="eventScript"
-        rows="4"
-        class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring tw-font-mono tw-text-sm"
-        placeholder="Optional JavaScript event script"
-      ></textarea>
     </label>
   </div>
 

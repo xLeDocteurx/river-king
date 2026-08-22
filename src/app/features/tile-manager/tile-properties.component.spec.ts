@@ -11,10 +11,8 @@ function createMockTile(overrides: Partial<Tile> = {}): Tile {
     spriteIds: [],
     animationSpeed: 8,
     properties: {
-      collision: false,
-      solid: false,
+      blocking: false,
       interactable: false,
-      layer: 'background',
       ...overrides.properties,
     },
     ...overrides,

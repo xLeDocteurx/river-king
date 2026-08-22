@@ -1,6 +1,43 @@
 import { TestBed } from '@angular/core/testing';
 import 'fake-indexeddb/auto';
-import { DatabaseService } from './database.service';
+import { DatabaseService, migrateTileProperties } from './database.service';
+
+describe('migrateTileProperties', () => {
+  it('merges collision/solid into blocking', () => {
+    expect(migrateTileProperties({ collision: true, solid: false, layer: 'background' })).toEqual({
+      blocking: true,
+      interactable: false,
+      actionId: undefined,
+    });
+  });
+
+  it('keeps interactable, drops eventScript/layer', () => {
+    const result = migrateTileProperties({
+      collision: false,
+      solid: true,
+      interactable: true,
+      eventScript: 'x()',
+      layer: 'foreground',
+    });
+    expect(result).toEqual({ blocking: true, interactable: true, actionId: undefined });
+  });
+
+  it('handles missing properties', () => {
+    expect(migrateTileProperties(undefined)).toEqual({
+      blocking: false,
+      interactable: false,
+      actionId: undefined,
+    });
+  });
+});
+
+describe('DatabaseService v3 migration', () => {
+  it('opens at version 3', () => {
+    TestBed.configureTestingModule({});
+    const db = TestBed.inject(DatabaseService);
+    expect(db.verno).toBe(3);
+  });
+});
 
 describe('DatabaseService', () => {
   let service: DatabaseService;

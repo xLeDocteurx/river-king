@@ -35,11 +35,8 @@ export class TilePropertiesComponent {
     type: ['static' as 'static' | 'animated'],
     animationSpeed: [8],
     properties: this.fb.group({
-      collision: [false],
-      solid: [false],
+      blocking: [false],
       interactable: [false],
-      layer: ['background' as 'background' | 'foreground'],
-      eventScript: [''],
     }),
   });
 
@@ -51,11 +48,8 @@ export class TilePropertiesComponent {
         type: t.type,
         animationSpeed: t.animationSpeed,
         properties: {
-          collision: t.properties.collision,
-          solid: t.properties.solid,
+          blocking: t.properties.blocking,
           interactable: t.properties.interactable,
-          layer: t.properties.layer,
-          eventScript: t.properties.eventScript ?? '',
         },
       });
     });
@@ -72,11 +66,8 @@ export class TilePropertiesComponent {
       type: value.type ?? 'static',
       animationSpeed: value.animationSpeed != null ? Number(value.animationSpeed) : 8,
       properties: {
-        collision: value.properties?.collision ?? false,
-        solid: value.properties?.solid ?? false,
+        blocking: value.properties?.blocking ?? false,
         interactable: value.properties?.interactable ?? false,
-        layer: (value.properties?.layer as 'background' | 'foreground') ?? 'background',
-        eventScript: value.properties?.eventScript || undefined,
       },
     };
     this.save.emit(updated);
