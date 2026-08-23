@@ -97,4 +97,13 @@ export class DashboardComponent {
       console.error('Failed to delete project:', error);
     }
   }
+
+  /**
+   * Builds the pluralized project count label for the status bar.
+   * @param count Number of projects.
+   * @returns Label such as "1 project" or "3 projects".
+   */
+  countLabel(count: number): string {
+    return `${count} ${count === 1 ? 'project' : 'projects'}`;
+  }
 }

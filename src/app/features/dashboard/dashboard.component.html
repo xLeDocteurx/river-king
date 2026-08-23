@@ -1,28 +1,32 @@
 <div class="tw-min-h-screen tw-bg-background tw-text-foreground">
-  <header
-    class="tw-flex tw-items-center tw-justify-between tw-px-6 tw-py-4 tw-border-b tw-border-border"
-  >
+  <header class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-3">
+    <h1
+      data-testid="dashboard-title"
+      class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+    >
+      My Projects
+    </h1>
     <button
       type="button"
       (click)="createDialog.open()"
-      class="tw-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-rounded-md tw-bg-primary tw-text-primary-foreground tw-transition hover:tw-opacity-90"
+      class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-sm tw-bg-primary tw-text-primary-foreground tw-text-xs tw-transition hover:tw-opacity-90"
     >
-      <span class="material-symbols" aria-hidden="true">add</span>
+      <span class="material-symbols tw-text-sm" aria-hidden="true">add</span>
       New Project
     </button>
   </header>
 
-  <main class="tw-p-6">
+  <main class="tw-px-4 tw-pb-4">
     @if (projects().length === 0) {
       <div
         class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-20 tw-text-muted-foreground"
       >
-        <span class="material-symbols tw-text-6xl tw-mb-4">folder_open</span>
-        <p class="tw-text-lg tw-font-semibold">No projects yet</p>
-        <p>Create your first project to get started</p>
+        <span class="material-symbols tw-text-5xl tw-mb-3">folder_open</span>
+        <p class="tw-text-sm tw-font-semibold">No projects yet</p>
+        <p class="tw-text-xs">Create your first project to get started</p>
       </div>
     } @else {
-      <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 tw-gap-4">
+      <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 tw-gap-3">
         @for (project of projects(); track project.id) {
           <rk-project-card
             [project]="project"
@@ -33,6 +37,13 @@
       </div>
     }
   </main>
+
+  <footer
+    class="tw-fixed tw-bottom-0 tw-left-0 tw-right-0 tw-h-[22px] tw-flex tw-items-center tw-justify-between tw-px-3 tw-bg-primary tw-text-primary-foreground tw-text-[11px]"
+  >
+    <span data-testid="status-count">{{ countLabel(projects().length) }}</span>
+    <span>River King Engine</span>
+  </footer>
 
   <rk-project-create-dialog #createDialog />
 
