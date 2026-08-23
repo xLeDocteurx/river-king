@@ -6,69 +6,69 @@
 
 :root {
   /* Surface & content */
-  --color-background: #ffffff;
-  --color-foreground: #0f172a;
+  --color-background: #f3f3f3;
+  --color-foreground: #1f1f1f;
 
   /* Cards */
   --color-card-bg: #ffffff;
-  --color-card-fg: #0f172a;
+  --color-card-fg: #1f1f1f;
 
   /* Brand – Primary (Blue) */
-  --color-primary: #0ea5e9;
+  --color-primary: #005fb8;
   --color-primary-foreground: #ffffff;
 
-  /* Brand – Secondary (Slate) */
-  --color-secondary: #64748b;
+  /* Brand – Secondary */
+  --color-secondary: #616161;
   --color-secondary-foreground: #ffffff;
 
-  /* Brand – Accent (Amber) */
-  --color-accent: #f59e0b;
+  /* Accent highlight */
+  --color-accent: #005fb8;
   --color-accent-foreground: #ffffff;
 
   /* Muted / subtle */
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
+  --color-muted: #e8eaed;
+  --color-muted-foreground: #616161;
 
   /* Destructive / Error */
-  --color-destructive: #ef4444;
+  --color-destructive: #cd3131;
 
   /* Borders & inputs */
-  --color-border: #e2e8f0;
-  --color-input: #e2e8f0;
+  --color-border: #d4d4d4;
+  --color-input: #d4d4d4;
 }
 
 .dark,
 [data-theme='dark'] {
   /* Surface & content */
-  --color-background: #0f172a;
-  --color-foreground: #f8fafc;
+  --color-background: #1e1e1e;
+  --color-foreground: #cccccc;
 
   /* Cards */
-  --color-card-bg: #1e293b;
-  --color-card-fg: #f8fafc;
+  --color-card-bg: #252526;
+  --color-card-fg: #cccccc;
 
-  /* Brand – Primary (lightened for contrast) */
-  --color-primary: #38bdf8;
-  --color-primary-foreground: #0f172a;
+  /* Brand – Primary (Blue) */
+  --color-primary: #0e639c;
+  --color-primary-foreground: #ffffff;
 
   /* Brand – Secondary */
-  --color-secondary: #94a3b8;
-  --color-secondary-foreground: #0f172a;
+  --color-secondary: #8a8a8a;
+  --color-secondary-foreground: #1e1e1e;
 
-  /* Brand – Accent */
-  --color-accent: #fbbf24;
-  --color-accent-foreground: #0f172a;
+  /* Accent highlight */
+  --color-accent: #41a6f6;
+  --color-accent-foreground: #1e1e1e;
 
   /* Muted / subtle */
-  --color-muted: #1e293b;
-  --color-muted-foreground: #94a3b8;
+  --color-muted: #2d2d2d;
+  --color-muted-foreground: #969696;
 
   /* Destructive / Error */
-  --color-destructive: #f87171;
+  --color-destructive: #f14c4c;
 
   /* Borders & inputs */
-  --color-border: #334155;
-  --color-input: #334155;
+  --color-border: #3c3c3c;
+  --color-input: #3c3c3c;
 }
 
 /* Material Symbols variable font setup (modern Google Icons) */
