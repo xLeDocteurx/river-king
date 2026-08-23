@@ -58,7 +58,7 @@ describe('ProjectCardComponent', () => {
     expect(compiled.querySelector('h3')?.textContent?.trim()).toBe('My Awesome Game');
   });
 
-  it('should emit open with project id when open button clicked', async () => {
+  it('should emit open with project id when the card body is clicked', async () => {
     const fixture = TestBed.createComponent(ProjectCardComponent);
     const project = createMockProject({ id: 'project-42' });
     fixture.componentRef.setInput('project', project);
@@ -71,11 +71,47 @@ describe('ProjectCardComponent', () => {
     });
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const openButton = compiled.querySelector('button[title="Open"]');
-    expect(openButton).toBeTruthy();
-    openButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const card = compiled.querySelector<HTMLElement>('[data-testid="project-card"]');
+    expect(card).toBeTruthy();
+    card!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(emittedId).toBe('project-42');
+  });
+
+  it('should emit open on Enter key press for keyboard accessibility', async () => {
+    const fixture = TestBed.createComponent(ProjectCardComponent);
+    fixture.componentRef.setInput('project', createMockProject({ id: 'project-7' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    let emittedId: string | undefined;
+    fixture.componentInstance.open.subscribe((id) => {
+      emittedId = id;
+    });
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const card = compiled.querySelector<HTMLElement>('[data-testid="project-card"]');
+    card!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(emittedId).toBe('project-7');
+  });
+
+  it('should show tile size and map dimensions in the meta line', async () => {
+    const fixture = TestBed.createComponent(ProjectCardComponent);
+    const updatedAt = new Date(2026, 0, 15).getTime();
+    fixture.componentRef.setInput(
+      'project',
+      createMockProject({ updatedAt, tileSize: 16, mapWidth: 40, mapHeight: 30 }),
+    );
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const meta = compiled.querySelector<HTMLElement>('[data-testid="card-meta"]');
+    const expectedDate = new Date(updatedAt).toLocaleDateString();
+    expect(meta!.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      `Updated ${expectedDate} · Tile 16px · 40×30`,
+    );
   });
 
   it('should emit delete with project id when delete button clicked', async () => {
@@ -90,12 +126,18 @@ describe('ProjectCardComponent', () => {
       emittedId = id;
     });
 
+    let openEmitted = false;
+    fixture.componentInstance.open.subscribe(() => {
+      openEmitted = true;
+    });
+
     const compiled = fixture.nativeElement as HTMLElement;
     const deleteButton = compiled.querySelector('button[title="Delete"]');
     expect(deleteButton).toBeTruthy();
     deleteButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(emittedId).toBe('project-99');
+    expect(openEmitted).toBe(false);
   });
 
   it('should display palette colors', async () => {
@@ -115,7 +157,7 @@ describe('ProjectCardComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const paletteContainer = compiled.querySelector('.tw-mt-3');
+    const paletteContainer = compiled.querySelector('[data-testid="palette-row"]');
     expect(paletteContainer).toBeTruthy();
     const colorDivs = paletteContainer!.querySelectorAll('div');
     expect(colorDivs.length).toBe(8);

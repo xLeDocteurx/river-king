@@ -2,7 +2,7 @@ import { Component, input, output, ChangeDetectionStrategy } from '@angular/core
 import type { Project } from '../../shared/models/project.model';
 
 /**
- * Displays a single project card with metadata, palette preview, and open/delete actions.
+ * Displays a single project as a clickable editor-style card: name, meta line, palette preview, and a hover delete action.
  */
 @Component({
   selector: 'rk-project-card',
@@ -28,5 +28,21 @@ export class ProjectCardComponent {
    */
   formatDate(timestamp: number): string {
     return new Date(timestamp).toLocaleDateString();
+  }
+
+  /**
+   * Activates the card's primary action: emits the open output with the project id.
+   */
+  activate(): void {
+    this.open.emit(this.project().id);
+  }
+
+  /**
+   * Handles a delete click without triggering the card's open action.
+   * @param event DOM click event, stopped so it does not bubble to the card root.
+   */
+  onDelete(event: Event): void {
+    event.stopPropagation();
+    this.delete.emit(this.project().id);
   }
 }
