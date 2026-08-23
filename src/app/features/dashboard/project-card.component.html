@@ -12,7 +12,9 @@
     <button
       type="button"
       (click)="onDelete($event)"
+      (keydown)="$event.stopPropagation()"
       title="Delete"
+      aria-label="Delete project"
       class="tw-p-1 tw-rounded-sm tw-opacity-0 group-hover:tw-opacity-100 focus-visible:tw-opacity-100 tw-text-destructive hover:tw-bg-destructive/10 tw-transition"
     >
       <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>

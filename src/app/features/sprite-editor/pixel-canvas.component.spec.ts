@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { vi, type MockedFunction } from 'vitest';
+import { vi } from 'vitest';
 import { PixelCanvasComponent } from './pixel-canvas.component';
 
 function createMockCanvasContext() {
@@ -30,13 +30,12 @@ describe('PixelCanvasComponent', () => {
 
   beforeEach(async () => {
     mockCtx = createMockCanvasContext();
-    const originalGetContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string) => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation((contextId: string) => {
       if (contextId === '2d') {
         return mockCtx as unknown as CanvasRenderingContext2D;
       }
-      return originalGetContext.call(this, contextId);
-    }) as MockedFunction<HTMLCanvasElement['getContext']>;
+      return null;
+    });
 
     await TestBed.configureTestingModule({
       imports: [PixelCanvasComponent],

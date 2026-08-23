@@ -96,6 +96,45 @@ describe('ProjectCardComponent', () => {
     expect(emittedId).toBe('project-7');
   });
 
+  it('should emit open on Space key press for keyboard accessibility', async () => {
+    const fixture = TestBed.createComponent(ProjectCardComponent);
+    fixture.componentRef.setInput('project', createMockProject({ id: 'project-8' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    let emittedId: string | undefined;
+    fixture.componentInstance.open.subscribe((id) => {
+      emittedId = id;
+    });
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const card = compiled.querySelector<HTMLElement>('[data-testid="project-card"]');
+    card!.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+
+    expect(emittedId).toBe('project-8');
+  });
+
+  it('should not emit open when keyboard events bubble from the delete button and should label it accessibly', async () => {
+    const fixture = TestBed.createComponent(ProjectCardComponent);
+    fixture.componentRef.setInput('project', createMockProject({ id: 'project-9' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    let openEmitted = false;
+    fixture.componentInstance.open.subscribe(() => {
+      openEmitted = true;
+    });
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const deleteButton = compiled.querySelector<HTMLButtonElement>('button[title="Delete"]');
+    expect(deleteButton).toBeTruthy();
+    expect(deleteButton!.getAttribute('aria-label')).toBe('Delete project');
+
+    deleteButton!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(openEmitted).toBe(false);
+  });
+
   it('should show tile size and map dimensions in the meta line', async () => {
     const fixture = TestBed.createComponent(ProjectCardComponent);
     const updatedAt = new Date(2026, 0, 15).getTime();
