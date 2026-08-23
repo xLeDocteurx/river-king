@@ -1,0 +1,33 @@
+<rk-dialog #dialog>
+  <div class="tw-p-6">
+    <h2 class="tw-text-xl tw-font-bold tw-mb-4">New Project</h2>
+    <form (submit)="createProject($event)" class="tw-flex tw-flex-col tw-gap-4">
+      <label class="tw-flex tw-flex-col tw-gap-1">
+        <span class="tw-text-sm tw-font-medium">Name</span>
+        <input
+          type="text"
+          [value]="projectName()"
+          (input)="projectName.set($any($event.target).value)"
+          placeholder="My Awesome Game"
+          class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+          required
+        />
+      </label>
+      <div class="tw-flex tw-justify-end tw-gap-2">
+        <button
+          type="button"
+          (click)="cancel()"
+          class="tw-px-4 tw-py-2 tw-rounded-md tw-border tw-border-border tw-bg-background tw-text-foreground hover:tw-bg-muted"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="tw-px-4 tw-py-2 tw-rounded-md tw-bg-primary tw-text-primary-foreground hover:tw-opacity-90"
+        >
+          Create
+        </button>
+      </div>
+    </form>
+  </div>
+</rk-dialog>

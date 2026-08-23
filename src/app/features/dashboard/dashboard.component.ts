@@ -10,18 +10,19 @@ import { Router } from '@angular/router';
 import { ProjectService } from './services/project.service';
 import type { Project } from '../../shared/models/project.model';
 import { ProjectCardComponent } from './project-card.component';
+import { ProjectCreateDialogComponent } from './project-create-dialog.component';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 /**
- * Presents the dashboard with a list of projects, creation form, and deletion confirmation.
+ * Presents the dashboard with a list of projects, creation dialog, and deletion confirmation.
  */
 @Component({
   selector: 'rk-dashboard',
   standalone: true,
-  imports: [ProjectCardComponent, ConfirmDialogComponent],
+  imports: [ProjectCardComponent, ProjectCreateDialogComponent, ConfirmDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -33,14 +34,8 @@ export class DashboardComponent {
   /** Signal holding the list of loaded projects. */
   projects = signal<Project[]>([]);
 
-  /** Signal controlling visibility of the create-project modal. */
-  showCreateForm = signal(false);
-
   /** Signal holding the ID of the project currently marked for deletion, or null. */
   projectToDelete = signal<string | null>(null);
-
-  /** Signal holding the name entered in the create-project form. */
-  projectName = signal('');
 
   /** Static data configuration for the delete confirmation dialog. */
   readonly deleteDialogData: ConfirmDialogData = {
@@ -70,49 +65,6 @@ export class DashboardComponent {
       this.projects.set(projects);
     } catch (error) {
       console.error('Failed to load projects:', error);
-    }
-  }
-
-  /**
-   * Handles create form submission. Creates a project and navigates to it.
-   * @param event Form submit event.
-   */
-  async createProject(event: Event): Promise<void> {
-    event.preventDefault();
-    const name = this.projectName().trim();
-    if (!name) return;
-
-    try {
-      const project = await this.projectService.create({
-        name,
-        palette: [
-          '#1a1c2c',
-          '#5d275d',
-          '#b13e53',
-          '#ef7d57',
-          '#ffcd75',
-          '#a7f070',
-          '#38b764',
-          '#257179',
-          '#29366f',
-          '#3b5dc9',
-          '#41a6f6',
-          '#73eff7',
-          '#f4f4f4',
-          '#94b0c2',
-          '#566c86',
-          '#333c57',
-        ],
-        tileSize: 16,
-        mapWidth: 40,
-        mapHeight: 30,
-      });
-      this.showCreateForm.set(false);
-      this.projectName.set('');
-      this.loadProjects();
-      this.router.navigate(['/project', project.id]);
-    } catch (error) {
-      console.error('Failed to create project:', error);
     }
   }
 

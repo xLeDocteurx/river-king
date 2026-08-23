@@ -23,5 +23,4 @@ export class TilePaletteComponent {
   tileImages = input<Record<number, string>>({});
   /** Emitted when a tile is selected. */
   tileSelect = output<number>();
-
 }
