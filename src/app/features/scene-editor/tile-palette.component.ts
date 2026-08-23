@@ -24,15 +24,4 @@ export class TilePaletteComponent {
   /** Emitted when a tile is selected. */
   tileSelect = output<number>();
 
-  /**
-   * Returns a color hex value for a given tile id.
-   * Cycles through the project palette.
-   * @param tileId The tile id to get a color for.
-   * @returns A CSS hex color string.
-   */
-  getTileColor(tileId: number): string {
-    const colors = this.palette();
-    if (colors.length === 0) return '#94b0c2';
-    return colors[tileId % colors.length];
-  }
 }

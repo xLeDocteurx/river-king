@@ -1,4 +1,4 @@
-<div class="tw-flex tw-flex-col tw-h-full tw-bg-card tw-border-l tw-border-border tw-p-4">
+<div class="tw-flex tw-flex-col tw-h-full tw-bg-card-bg tw-border-l tw-border-border tw-p-4">
   <h3 class="tw-font-semibold tw-text-foreground tw-mb-3">Tiles</h3>
   @if (tiles().length === 0) {
     <p class="tw-text-sm tw-text-muted-foreground">No tiles in this project.</p>
@@ -10,7 +10,6 @@
           (click)="tileSelect.emit(tile.id)"
           [class.tw-ring-2]="selectedTileId() === tile.id"
           class="tw-w-10 tw-h-10 tw-rounded-md tw-border tw-border-border tw-transition hover:tw-border-primary tw-overflow-hidden"
-          [style.background-color]="getTileColor(tile.id)"
           [title]="tile.name"
         >
           @if (tileImages()[tile.id]) {
