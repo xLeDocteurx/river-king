@@ -56,7 +56,7 @@ features/sprite-editor/
 ├── sprite-editor.component.{ts,html,scss,spec.ts}   # shell stays at root
 ├── canvas/pixel-canvas.component.*                  # example naming
 ├── palette/palette-manager.component.*
-└── list/sprite-list.component.*
+└── tools/drawing-tools.component.*
 
 features/tile-manager/
 ├── tile-manager.routes.ts
@@ -82,7 +82,7 @@ Flush guarantees: pending save flushes on `ngOnDestroy`, on sprite switch (`sele
 
 ### D5 — Sprite list grouped by parent tile
 
-`SpriteListComponent` receives `sprites` (project-wide, as today) plus a `tiles` input; a computed groups sprites by `tileId`, ordered by tile name (`localeCompare`), each group's rows sorted by sprite name. Header row reuses the scene-list folder-header recipe (`tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-xs tw-font-semibold tw-text-muted-foreground tw-uppercase` + material-symbols `folder`). Row click selects the sprite through the existing output; selection highlight unchanged. No drag & drop, no manual CRUD (D4).
+The sprite list markup stays where it is today (inline in the sprite editor shell). A computed groups `sprites()` by `tileId`, ordered by parent tile name (`localeCompare`), each group's rows sorted by sprite name; tiles for name lookup arrive via the project-wide `TileService.getTiles(projectId)`. Header rows reuse the scene-list folder-header recipe (`tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-xs tw-font-semibold tw-text-muted-foreground tw-uppercase` + material-symbols `folder`). Row click selects through the existing handler; selection highlight unchanged. No drag & drop, no manual CRUD buttons (D4).
 
 ### D6 — Palette panel width
 
