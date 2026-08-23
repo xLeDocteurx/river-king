@@ -61,6 +61,44 @@ describe('PixelCanvasComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
+  it('should adapt grid dimensions and cell scale to a 32x32 sprite', () => {
+    const indices = Array.from({ length: 32 }, () => Array(32).fill(0));
+    setupInputs(indices);
+
+    expect(fixture.componentInstance.gridRows()).toBe(32);
+    expect(fixture.componentInstance.gridCols()).toBe(32);
+    expect(fixture.componentInstance.cellScale()).toBe(8); // floor(256/32)
+
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    expect(canvas.width).toBe(256);
+    expect(canvas.height).toBe(256);
+
+    // Drawing must work beyond the legacy 16x16 bounds: click at x=200/8=25.
+    const spy = vi.fn();
+    fixture.componentInstance.indicesChange.subscribe(spy);
+    const rect = { left: 0, top: 0, width: 256, height: 256 };
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(rect as DOMRect);
+    canvas.dispatchEvent(
+      new MouseEvent('mousedown', { clientX: 200, clientY: 200, bubbles: true }),
+    );
+    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+
+    expect(spy).toHaveBeenCalled();
+    const emitted = spy.mock.calls[0][0] as number[][];
+    expect(emitted[25][25]).toBe(1);
+  });
+
+  it('should clamp the minimum cell scale for very large sprites', () => {
+    const indices = Array.from({ length: 80 }, () => Array(80).fill(0));
+    setupInputs(indices);
+
+    expect(fixture.componentInstance.gridRows()).toBe(80);
+    expect(fixture.componentInstance.cellScale()).toBe(4); // floor(256/80)=3 -> min 4
+
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    expect(canvas.width).toBe(320); // 80 * 4
+  });
+
   it('should emit change with updated palette indices on brush click', () => {
     const indices = Array.from({ length: 16 }, () => Array(16).fill(0));
     setupInputs(indices);

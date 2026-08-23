@@ -1,7 +1,9 @@
 import {
   Component,
+  computed,
   input,
   output,
+  signal,
   viewChild,
   ElementRef,
   ChangeDetectionStrategy,
@@ -12,8 +14,10 @@ import {
 /**
  * Pixel canvas component for drawing and editing sprite pixel data.
  *
- * Renders a 16x16 grid using HTML5 Canvas and supports brush, eraser,
- * and flood-fill tools. Emits updated palette indices on change.
+ * Renders a grid matching the sprite dimensions derived from the
+ * `paletteIndices` input (any width/height), with an adaptive cell scale that
+ * keeps the canvas around 256px. Supports brush, eraser, and flood-fill
+ * tools. Emits updated palette indices on change.
  */
 @Component({
   selector: 'rk-pixel-canvas',
@@ -41,10 +45,22 @@ export class PixelCanvasComponent implements AfterViewInit {
   /** Emits updated palette indices whenever the canvas is modified. */
   indicesChange = output<number[][]>();
 
-  readonly canvasWidth = 256;
-  readonly canvasHeight = 256;
-  readonly scale = 16;
-  readonly spriteSize = 16;
+  /** Number of pixel rows in the current sprite grid (derived from input). */
+  readonly gridRows = signal(1);
+
+  /** Number of pixel columns in the current sprite grid (derived from input). */
+  readonly gridCols = signal(1);
+
+  /** Device pixels per grid cell; adapts to keep the canvas near 256px. */
+  readonly cellScale = computed(() =>
+    Math.max(4, Math.floor(256 / Math.max(this.gridRows(), this.gridCols(), 1))),
+  );
+
+  /** Canvas bitmap width in device pixels. */
+  readonly canvasWidth = computed(() => this.gridCols() * this.cellScale());
+
+  /** Canvas bitmap height in device pixels. */
+  readonly canvasHeight = computed(() => this.gridRows() * this.cellScale());
 
   private isDrawing = false;
   private localPaletteIndices: number[][] = [];
@@ -52,19 +68,27 @@ export class PixelCanvasComponent implements AfterViewInit {
 
   constructor() {
     effect(() => {
-      this.localPaletteIndices = this.paletteIndices().map((row) => [...row]);
+      const indices = this.paletteIndices();
+      this.localPaletteIndices = indices.map((row) => [...row]);
+      this.gridRows.set(Math.max(1, indices.length));
+      this.gridCols.set(Math.max(1, ...indices.map((row) => row.length)));
+      this.syncCanvasSize();
       this.render();
     });
   }
 
   /** Lifecycle hook called after view initialization. Sets up canvas dimensions. */
   ngAfterViewInit() {
+    this.syncCanvasSize();
+    this.render();
+  }
+
+  /** Sizes the canvas bitmap to the current grid dimensions and cell scale. */
+  private syncCanvasSize() {
     const ref = this.canvasRef();
     if (!ref) return;
-    const canvas = ref.nativeElement;
-    canvas.width = this.canvasWidth;
-    canvas.height = this.canvasHeight;
-    this.render();
+    ref.nativeElement.width = this.canvasWidth();
+    ref.nativeElement.height = this.canvasHeight();
   }
 
   /** Renders the pixel grid, background, and pixel data onto the canvas. */
@@ -74,23 +98,29 @@ export class PixelCanvasComponent implements AfterViewInit {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const width = this.canvasWidth();
+    const height = this.canvasHeight();
+    const rows = this.gridRows();
+    const cols = this.gridCols();
+    const scale = this.cellScale();
+
     // Dark checkerboard background
     ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+    ctx.fillRect(0, 0, width, height);
 
     // Draw grid
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
-    for (let x = 0; x <= this.spriteSize; x++) {
+    for (let x = 0; x <= cols; x++) {
       ctx.beginPath();
-      ctx.moveTo(x * this.scale, 0);
-      ctx.lineTo(x * this.scale, this.canvasHeight);
+      ctx.moveTo(x * scale, 0);
+      ctx.lineTo(x * scale, height);
       ctx.stroke();
     }
-    for (let y = 0; y <= this.spriteSize; y++) {
+    for (let y = 0; y <= rows; y++) {
       ctx.beginPath();
-      ctx.moveTo(0, y * this.scale);
-      ctx.lineTo(this.canvasWidth, y * this.scale);
+      ctx.moveTo(0, y * scale);
+      ctx.lineTo(width, y * scale);
       ctx.stroke();
     }
 
@@ -98,14 +128,14 @@ export class PixelCanvasComponent implements AfterViewInit {
     const indices = this.localPaletteIndices;
     if (indices.length === 0) return;
 
-    for (let y = 0; y < this.spriteSize; y++) {
-      for (let x = 0; x < this.spriteSize; x++) {
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
         const idx = indices[y]?.[x] ?? 0;
         if (idx > 0) {
           const color = this.palette()[idx - 1];
           if (color) {
             ctx.fillStyle = color;
-            ctx.fillRect(x * this.scale, y * this.scale, this.scale, this.scale);
+            ctx.fillRect(x * scale, y * scale, scale, scale);
           }
         }
       }
@@ -121,8 +151,9 @@ export class PixelCanvasComponent implements AfterViewInit {
     if (!this.rectCache) {
       return { x: -1, y: -1 };
     }
-    const x = Math.floor((event.clientX - this.rectCache.left) / this.scale);
-    const y = Math.floor((event.clientY - this.rectCache.top) / this.scale);
+    const scale = this.cellScale();
+    const x = Math.floor((event.clientX - this.rectCache.left) / scale);
+    const y = Math.floor((event.clientY - this.rectCache.top) / scale);
     return { x, y };
   }
 
@@ -161,7 +192,7 @@ export class PixelCanvasComponent implements AfterViewInit {
 
   private applyTool(event: MouseEvent) {
     const { x, y } = this.getPixelCoordinates(event);
-    if (x < 0 || x >= this.spriteSize || y < 0 || y >= this.spriteSize) return;
+    if (x < 0 || x >= this.gridCols() || y < 0 || y >= this.gridRows()) return;
 
     const current = this.localPaletteIndices[y][x];
     const tool = this.tool();
@@ -192,7 +223,7 @@ export class PixelCanvasComponent implements AfterViewInit {
 
     while (stack.length > 0) {
       const [x, y] = stack.pop()!;
-      if (x < 0 || x >= this.spriteSize || y < 0 || y >= this.spriteSize) continue;
+      if (x < 0 || x >= this.gridCols() || y < 0 || y >= this.gridRows()) continue;
       if (visited.has(key(x, y))) continue;
       visited.add(key(x, y));
       if (this.localPaletteIndices[y][x] !== targetColor) continue;
