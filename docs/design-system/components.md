@@ -66,8 +66,9 @@ Container:
 tw-group tw-relative tw-p-3 tw-rounded-sm tw-border tw-border-border tw-bg-card-bg tw-cursor-pointer tw-transition hover:tw-border-accent
 ```
 
-Anatomy top-to-bottom: title (`tw-text-sm tw-font-semibold tw-text-foreground`), optional
-destructive icon button absolutely positioned top-right, meta line
+Anatomy top-to-bottom: a header row (`tw-flex tw-items-start tw-justify-between tw-mb-1`)
+holding the title (`tw-text-sm tw-font-semibold tw-text-foreground`) and, on its right, the
+optional destructive icon button; then the meta line
 (`tw-text-[11px] tw-leading-relaxed tw-text-muted-foreground`), then free content rows.
 The whole card is interactive: `role="button"` `tabindex="0"` `(keydown.enter)`
 `(keydown.space)`.
