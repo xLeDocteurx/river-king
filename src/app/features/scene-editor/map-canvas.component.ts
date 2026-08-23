@@ -135,18 +135,19 @@ export class MapCanvasComponent implements AfterViewInit {
   }
 
   /**
-   * Renders the current scene onto the canvas. Each anchor is drawn exactly
-   * once across its full footprint.
+   * Renders the current scene onto the canvas. The canvas is cleared first,
+   * so a null scene leaves it blank instead of showing a deleted scene's
+   * last frame. Each anchor is drawn exactly once across its full footprint.
    */
   render(): void {
     const ctx = this.ctx;
     const canvas = this.canvasRef()?.nativeElement;
     if (!ctx || !canvas) return;
 
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     const scene = this.scene();
     if (!scene) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const cell = this.tileSize();
 

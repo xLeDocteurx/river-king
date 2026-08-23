@@ -29,7 +29,9 @@ import { TileSpritesService } from './services/tile-sprites.service';
  * through a searchable dropdown). Persists frame lifecycle and size changes
  * through {@link TileSpritesService} shared state; navigation to the sprite
  * editor is performed directly via the Router. Only save/delete user
- * submissions are delegated upward.
+ * submissions are delegated upward. Stored tile values are synced into the
+ * form only when the edited tile identity changes, so sprite-array mutations
+ * (frame create/delete/resize) never discard unsaved edits.
  */
 @Component({
   selector: 'rk-tile-properties',
@@ -141,11 +143,20 @@ export class TilePropertiesComponent {
     };
   });
 
+  /** Id of the tile whose stored values were last patched into the form. */
+  private lastPatchedTileId: number | null = null;
+
   constructor() {
-    // Sync local state whenever the tile or its sprites change.
+    // Sync local state only when the edited tile identity changes; replacing
+    // the sprites array for the same tile must not clobber unsaved edits.
     effect(() => {
       const t = this.tile();
-      if (!t) return;
+      if (!t) {
+        this.lastPatchedTileId = null;
+        return;
+      }
+      if (t.id === this.lastPatchedTileId) return;
+      this.lastPatchedTileId = t.id;
       const sprites = this.tileSprites();
       this.form.patchValue({
         name: t.name,

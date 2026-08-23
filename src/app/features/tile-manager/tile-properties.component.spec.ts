@@ -304,6 +304,26 @@ describe('TilePropertiesComponent', () => {
     expect(text).toContain('(action inconnue)');
   });
 
+  it('sprite mutation keeps unsaved name edits in the form', async () => {
+    await setup(makeTile({ name: 'Original' }));
+    const nameInput = fixture.debugElement.query(By.css('input[name="name"]'))
+      .nativeElement as HTMLInputElement;
+    nameInput.value = 'Typed edit';
+    nameInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(nameInput.value).toBe('Typed edit');
+    // Replacing the shared sprites array (frame create/delete/resize) must
+    // not re-patch identity fields from stored values mid-edit.
+    await TestBed.inject(TileSpritesService).markMutated();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r, 50));
+    fixture.detectChanges();
+    const after = fixture.debugElement.query(By.css('input[name="name"]'))
+      .nativeElement as HTMLInputElement;
+    expect(after.value).toBe('Typed edit');
+  });
+
   it('form save emits blocking property; legacy fields gone from DOM', async () => {
     await setup(makeTile());
     const nameInput = fixture.debugElement.query(By.css('input[name="name"]'))
