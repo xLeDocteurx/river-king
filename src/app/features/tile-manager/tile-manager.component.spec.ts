@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
@@ -73,6 +74,30 @@ describe('TileManagerComponent', () => {
     const comp = fixture.componentInstance;
     expect(comp.tileSize()).toBe(32);
     expect(comp.palette()).toEqual(['#ff0000', '#00ff00']);
+  });
+
+  it('creates a first frame and selects the new tile', async () => {
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 50));
+    const comp = fixture.componentInstance;
+    const tileSpritesService = fixture.debugElement.injector.get(TileSpritesService);
+    const tileService = fixture.debugElement.injector.get(TileService);
+    const frameSpy = vi
+      .spyOn(tileSpritesService, 'createBlankFrame')
+      .mockResolvedValue({ id: 99 } as never);
+    const updateSpy = vi.spyOn(tileService, 'updateTile').mockResolvedValue(undefined);
+
+    await comp.createTile();
+
+    expect(frameSpy).toHaveBeenCalledWith(
+      comp.projectId(),
+      expect.any(Number),
+      'frame 1',
+      comp.tileSize(),
+      comp.tileSize(),
+    );
+    expect(updateSpy).toHaveBeenCalledWith(expect.any(Number), { spriteIds: [99] });
+    expect(comp.selectedTileId()).not.toBeNull();
   });
 
   it('loads tile sprites when a tile is selected', async () => {

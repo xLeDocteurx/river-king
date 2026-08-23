@@ -6,8 +6,6 @@ import {
   OnInit,
   ChangeDetectionStrategy,
   computed,
-  viewChild,
-  effect,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -15,10 +13,6 @@ import { SpriteService } from './services/sprite.service';
 import { PixelCanvasComponent } from './pixel-canvas.component';
 import { PaletteManagerComponent } from './palette-manager.component';
 import { DrawingToolsComponent, type DrawingTool } from './drawing-tools.component';
-import {
-  ConfirmDialogComponent,
-  ConfirmDialogData,
-} from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ProjectService } from '../dashboard/services/project.service';
 import { NotificationService } from '../../core/services/notification.service';
 import type { Sprite } from '../../shared/models/sprite.model';
@@ -33,12 +27,7 @@ import type { Sprite } from '../../shared/models/sprite.model';
   selector: 'rk-sprite-editor',
   standalone: true,
   providers: [SpriteService],
-  imports: [
-    PixelCanvasComponent,
-    PaletteManagerComponent,
-    DrawingToolsComponent,
-    ConfirmDialogComponent,
-  ],
+  imports: [PixelCanvasComponent, PaletteManagerComponent, DrawingToolsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sprite-editor.component.html',
   styleUrl: './sprite-editor.component.scss',
@@ -50,9 +39,6 @@ export class SpriteEditorComponent implements OnInit {
   private readonly projectService = inject(ProjectService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
-
-  /** Reference to the confirm dialog component. */
-  private readonly confirmDialogRef = viewChild.required(ConfirmDialogComponent);
 
   /** Reactive signal holding the current project ID. */
   projectId = signal<string>('');
@@ -78,9 +64,6 @@ export class SpriteEditorComponent implements OnInit {
   /** Reactive signal holding the selected drawing tool. */
   selectedTool = signal<DrawingTool>('brush');
 
-  /** Reactive signal tracking which sprite is pending deletion confirmation. */
-  spriteToDelete = signal<number | null>(null);
-
   /** Reactive signal holding the decoded palette indices for the canvas. */
   paletteIndices = signal<number[][] | null>(null);
 
@@ -92,23 +75,6 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Computed signal deriving the selected color index (palette index + 1). */
   readonly selectedColorIndex = computed(() => this.selectedPaletteIndex() + 1);
-
-  /** Static configuration for the delete confirmation dialog. */
-  readonly deleteDialogData: ConfirmDialogData = {
-    title: 'Delete Sprite',
-    message: 'Are you sure you want to delete this sprite? This action cannot be undone.',
-    confirmLabel: 'Delete',
-    cancelLabel: 'Cancel',
-  };
-
-  constructor() {
-    effect(() => {
-      const id = this.spriteToDelete();
-      if (id !== null) {
-        this.confirmDialogRef().open();
-      }
-    });
-  }
 
   /** Initializes component, subscribing to route params to load project data and optional sprite focus. */
   ngOnInit() {
@@ -201,23 +167,6 @@ export class SpriteEditorComponent implements OnInit {
     }
   }
 
-  /** Creates a new sprite for the current project. */
-  async createSprite() {
-    try {
-      const count = this.sprites().length;
-      const sprite = await this.spriteService.createSprite(
-        this.projectId(),
-        `Sprite ${count + 1}`,
-        0,
-      );
-      await this.loadSprites();
-      await this.selectSprite(sprite.id);
-    } catch (e) {
-      this.notification.error('Failed to create sprite');
-      console.error(e);
-    }
-  }
-
   /**
    * Handles canvas changes: echoes pixels locally right away and schedules
    * a single trailing save 250 ms after the last stroke event.
@@ -283,33 +232,5 @@ export class SpriteEditorComponent implements OnInit {
    */
   backToTiles(): void {
     this.router.navigate(['/project', this.projectId(), 'tiles']);
-  }
-
-  /**
-   * Requests deletion confirmation for the specified sprite.
-   * @param spriteId - The ID of the sprite to delete.
-   */
-  requestDelete(spriteId: number) {
-    this.spriteToDelete.set(spriteId);
-  }
-
-  /**
-   * Deletes the specified sprite after confirmation.
-   * @param spriteId - The ID of the sprite to delete.
-   */
-  async deleteSprite(spriteId: number) {
-    try {
-      await this.spriteService.deleteSprite(spriteId);
-      this.spriteToDelete.set(null);
-      if (this.selectedSpriteId() === spriteId) {
-        this.selectedSpriteId.set(null);
-        this.selectedSprite.set(null);
-        this.paletteIndices.set(null);
-      }
-      await this.loadSprites();
-    } catch (e) {
-      this.notification.error('Failed to delete sprite');
-      console.error(e);
-    }
   }
 }

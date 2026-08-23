@@ -119,30 +119,6 @@ describe('SpriteEditorComponent', () => {
     expect(compiled.querySelector('rk-pixel-canvas')).toBeTruthy();
   });
 
-  it('should delete sprite after confirmation', async () => {
-    await createProjectWithPalette();
-    await setupWithProject();
-    const service = TestBed.inject(SpriteService);
-    const sprite = await service.createSprite('test-proj', 'To Delete', 1);
-    await fixture.componentInstance.loadSprites();
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    const deleteButton = compiled.querySelector('button[title="Delete"]') as HTMLButtonElement;
-    expect(deleteButton).toBeTruthy();
-    deleteButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    fixture.detectChanges();
-
-    // Confirm dialog should now be open with spriteToDelete set
-    expect(fixture.componentInstance.spriteToDelete()).toBe(sprite.id);
-
-    await fixture.componentInstance.deleteSprite(sprite.id);
-    fixture.detectChanges();
-
-    const remaining = await service.getSprites('test-proj');
-    expect(remaining.length).toBe(0);
-  });
-
   it('enters focus mode and auto-selects the sprite when a spriteId param is present', async () => {
     await createProjectWithPalette();
     const service = TestBed.inject(SpriteService);

@@ -172,13 +172,26 @@ export class TileManagerComponent implements OnInit {
   }
 
   /**
-   * Creates a new tile with a default name and refreshes the list.
-   * @returns Promise that resolves when the tile is created.
+   * Creates a new tile together with its first blank frame ("frame 1"),
+   * refreshes the list and selects the new tile.
+   * @returns Promise that resolves when the tile is ready.
    */
   async createTile(): Promise<void> {
     try {
-      await this.tileService.createTile(this.projectId(), `Tile ${this.tiles().length + 1}`);
+      const tile = await this.tileService.createTile(
+        this.projectId(),
+        `Tile ${this.tiles().length + 1}`,
+      );
+      const frame = await this.tileSpritesService.createBlankFrame(
+        this.projectId(),
+        tile.id,
+        'frame 1',
+        this.tileSize(),
+        this.tileSize(),
+      );
+      await this.tileService.updateTile(tile.id, { spriteIds: [frame.id] });
       await this.loadTiles();
+      await this.selectTile(tile.id);
     } catch (e) {
       this.notification.error('Failed to create tile');
       console.error(e);
