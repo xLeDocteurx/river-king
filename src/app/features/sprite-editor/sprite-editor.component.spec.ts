@@ -213,4 +213,69 @@ describe('SpriteEditorComponent', () => {
     expect(errorSpy).toHaveBeenCalledWith('Failed to load sprite');
     expect(navigateSpy).not.toHaveBeenCalled();
   });
+
+  /** Seeds two sprites and resolves the SpriteService instance the component uses. */
+  async function seedTwoSprites() {
+    await createProjectWithPalette();
+    await setupWithProject();
+    const spriteService = fixture.debugElement.injector.get(SpriteService);
+    const existingSpriteId = (await spriteService.createSprite('test-proj', 'Existing Sprite', 1))
+      .id;
+    const otherSpriteId = (await spriteService.createSprite('test-proj', 'Other Sprite', 1)).id;
+    return { spriteService, existingSpriteId, otherSpriteId };
+  }
+
+  it('debounces rapid strokes into one updateSprite call', async () => {
+    const { spriteService, existingSpriteId } = await seedTwoSprites();
+    const updateSpy = vi.spyOn(spriteService, 'updateSprite').mockResolvedValue(undefined);
+
+    vi.useFakeTimers();
+    try {
+      await fixture.componentInstance.selectSprite(existingSpriteId);
+      updateSpy.mockClear();
+
+      const stroke = fixture.componentInstance.paletteIndices()!.map((row) => [...row]);
+      stroke[0][0] = 1;
+      await fixture.componentInstance.onCanvasChange(stroke);
+      stroke[0][0] = 2;
+      await fixture.componentInstance.onCanvasChange(stroke);
+
+      expect(updateSpy).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(250);
+      expect(updateSpy).toHaveBeenCalledTimes(1);
+      expect(updateSpy.mock.calls.at(-1)![0]).toBe(existingSpriteId);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('flushes the pending save when the component is destroyed', async () => {
+    const { spriteService, existingSpriteId } = await seedTwoSprites();
+    const updateSpy = vi.spyOn(spriteService, 'updateSprite').mockResolvedValue(undefined);
+    await fixture.componentInstance.selectSprite(existingSpriteId);
+    updateSpy.mockClear();
+
+    const stroke = fixture.componentInstance.paletteIndices()!.map((row) => [...row]);
+    stroke[0][0] = 3;
+    await fixture.componentInstance.onCanvasChange(stroke);
+
+    fixture.destroy();
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('flushes the pending save before switching sprites', async () => {
+    const { spriteService, existingSpriteId, otherSpriteId } = await seedTwoSprites();
+    const updateSpy = vi.spyOn(spriteService, 'updateSprite').mockResolvedValue(undefined);
+    await fixture.componentInstance.selectSprite(existingSpriteId);
+    updateSpy.mockClear();
+
+    const stroke = fixture.componentInstance.paletteIndices()!.map((row) => [...row]);
+    stroke[0][0] = 4;
+    await fixture.componentInstance.onCanvasChange(stroke);
+    await fixture.componentInstance.selectSprite(otherSpriteId);
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(updateSpy.mock.calls.at(-1)![0]).toBe(existingSpriteId);
+  });
 });

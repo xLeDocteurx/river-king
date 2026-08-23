@@ -84,6 +84,12 @@ export class SpriteEditorComponent implements OnInit {
   /** Reactive signal holding the decoded palette indices for the canvas. */
   paletteIndices = signal<number[][] | null>(null);
 
+  /** Handle of the scheduled trailing save timer (null when idle). */
+  private persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Payload waiting to be persisted once drawing pauses. */
+  private pendingSave: { spriteId: number; indices: number[][]; pixelData: string } | null = null;
+
   /** Computed signal deriving the selected color index (palette index + 1). */
   readonly selectedColorIndex = computed(() => this.selectedPaletteIndex() + 1);
 
@@ -106,6 +112,8 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Initializes component, subscribing to route params to load project data and optional sprite focus. */
   ngOnInit() {
+    this.destroyRef.onDestroy(() => void this.flushPersist());
+
     const projectParams =
       this.route.pathFromRoot?.find((r) => r.snapshot.paramMap.has('id'))?.params ??
       this.route.parent?.params;
@@ -169,6 +177,7 @@ export class SpriteEditorComponent implements OnInit {
    */
   async selectSprite(spriteId: number) {
     try {
+      await this.flushPersist();
       this.selectedSpriteId.set(spriteId);
       const sprite = await this.spriteService.getSprite(spriteId);
       this.selectedSprite.set(sprite ?? null);
@@ -210,24 +219,59 @@ export class SpriteEditorComponent implements OnInit {
   }
 
   /**
-   * Handles canvas changes by encoding and saving pixel data.
+   * Handles canvas changes: echoes pixels locally right away and schedules
+   * a single trailing save 250 ms after the last stroke event.
    * @param updatedIndices - The updated 2D array of palette indices.
    */
-  async onCanvasChange(updatedIndices: number[][]) {
+  onCanvasChange(updatedIndices: number[][]) {
+    const sprite = this.selectedSprite();
+    if (!sprite) return;
+
     try {
-      const sprite = this.selectedSprite();
-      if (!sprite) return;
-
       const pixelData = this.spriteService.encodePixelData(updatedIndices, this.projectPalette());
-      await this.spriteService.updateSprite(sprite.id, {
-        paletteIndices: updatedIndices,
-        pixelData,
-      });
-
       this.paletteIndices.set(updatedIndices.map((row) => [...row]));
       this.selectedSprite.update((s) =>
         s ? { ...s, paletteIndices: updatedIndices.map((row) => [...row]), pixelData } : null,
       );
+      this.schedulePersist(sprite.id, updatedIndices, pixelData);
+    } catch (e) {
+      this.notification.error('Failed to save sprite');
+      console.error(e);
+    }
+  }
+
+  /**
+   * Stores the payload and (re)starts the 250 ms trailing timer.
+   * @param spriteId - Sprite being edited.
+   * @param indices - Latest palette indices.
+   * @param pixelData - Encoded pixel payload.
+   */
+  private schedulePersist(spriteId: number, indices: number[][], pixelData: string): void {
+    this.pendingSave = { spriteId, indices, pixelData };
+    if (this.persistTimer !== null) clearTimeout(this.persistTimer);
+    this.persistTimer = setTimeout(() => {
+      this.persistTimer = null;
+      void this.flushPersist();
+    }, 250);
+  }
+
+  /**
+   * Writes the pending payload to IndexedDB immediately (no-op when empty).
+   * Called by the timer, before sprite switches, and on destruction.
+   */
+  private async flushPersist(): Promise<void> {
+    if (this.persistTimer !== null) {
+      clearTimeout(this.persistTimer);
+      this.persistTimer = null;
+    }
+    const payload = this.pendingSave;
+    this.pendingSave = null;
+    if (!payload) return;
+    try {
+      await this.spriteService.updateSprite(payload.spriteId, {
+        paletteIndices: payload.indices,
+        pixelData: payload.pixelData,
+      });
     } catch (e) {
       this.notification.error('Failed to save sprite');
       console.error(e);
