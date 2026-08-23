@@ -14,9 +14,7 @@
 
       <!-- Project navigation (visible only when inside a project) -->
       @if (isProjectRoute()) {
-        <nav
-          class="tw-flex tw-items-stretch tw-self-stretch tw-border-l tw-border-border tw-pl-4"
-        >
+        <nav class="tw-flex tw-items-stretch tw-self-stretch tw-border-l tw-border-border tw-pl-4">
           <a
             [routerLink]="['/project', projectId(), 'scenes']"
             routerLinkActive="tw-text-foreground tw-border-accent"

@@ -27,10 +27,12 @@
 Pure stylesheet swap (config-type change: no unit tests possible). Verified by the suite compiling and staying green.
 
 **Files:**
+
 - Modify: `src/styles/theme.scss` (lines 7–72, both `:root` and `.dark` blocks)
 - Modify: `src/styles.scss`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: token values consumed by every later task (`--color-*` variables behind `tw-*` classes).
 
@@ -180,10 +182,12 @@ git commit -m "redesign: adopt pro-editor theme tokens and global density conven
 ### Task 2: Topbar — brand mark, editor tabs, ghost theme toggle
 
 **Files:**
+
 - Modify: `src/app/app.spec.ts`
 - Modify: `src/app/app.component.html`
 
 **Interfaces:**
+
 - Consumes: tokens from Task 1 (`muted` bar background, `accent` underline/highlight).
 - Produces: nav links expose `aria-current="page"` on the active route (later tasks/tests may rely on it).
 
@@ -245,34 +249,32 @@ Expected: FAIL — `aria-current` never set (routerLinkActive only toggles class
 
       <!-- Project navigation (visible only when inside a project) -->
       @if (isProjectRoute()) {
-        <nav
-          class="tw-flex tw-items-stretch tw-self-stretch tw-border-l tw-border-border tw-pl-4"
+      <nav class="tw-flex tw-items-stretch tw-self-stretch tw-border-l tw-border-border tw-pl-4">
+        <a
+          [routerLink]="['/project', projectId(), 'scenes']"
+          routerLinkActive="tw-text-foreground tw-border-accent"
+          ariaCurrentWhenActive="page"
+          class="tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
         >
-          <a
-            [routerLink]="['/project', projectId(), 'scenes']"
-            routerLinkActive="tw-text-foreground tw-border-accent"
-            ariaCurrentWhenActive="page"
-            class="tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
-          >
-            Scenes
-          </a>
-          <a
-            [routerLink]="['/project', projectId(), 'tiles']"
-            routerLinkActive="tw-text-foreground tw-border-accent"
-            ariaCurrentWhenActive="page"
-            class="tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
-          >
-            Tiles
-          </a>
-          <a
-            [routerLink]="['/project', projectId(), 'sprites']"
-            routerLinkActive="tw-text-foreground tw-border-accent"
-            ariaCurrentWhenActive="page"
-            class="tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
-          >
-            Sprites
-          </a>
-        </nav>
+          Scenes
+        </a>
+        <a
+          [routerLink]="['/project', projectId(), 'tiles']"
+          routerLinkActive="tw-text-foreground tw-border-accent"
+          ariaCurrentWhenActive="page"
+          class="tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
+        >
+          Tiles
+        </a>
+        <a
+          [routerLink]="['/project', projectId(), 'sprites']"
+          routerLinkActive="tw-text-foreground tw-border-accent"
+          ariaCurrentWhenActive="page"
+          class="tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
+        >
+          Sprites
+        </a>
+      </nav>
       }
     </div>
 
@@ -285,11 +287,7 @@ Expected: FAIL — `aria-current` never set (routerLinkActive only toggles class
       class="tw-inline-flex tw-items-center tw-justify-center tw-p-1.5 tw-rounded-sm tw-text-muted-foreground hover:tw-text-foreground hover:tw-bg-card-bg tw-transition"
     >
       <span class="material-symbols tw-text-base" aria-hidden="true">
-        @if (theme.theme() === 'dark') {
-          light_mode
-        } @else {
-          dark_mode
-        }
+        @if (theme.theme() === 'dark') { light_mode } @else { dark_mode }
       </span>
     </button>
   </header>
@@ -323,11 +321,13 @@ git commit -m "redesign: restyle topbar with editor tabs and ghost theme toggle"
 Behavioral change: opening moves from an explicit button to the whole card (click + keyboard). Delete stays a hover-revealed button that must not trigger open.
 
 **Files:**
+
 - Modify: `src/app/features/dashboard/project-card.component.spec.ts`
 - Modify: `src/app/features/dashboard/project-card.component.ts`
 - Modify: `src/app/features/dashboard/project-card.component.html`
 
 **Interfaces:**
+
 - Consumes: `Project` model (`name`, `updatedAt`, `palette[]`, `tileSize`, `mapWidth`, `mapHeight`, `id`).
 - Produces: unchanged outputs `(open)="string"` / `(delete)="string"`; new public methods `activate(): void`, `onDelete(event: Event): void`; root element carries `data-testid="project-card"`, palette row `data-testid="palette-row"`.
 
@@ -445,15 +445,12 @@ Replace `src/app/features/dashboard/project-card.component.html` entirely:
     data-testid="card-meta"
     class="tw-text-[11px] tw-leading-relaxed tw-text-muted-foreground tw-mb-3"
   >
-    Updated {{ formatDate(project().updatedAt) }} · Tile {{ project().tileSize }}px ·
-    {{ project().mapWidth }}×{{ project().mapHeight }}
+    Updated {{ formatDate(project().updatedAt) }} · Tile {{ project().tileSize }}px · {{
+    project().mapWidth }}×{{ project().mapHeight }}
   </p>
   <div data-testid="palette-row" class="tw-flex tw-gap-1">
     @for (color of project().palette.slice(0, 8); track $index) {
-      <div
-        class="tw-w-3 tw-h-3 tw-border tw-border-border/50"
-        [style.background-color]="color"
-      ></div>
+    <div class="tw-w-3 tw-h-3 tw-border tw-border-border/50" [style.background-color]="color"></div>
     }
   </div>
 </div>
@@ -498,11 +495,13 @@ git commit -m "redesign: rebuild project card with full-card interaction and pro
 ### Task 4: Dashboard shell — header label, status bar, dense grid
 
 **Files:**
+
 - Create: `src/app/features/dashboard/dashboard.component.spec.ts`
 - Modify: `src/app/features/dashboard/dashboard.component.ts`
 - Modify: `src/app/features/dashboard/dashboard.component.html`
 
 **Interfaces:**
+
 - Consumes: `ProjectCardComponent` (unchanged API), `ProjectService.getAll()`, `DatabaseService` (test seeding).
 - Produces: public method `countLabel(count: number): string` returning `"1 project"` / `"n projects"`; DOM hooks `[data-testid="status-count"]`, `[data-testid="dashboard-title"]`.
 
@@ -564,11 +563,7 @@ describe('DashboardComponent', () => {
   });
 
   it('should pluralize the project count in the status bar', async () => {
-    await mountWithProjects([
-      makeProject('a'),
-      makeProject('b'),
-      makeProject('c'),
-    ]);
+    await mountWithProjects([makeProject('a'), makeProject('b'), makeProject('c')]);
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('[data-testid="status-count"]')?.textContent?.trim()).toBe(
       '3 projects',
@@ -634,23 +629,23 @@ Rewrite `dashboard.component.html`:
 
   <main class="tw-px-4 tw-pb-4">
     @if (projects().length === 0) {
-      <div
-        class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-20 tw-text-muted-foreground"
-      >
-        <span class="material-symbols tw-text-5xl tw-mb-3">folder_open</span>
-        <p class="tw-text-sm tw-font-semibold">No projects yet</p>
-        <p class="tw-text-xs">Create your first project to get started</p>
-      </div>
+    <div
+      class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-20 tw-text-muted-foreground"
+    >
+      <span class="material-symbols tw-text-5xl tw-mb-3">folder_open</span>
+      <p class="tw-text-sm tw-font-semibold">No projects yet</p>
+      <p class="tw-text-xs">Create your first project to get started</p>
+    </div>
     } @else {
-      <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 tw-gap-3">
-        @for (project of projects(); track project.id) {
-          <rk-project-card
-            [project]="project"
-            (open)="openProject($event)"
-            (delete)="requestDelete($event)"
-          />
-        }
-      </div>
+    <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 tw-gap-3">
+      @for (project of projects(); track project.id) {
+      <rk-project-card
+        [project]="project"
+        (open)="openProject($event)"
+        (delete)="requestDelete($event)"
+      />
+      }
+    </div>
     }
   </main>
 
@@ -691,11 +686,13 @@ git commit -m "redesign: add dashboard header label, dense grid, and status bar"
 The dashed "+ New Project…" affordance appears inside the grid (when projects exist) and as the empty-state CTA; both open the existing create dialog. Dialog inputs/buttons get crisp corners + token borders (visual only, no behavioral tests).
 
 **Files:**
+
 - Modify: `src/app/features/dashboard/dashboard.component.spec.ts`
 - Modify: `src/app/features/dashboard/dashboard.component.html`
 - Modify: `src/app/features/dashboard/project-create-dialog.component.html`
 
 **Interfaces:**
+
 - Consumes: `ProjectCreateDialogComponent.open()` (public, existing).
 - Produces: DOM hook `[data-testid="new-project-dashed"]` (grid variant) and `[data-testid="new-project-empty"]` (empty-state variant).
 
@@ -710,9 +707,8 @@ import { ProjectCreateDialogComponent } from './project-create-dialog.component'
 
 ```typescript
 function createDialogSpy(): ReturnType<typeof vi.fn> {
-  const dialogEl = fixture.debugElement.query(
-    By.directive(ProjectCreateDialogComponent),
-  ).componentInstance as ProjectCreateDialogComponent;
+  const dialogEl = fixture.debugElement.query(By.directive(ProjectCreateDialogComponent))
+    .componentInstance as ProjectCreateDialogComponent;
   return vi.spyOn(dialogEl, 'open');
 }
 

@@ -34,23 +34,23 @@ Every screen already styles itself via `tw-bg-*` / `tw-border-border` classes bo
 
 ### 4.1 Dark theme (`.dark`) — palette B exact
 
-| Token | Current | New | Role |
-|---|---|---|---|
-| `--color-background` | `#0f172a` | `#1e1e1e` | page background |
-| `--color-card-bg` | `#1e293b` | `#252526` | cards, panels |
-| `--color-card-fg` | `#f8fafc` | `#cccccc` | card text |
-| `--color-muted` | `#1e293b` | `#2d2d2d` | bars, elevated surfaces |
-| `--color-muted-foreground` | `#94a3b8` | `#969696` | secondary text |
-| `--color-border` | `#334155` | `#3c3c3c` | 1px borders |
-| `--color-input` | `#334155` | `#3c3c3c` | input borders |
-| `--color-primary` | `#38bdf8` | `#0e639c` | action buttons |
-| `--color-primary-foreground` | `#0f172a` | `#ffffff` | text on primary |
-| `--color-accent` | `#fbbf24` | `#41a6f6` | highlight, focus, hover |
-| `--color-destructive` | `#f87171` | `#f14c4c` | destructive actions |
-| `--color-secondary` | `#94a3b8` | `#8a8a8a` | neutral secondary |
-| `--color-secondary-foreground` | `#0f172a` | `#1e1e1e` | text on secondary |
-| `--color-accent-foreground` | `#0f172a` | `#1e1e1e` | text on accent backgrounds |
-| `--color-foreground` | `#f8fafc` | `#cccccc` | base text |
+| Token                          | Current   | New       | Role                       |
+| ------------------------------ | --------- | --------- | -------------------------- |
+| `--color-background`           | `#0f172a` | `#1e1e1e` | page background            |
+| `--color-card-bg`              | `#1e293b` | `#252526` | cards, panels              |
+| `--color-card-fg`              | `#f8fafc` | `#cccccc` | card text                  |
+| `--color-muted`                | `#1e293b` | `#2d2d2d` | bars, elevated surfaces    |
+| `--color-muted-foreground`     | `#94a3b8` | `#969696` | secondary text             |
+| `--color-border`               | `#334155` | `#3c3c3c` | 1px borders                |
+| `--color-input`                | `#334155` | `#3c3c3c` | input borders              |
+| `--color-primary`              | `#38bdf8` | `#0e639c` | action buttons             |
+| `--color-primary-foreground`   | `#0f172a` | `#ffffff` | text on primary            |
+| `--color-accent`               | `#fbbf24` | `#41a6f6` | highlight, focus, hover    |
+| `--color-destructive`          | `#f87171` | `#f14c4c` | destructive actions        |
+| `--color-secondary`            | `#94a3b8` | `#8a8a8a` | neutral secondary          |
+| `--color-secondary-foreground` | `#0f172a` | `#1e1e1e` | text on secondary          |
+| `--color-accent-foreground`    | `#0f172a` | `#1e1e1e` | text on accent backgrounds |
+| `--color-foreground`           | `#f8fafc` | `#cccccc` | base text                  |
 
 Accepted consequences:
 
@@ -59,23 +59,23 @@ Accepted consequences:
 
 ### 4.2 Light theme (`:root`) — derived variant ("VS Code Light" spirit)
 
-| Token | New |
-|---|---|
-| `--color-background` | `#f3f3f3` |
-| `--color-card-bg` | `#ffffff` |
-| `--color-card-fg` | `#1f1f1f` |
-| `--color-muted` | `#e8eaed` |
-| `--color-muted-foreground` | `#616161` |
-| `--color-border` | `#d4d4d4` |
-| `--color-input` | `#d4d4d4` |
-| `--color-primary` | `#005fb8` |
-| `--color-primary-foreground` | `#ffffff` |
-| `--color-accent` | `#005fb8` |
-| `--color-accent-foreground` | `#ffffff` |
-| `--color-destructive` | `#cd3131` |
-| `--color-secondary` | `#616161` |
+| Token                          | New       |
+| ------------------------------ | --------- |
+| `--color-background`           | `#f3f3f3` |
+| `--color-card-bg`              | `#ffffff` |
+| `--color-card-fg`              | `#1f1f1f` |
+| `--color-muted`                | `#e8eaed` |
+| `--color-muted-foreground`     | `#616161` |
+| `--color-border`               | `#d4d4d4` |
+| `--color-input`                | `#d4d4d4` |
+| `--color-primary`              | `#005fb8` |
+| `--color-primary-foreground`   | `#ffffff` |
+| `--color-accent`               | `#005fb8` |
+| `--color-accent-foreground`    | `#ffffff` |
+| `--color-destructive`          | `#cd3131` |
+| `--color-secondary`            | `#616161` |
 | `--color-secondary-foreground` | `#ffffff` |
-| `--color-foreground` | `#1f1f1f` |
+| `--color-foreground`           | `#1f1f1f` |
 
 In light mode `accent` intentionally equals `primary` (same as VS Code Light); they stay distinct in dark mode (`#0e639c` vs `#41a6f6`).
 
