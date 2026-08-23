@@ -8,10 +8,14 @@ export interface Tile {
   properties: TileProperties;
 }
 
+/**
+ * Runtime properties of a tile.
+ */
 export interface TileProperties {
-  collision: boolean;
-  solid: boolean;
+  /** Blocks character movement across the tile. */
+  blocking: boolean;
+  /** Whether the tile triggers an action on interaction. */
   interactable: boolean;
-  eventScript?: string;
-  layer: 'background' | 'foreground';
+  /** Key of the action in GAME_ACTIONS; undefined when not interactable. */
+  actionId?: string;
 }

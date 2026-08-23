@@ -9,10 +9,18 @@
           type="button"
           (click)="tileSelect.emit(tile.id)"
           [class.tw-ring-2]="selectedTileId() === tile.id"
-          class="tw-w-10 tw-h-10 tw-rounded-md tw-border tw-border-border tw-transition hover:tw-border-primary"
+          class="tw-w-10 tw-h-10 tw-rounded-md tw-border tw-border-border tw-transition hover:tw-border-primary tw-overflow-hidden"
           [style.background-color]="getTileColor(tile.id)"
           [title]="tile.name"
-        ></button>
+        >
+          @if (tileImages()[tile.id]) {
+            <img
+              [src]="tileImages()[tile.id]"
+              alt=""
+              class="tw-w-full tw-h-full tw-object-cover tw-pointer-events-none"
+            />
+          }
+        </button>
       }
     </div>
   }

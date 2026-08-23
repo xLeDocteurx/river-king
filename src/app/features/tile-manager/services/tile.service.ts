@@ -18,10 +18,8 @@ export class TileService {
       spriteIds: [],
       animationSpeed: 8,
       properties: {
-        collision: false,
-        solid: false,
+        blocking: false,
         interactable: false,
-        layer: 'background',
       },
     };
     const id = await this.db.tiles.add(tile as Tile);

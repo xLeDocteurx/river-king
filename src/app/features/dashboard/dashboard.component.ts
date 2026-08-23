@@ -6,7 +6,7 @@ import {
   viewChild,
   effect,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { ProjectService } from './services/project.service';
 import type { Project } from '../../shared/models/project.model';
 import { ProjectCardComponent } from './project-card.component';
@@ -21,7 +21,7 @@ import {
 @Component({
   selector: 'rk-dashboard',
   standalone: true,
-  imports: [ProjectCardComponent, ConfirmDialogComponent, RouterLink],
+  imports: [ProjectCardComponent, ConfirmDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',

@@ -129,6 +129,16 @@ src/app/
 
 ---
 
+## Component architecture: services over outputs
+
+- **A component's TS code serves its UI needs only:** rendering state, view helpers, local interaction handling. Anything application-level (navigation, persistence, business rules, shared state changes) belongs in an injected service.
+- **Minimize outputs.** Never chain child → parent emissions to make the parent perform app actions (child emits `changed`, parent reloads data and navigates). Inject the relevant service in the component that owns the action and call it directly.
+- **Inputs carry display data only:** models, primitives, flags. No callbacks, no app-workflow triggers through the template.
+- Feature-specific services live in `features/<feature>/services/` and are provided by the feature's root component; cross-feature or global services live in `core/services/`.
+- Reference implementations: `TileManagerComponent` (loads sprites/palette/tile size via `TileSpritesService` + `ProjectService`, navigates via `Router`), `MapTilesService` (supplies real tile images to `MapCanvasComponent`).
+
+---
+
 ## Documentation & JSDoc
 
 - **Every public method** must have a JSDoc block with `@param`, `@returns`, and `@throws` where applicable.
@@ -153,6 +163,7 @@ src/app/
 - Tests are `*.spec.ts` alongside the code under test.
 - `tsconfig.spec.json` includes `types: ["vitest/globals"]`.
 - Use `TestBed.configureTestingModule({ imports: [ComponentUnderTest] })` for standalone component setup.
+- Async DB work (Dexie/Promises inside event handlers) is **not** tracked by `fixture.whenStable()`. After triggering such handlers, flush manually before asserting: `await new Promise(r => setTimeout(r, 50));`.
 - If a component test fails with unknown errors, confirm `index.html` has `<rk-root></rk-root>` and that `app.ts` has `selector: 'rk-root'`.
 
 ---
@@ -230,3 +241,8 @@ confirmDialog().open(); // Uses native <dialog> element under the hood
 - `features/` should expose lazy-loaded routes (e.g., `loadChildren`) and keep internal services/components private to the feature.
 - **All singleton services** (DatabaseService, ThemeService, NotificationService, SessionService) must live in `core/services/`, never in `shared/services/`.
 - **Never inline templates** in `@Component({ template: \`...\` })`. Always use `templateUrl`and`styleUrl` pointing to separate files.
+- In environments where bare `npm` resolves to Windows binaries over UNC paths (WSL shares), always run commands through `devbox run ...`; plain `npm run test` may fail with `'ng' is not recognized`.
+
+## Collaboration preferences
+
+- The user likes to be **challenged** on their proposals: question assumptions, point out design risks, and suggest alternatives instead of implementing requests blindly.

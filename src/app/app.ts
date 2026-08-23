@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterOutlet, RouterLink, NavigationEnd } from '@angular/router';
+import { Router, RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ThemeService } from './core/services/theme.service';
 import { ToastComponent } from './shared/components/toast/toast.component';
@@ -11,7 +11,7 @@ import { ToastComponent } from './shared/components/toast/toast.component';
  * and dark-mode toggle. Hosts the router outlet below.
  */
 @Component({
-  imports: [RouterOutlet, RouterLink, ToastComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastComponent],
   selector: 'rk-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',

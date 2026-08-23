@@ -47,8 +47,12 @@ export class ConfirmDialogComponent {
   /** Emitted when the user presses the cancel button or closes the dialog. */
   cancelled = output<void>();
 
+  /** Tracks whether the confirm button was just clicked so we don't emit cancelled after a confirmation. */
+  private confirmedClicked = false;
+
   /** Opens the confirmation dialog as a modal. */
   open(): void {
+    this.confirmedClicked = false;
     this.dialog().open();
   }
 
@@ -59,18 +63,25 @@ export class ConfirmDialogComponent {
 
   /** @internal Called when the dialog emits its native close event. */
   onDialogClosed(): void {
-    this.cancelled.emit();
+    if (!this.confirmedClicked) {
+      this.cancelled.emit();
+    }
+    this.confirmedClicked = false;
   }
 
   /** @internal Called when the user explicitly confirms. */
   onConfirm(): void {
+    this.confirmedClicked = true;
     this.close();
     this.confirmed.emit();
   }
 
-  /** @internal Called when the user explicitly cancels. */
+  /**
+   * @internal Called when the user explicitly cancels.
+   * Only closes: the native close event triggers {@link onDialogClosed},
+   * which emits `cancelled` exactly once.
+   */
   onCancel(): void {
     this.close();
-    this.cancelled.emit();
   }
 }

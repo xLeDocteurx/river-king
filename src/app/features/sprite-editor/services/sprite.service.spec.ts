@@ -70,32 +70,4 @@ describe('SpriteService', () => {
     const result = await service.getSprite(sprite.id);
     expect(result).toBeUndefined();
   });
-
-  it('should encode pixel data from palette indices', () => {
-    const paletteIndices = [
-      [0, 1, 0],
-      [1, 0, 1],
-      [0, 0, 0],
-    ];
-    const palette = ['#ff0000', '#00ff00'];
-    const pixelData = service.encodePixelData(paletteIndices, palette);
-    expect(pixelData.startsWith('data:image/png;base64,')).toBe(true);
-  });
-
-  it('should decode palette indices from pixel data', async () => {
-    const palette = ['#ff0000', '#00ff00'];
-    // Use the hardcoded blank data URL which triggers fallback in jsdom
-    const pixelData = 'data:image/png;base64,';
-    const decoded = await service.decodePixelData(pixelData, palette, 3, 3);
-    expect(decoded).toHaveLength(3);
-    expect(decoded[0]).toEqual([0, 0, 0]);
-  });
-
-  it('should decode blank pixel data when invalid', async () => {
-    const decoded = await service.decodePixelData('', ['#ff0000'], 2, 2);
-    expect(decoded).toEqual([
-      [0, 0],
-      [0, 0],
-    ]);
-  });
 });

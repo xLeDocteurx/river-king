@@ -10,6 +10,8 @@
     @if (selectedTile()) {
       <rk-tile-properties
         [tile]="selectedTile()!"
+        [projectTileSize]="tileSize()"
+        [projectPalette]="palette()"
         (save)="saveTile($event)"
         (delete)="requestDelete($event)"
       />

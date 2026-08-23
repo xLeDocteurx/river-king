@@ -2,9 +2,12 @@
   <rk-scene-list
     class="tw-w-64 tw-shrink-0"
     [scenes]="scenes()"
+    [folders]="folders()"
     [selectedSceneId]="selectedSceneId()"
     (sceneSelect)="selectScene($event)"
     (createScene)="onCreateScene()"
+    (sceneDelete)="onDeleteSceneRequest($event)"
+    (createFolder)="onCreateFolder($event)"
     (sceneFolderChange)="onSceneFolderChange($event)"
   />
   <div class="tw-flex-1 tw-relative tw-overflow-hidden">
@@ -12,6 +15,9 @@
       [scene]="selectedScene()"
       [selectedTileId]="selectedTileId()"
       [palette]="projectPalette()"
+      [tileImages]="tileImages()"
+      [tileSize]="projectTileSize()"
+      [tileFootprints]="tileFootprints()"
       (tilePlaced)="onTilePlaced($event)"
     />
   </div>
@@ -20,6 +26,9 @@
     [tiles]="projectTiles()"
     [selectedTileId]="selectedTileId()"
     [palette]="projectPalette()"
+    [tileImages]="tileImages()"
     (tileSelect)="selectedTileId.set($event)"
   />
 </div>
+
+<rk-confirm-dialog [data]="deleteDialogData()" (confirmed)="onConfirmDelete()" />

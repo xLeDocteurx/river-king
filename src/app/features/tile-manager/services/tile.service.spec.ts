@@ -28,10 +28,8 @@ describe('TileService', () => {
     expect(tile.type).toBe('static');
     expect(tile.animationSpeed).toBe(8);
     expect(tile.spriteIds).toEqual([]);
-    expect(tile.properties.collision).toBe(false);
-    expect(tile.properties.solid).toBe(false);
+    expect(tile.properties.blocking).toBe(false);
     expect(tile.properties.interactable).toBe(false);
-    expect(tile.properties.layer).toBe('background');
   });
 
   it('should list tiles by projectId', async () => {

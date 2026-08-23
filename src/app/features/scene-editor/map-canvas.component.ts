@@ -10,6 +10,8 @@ import {
   ElementRef,
 } from '@angular/core';
 import type { Scene } from '../../shared/models/scene.model';
+import { getFootprint } from './map-footprint';
+import type { TileFootprintMap } from './map-footprint';
 
 /**
  * Canvas-based map renderer for a single scene.
@@ -32,6 +34,12 @@ export class MapCanvasComponent implements AfterViewInit {
   selectedTileId = input<number | null>(null);
   /** Project palette colors used for tile rendering. */
   palette = input<string[]>([]);
+  /** Image sources (data URIs) for each tileId (first sprite frame). */
+  tileImages = input<Record<number, string>>({});
+  /** Size of one grid cell in pixels (from the project settings). */
+  tileSize = input(16);
+  /** Grid-cell footprint of each tile id; missing entries mean 1x1. */
+  tileFootprints = input<TileFootprintMap>({});
   /** Emitted when a tile is placed on the canvas. */
   tilePlaced = output<{ x: number; y: number; tileId: number }>();
 
@@ -44,20 +52,68 @@ export class MapCanvasComponent implements AfterViewInit {
 
   /** @internal Canvas 2D rendering context. */
   private ctx: CanvasRenderingContext2D | null = null;
+  /** @internal Decoded images ready to draw, keyed by tileId. */
+  private readonly loadedImages = signal<Record<number, HTMLImageElement>>({});
+  /** @internal Guards against stale async image-cache rebuilds. */
+  private imageCacheVersion = 0;
   /** @internal Whether the user is currently panning. */
   private isDragging = false;
   /** @internal Last mouse X position for pan delta calculation. */
   private lastMouseX = 0;
   /** @internal Last mouse Y position for pan delta calculation. */
   private lastMouseY = 0;
-  /** @internal Size of a single tile in pixels. */
-  private readonly tileSize = 16;
 
   constructor() {
     effect(() => {
-      // Re-render whenever palette changes
+      // Re-render whenever rendering inputs change
       this.palette();
+      this.tileSize();
+      this.tileFootprints();
+      const sources = this.tileImages();
+      void this.rebuildImageCache(sources);
       this.render();
+    });
+  }
+
+  /**
+   * Rebuilds the internal HTMLImageElement cache from the given data URIs,
+   * then re-renders once every decodable image is ready. Images that fail
+   * to decode are skipped so tiles fall back to palette colors.
+   * @param sources - Map of tileId to image source string.
+   */
+  private async rebuildImageCache(sources: Record<number, string>): Promise<void> {
+    const version = ++this.imageCacheVersion;
+    if (Object.keys(sources).length === 0) {
+      this.loadedImages.set({});
+      return;
+    }
+    const entries = Object.entries(sources);
+    const pairs = await Promise.all(
+      entries.map(async ([tileId, src]) => ({
+        tileId: Number(tileId),
+        img: await this.loadImage(src),
+      })),
+    );
+    if (version !== this.imageCacheVersion) return; // a newer request superseded this one
+    const map: Record<number, HTMLImageElement> = {};
+    for (const { tileId, img } of pairs) {
+      if (img) map[tileId] = img;
+    }
+    this.loadedImages.set(map);
+    this.render();
+  }
+
+  /**
+   * Creates an HTMLImageElement and waits for it to load from the given source.
+   * @param src - Image source (typically a base64 data URI).
+   * @returns The loaded image element, or null when decoding fails.
+   */
+  private loadImage(src: string): Promise<HTMLImageElement | null> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
     });
   }
 
@@ -79,7 +135,9 @@ export class MapCanvasComponent implements AfterViewInit {
   }
 
   /**
-   * Renders the current scene onto the canvas.
+   * Renders the current scene onto the canvas. The canvas is cleared first,
+   * so a null scene leaves it blank instead of showing a deleted scene's
+   * last frame. Each anchor is drawn exactly once across its full footprint.
    */
   render(): void {
     const ctx = this.ctx;
@@ -91,21 +149,33 @@ export class MapCanvasComponent implements AfterViewInit {
     const scene = this.scene();
     if (!scene) return;
 
+    const cell = this.tileSize();
+
     ctx.save();
     ctx.translate(this.cameraX(), this.cameraY());
     ctx.scale(this.zoom(), this.zoom());
 
-    // Draw grid background
-    this.drawGrid(ctx, scene.width, scene.height);
+    this.drawGrid(ctx, scene.width, scene.height, cell);
 
-    // Draw tiles
+    const tileImages = this.loadedImages();
+    const anchors: { x: number; y: number; tileId: number }[] = [];
     for (let y = 0; y < scene.height; y++) {
       for (let x = 0; x < scene.width; x++) {
         const tileId = scene.tileData[y]?.[x] ?? -1;
         if (tileId >= 0) {
-          ctx.fillStyle = this.getTileColor(tileId);
-          ctx.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
+          anchors.push({ x, y, tileId });
         }
+      }
+    }
+
+    for (const { x, y, tileId } of anchors) {
+      const { w, h } = getFootprint(tileId, this.tileFootprints());
+      const img = tileImages[tileId];
+      if (img) {
+        ctx.drawImage(img, x * cell, y * cell, w * cell, h * cell);
+      } else {
+        ctx.fillStyle = this.getTileColor(tileId);
+        ctx.fillRect(x * cell, y * cell, w * cell, h * cell);
       }
     }
 
@@ -113,21 +183,26 @@ export class MapCanvasComponent implements AfterViewInit {
   }
 
   /** @internal Draws the grid behind the tiles. */
-  private drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+  private drawGrid(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    cell: number,
+  ): void {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.lineWidth = 1;
 
     for (let x = 0; x <= width; x++) {
       ctx.beginPath();
-      ctx.moveTo(x * this.tileSize, 0);
-      ctx.lineTo(x * this.tileSize, height * this.tileSize);
+      ctx.moveTo(x * cell, 0);
+      ctx.lineTo(x * cell, height * cell);
       ctx.stroke();
     }
 
     for (let y = 0; y <= height; y++) {
       ctx.beginPath();
-      ctx.moveTo(0, y * this.tileSize);
-      ctx.lineTo(width * this.tileSize, y * this.tileSize);
+      ctx.moveTo(0, y * cell);
+      ctx.lineTo(width * cell, y * cell);
       ctx.stroke();
     }
   }
@@ -188,20 +263,19 @@ export class MapCanvasComponent implements AfterViewInit {
     this.render();
   }
 
-  /** @internal Calculates grid coordinates and emits a tilePlaced event. */
+  /** @internal Calculates grid coordinates and emits a tilePlaced event. The whole footprint must fit inside the scene. */
   private placeTile(event: MouseEvent): void {
     const canvas = this.canvasRef().nativeElement;
     const rect = canvas.getBoundingClientRect();
-    const x = Math.floor(
-      (event.clientX - rect.left - this.cameraX()) / (this.tileSize * this.zoom()),
-    );
-    const y = Math.floor(
-      (event.clientY - rect.top - this.cameraY()) / (this.tileSize * this.zoom()),
-    );
+    const cell = this.tileSize();
+    const x = Math.floor((event.clientX - rect.left - this.cameraX()) / (cell * this.zoom()));
+    const y = Math.floor((event.clientY - rect.top - this.cameraY()) / (cell * this.zoom()));
     const scene = this.scene();
     const tileId = this.selectedTileId();
+    if (!scene || tileId === null) return;
 
-    if (scene && tileId !== null && x >= 0 && x < scene.width && y >= 0 && y < scene.height) {
+    const { w, h } = getFootprint(tileId, this.tileFootprints());
+    if (x >= 0 && y >= 0 && x + w <= scene.width && y + h <= scene.height) {
       this.tilePlaced.emit({ x, y, tileId });
     }
   }
