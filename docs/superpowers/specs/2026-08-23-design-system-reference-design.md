@@ -81,7 +81,7 @@ Supporting changes:
   screen-specific contextual info (e.g. `{n} projects` on dashboard); right slot always
   `River King Engine`. The propagation mechanism (shared component vs per-screen markup) is an
   implementation decision deferred to phase 2 — this spec fixes anatomy and placement only.
-- **Editor screen target pattern** *(new pattern)*: left sidebar list + central canvas area +
+- **Editor screen target pattern** _(new pattern)_: left sidebar list + central canvas area +
   right properties panel, separated by 1px `border`. Target anatomy for tile-manager,
   scene-editor, sprite-editor restyling.
 - **Page header:** section label left (12px uppercase, letter-spaced, muted-foreground);
@@ -91,21 +91,21 @@ Supporting changes:
 
 Normative recipes with canonical Tailwind class strings extracted from implemented components:
 
-| Component                     | Status          | Reference implementation            |
-| ----------------------------- | --------------- | ----------------------------------- |
-| Primary button                | implemented     | Dashboard "+ New Project" header    |
-| Ghost icon button             | implemented     | Topbar theme toggle                 |
-| Destructive icon button       | implemented     | Project card trash                  |
-| Dashed quick-create row       | implemented     | Dashboard "+ New Project…"          |
-| Clickable card                | implemented     | Project card                        |
-| Selectable list item          | **(new)**       | —                                   |
-| Properties panel              | **(new)**       | —                                   |
-| Dialog                        | implemented     | Native `<dialog>` components        |
-| Empty state                   | implemented     | Dashboard no-projects block         |
+| Component               | Status      | Reference implementation         |
+| ----------------------- | ----------- | -------------------------------- |
+| Primary button          | implemented | Dashboard "+ New Project" header |
+| Ghost icon button       | implemented | Topbar theme toggle              |
+| Destructive icon button | implemented | Project card trash               |
+| Dashed quick-create row | implemented | Dashboard "+ New Project…"       |
+| Clickable card          | implemented | Project card                     |
+| Selectable list item    | **(new)**   | —                                |
+| Properties panel        | **(new)**   | —                                |
+| Dialog                  | implemented | Native `<dialog>` components     |
+| Empty state             | implemented | Dashboard no-projects block      |
 
-- **Selectable list item** *(new)*: selected = background `muted` + text `foreground`;
+- **Selectable list item** _(new)_: selected = background `muted` + text `foreground`;
   hover = subtle emphasis; never uses `primary` fill for selection.
-- **Properties panel** *(new)*: title 12px uppercase muted-foreground; stacked labeled inputs
+- **Properties panel** _(new)_: title 12px uppercase muted-foreground; stacked labeled inputs
   using `input` border token, radius `rounded-sm`.
 - **Dialog actions row:** right-aligned; ghost "Cancel" + primary confirm; destructive variant
   when the action deletes data.
