@@ -45,3 +45,6 @@ Thumbs.db
 
 # Devbox
 .devbox/
+
+# Brainstorming mockups (visual companion)
+.superpowers/
