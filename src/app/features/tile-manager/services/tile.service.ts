@@ -30,8 +30,17 @@ export class TileService {
     await this.db.tiles.update(id, changes);
   }
 
+  /**
+   * Deletes a tile and cascade-deletes every sprite linked to it.
+   * Both operations run atomically in a single readwrite transaction.
+   * @param id - The id of the tile to delete.
+   * @throws When the underlying IndexedDB transaction fails; no partial deletion is persisted.
+   */
   async deleteTile(id: number): Promise<void> {
-    await this.db.tiles.delete(id);
+    await this.db.transaction('rw', this.db.tiles, this.db.sprites, async () => {
+      await this.db.sprites.where('tileId').equals(id).delete();
+      await this.db.tiles.delete(id);
+    });
   }
 
   async getTile(id: number): Promise<Tile | undefined> {

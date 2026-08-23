@@ -1,13 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import 'fake-indexeddb/auto';
 import { TileService } from './tile.service';
+import { SpriteService } from '../../sprite-editor/services/sprite.service';
 import { DatabaseService } from '../../../core/services/database.service';
 
 describe('TileService', () => {
   let service: TileService;
 
   beforeEach(async () => {
-    TestBed.configureTestingModule({ providers: [TileService] });
+    TestBed.configureTestingModule({ providers: [TileService, SpriteService] });
     service = TestBed.inject(TileService);
     const db = TestBed.inject(DatabaseService);
     await db.projects.clear();
@@ -55,5 +56,21 @@ describe('TileService', () => {
     await service.deleteTile(tile.id);
     const result = await service.getTile(tile.id);
     expect(result).toBeUndefined();
+  });
+
+  it('should cascade-delete linked sprites when deleting a tile', async () => {
+    const db = TestBed.inject(DatabaseService);
+    const spriteService = TestBed.inject(SpriteService);
+
+    const tile = await service.createTile('proj-1', 'Framed');
+    const frame = await spriteService.createSprite('proj-1', 'Frame 1', tile.id);
+    await spriteService.createSprite('proj-1', 'Unrelated', 9999);
+
+    await service.deleteTile(tile.id);
+
+    expect(await service.getTile(tile.id)).toBeUndefined();
+    expect(await spriteService.getSprite(frame.id)).toBeUndefined();
+    const remaining = await db.sprites.toArray();
+    expect(remaining.map((s) => s.name)).toEqual(['Unrelated']);
   });
 });

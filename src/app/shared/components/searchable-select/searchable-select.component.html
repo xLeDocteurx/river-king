@@ -1,26 +1,37 @@
 <div class="tw-relative tw-flex tw-flex-col tw-gap-1" [class]="class()">
   <input
     type="text"
+    role="combobox"
     [ngModel]="query()"
     (ngModelChange)="query.set($event)"
     (input)="onInput($event)"
     (focus)="open.set(true)"
     (keydown.escape)="close()"
+    (keydown.arrowdown)="onArrowDown()"
+    (keydown.arrowup)="onArrowUp()"
+    (keydown.enter)="onEnter()"
     [placeholder]="placeholder()"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="open() ? listId : null"
+    aria-autocomplete="list"
+    [attr.aria-activedescendant]="activeDescendantId()"
     class="tw-w-full tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
     aria-label="Action"
   />
   @if (open()) {
     <ul
       role="listbox"
+      [attr.id]="listId"
       class="tw-absolute tw-top-full tw-z-10 tw-mt-1 tw-max-h-48 tw-w-full tw-overflow-auto tw-rounded-md tw-border tw-border-border tw-bg-background tw-shadow-md"
     >
-      @for (option of filtered(); track option) {
+      @for (option of filtered(); track option; let i = $index) {
         <li>
           <button
             type="button"
             role="option"
+            [attr.id]="listId + '-opt-' + i"
             [attr.aria-selected]="option === value()"
+            [class.tw-bg-muted]="activeIndex() === i"
             (click)="select(option)"
             class="tw-w-full tw-text-left tw-px-3 tw-py-1.5 tw-text-sm hover:tw-bg-muted"
           >

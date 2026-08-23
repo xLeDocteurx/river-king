@@ -7,10 +7,12 @@ import { SearchableSelectComponent } from './searchable-select.component';
   selector: 'rk-test-host',
   standalone: true,
   imports: [SearchableSelectComponent],
-  template: '<rk-searchable-select [options]="opts()" (valueChange)="onValue($event)" />',
+  template:
+    '<rk-searchable-select [options]="opts()" [value]="val()" (valueChange)="onValue($event)" />',
 })
 class TestHostComponent {
   readonly opts = signal<string[]>(['walk', 'talk']);
+  readonly val = signal<string | null>(null);
   received: string | null = null;
 
   onValue(value: string): void {
@@ -84,5 +86,45 @@ describe('SearchableSelectComponent', () => {
     expect(optionButtons()).toHaveLength(0);
     const listText = fixture.debugElement.query(By.css('ul'))!.nativeElement.textContent;
     expect(listText).toContain('No match');
+  });
+
+  it('syncs the displayed text when value is set programmatically', async () => {
+    host.val.set('walk');
+    fixture.detectChanges();
+    // NgModel writes the model to the DOM in a deferred microtask.
+    await fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const input = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
+    expect(input.value).toBe('walk');
+  });
+
+  it('marks the input as a combobox and exposes the expanded state', () => {
+    const input = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
+    expect(input.getAttribute('role')).toBe('combobox');
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+
+    openList();
+
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('moves the active option with arrow keys and selects it with Enter', () => {
+    openList();
+    const inputDebug = fixture.debugElement.query(By.css('input'));
+
+    inputDebug.triggerEventHandler('keydown.arrowdown', {});
+    fixture.detectChanges();
+    inputDebug.triggerEventHandler('keydown.arrowdown', {});
+    fixture.detectChanges();
+
+    const input = inputDebug.nativeElement as HTMLInputElement;
+    const buttons = optionButtons();
+    expect(input.getAttribute('aria-activedescendant')).toBe(buttons[1].id);
+
+    inputDebug.triggerEventHandler('keydown.enter', {});
+    fixture.detectChanges();
+
+    expect(host.received).toBe('talk');
+    expect(input.getAttribute('aria-expanded')).toBe('false');
   });
 });
