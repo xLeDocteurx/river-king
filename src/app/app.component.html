@@ -1,44 +1,44 @@
 <div class="tw-flex tw-flex-col tw-h-screen tw-bg-background tw-text-foreground">
   <header
-    class="tw-flex tw-items-center tw-justify-between tw-px-6 tw-py-3 tw-border-b tw-border-border tw-bg-card-bg"
+    class="tw-flex tw-h-[35px] tw-items-center tw-justify-between tw-px-3 tw-border-b tw-border-border tw-bg-muted"
   >
-    <div class="tw-flex tw-items-center tw-gap-6">
+    <div class="tw-flex tw-items-center tw-gap-5">
       <!-- Brand -->
       <a
         [routerLink]="['/']"
-        class="tw-flex tw-items-center tw-gap-2 tw-text-foreground hover:tw-opacity-80 tw-transition"
+        class="tw-flex tw-items-center tw-gap-2 hover:tw-opacity-80 tw-transition"
       >
-        <span class="material-symbols tw-text-2xl tw-text-primary" aria-hidden="true"
-          >phishing</span
-        >
-        <span class="tw-text-xl tw-font-bold">River King Engine</span>
+        <span class="tw-block tw-w-2.5 tw-h-2.5 tw-bg-accent" aria-hidden="true"></span>
+        <span class="tw-text-sm tw-font-semibold">River King Engine</span>
       </a>
 
       <!-- Project navigation (visible only when inside a project) -->
       @if (isProjectRoute()) {
-        <nav class="tw-flex tw-items-center tw-gap-1 tw-border-l tw-border-border tw-pl-6">
+        <nav
+          class="tw-flex tw-items-stretch tw-self-stretch tw-border-l tw-border-border tw-pl-4"
+        >
           <a
             [routerLink]="['/project', projectId(), 'scenes']"
-            routerLinkActive="tw-bg-primary/10 tw-text-primary"
-            class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-md tw-text-sm tw-font-medium tw-text-muted-foreground hover:tw-bg-muted tw-transition"
+            routerLinkActive="tw-text-foreground tw-border-accent"
+            ariaCurrentWhenActive="page"
+            class="tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
           >
-            <span class="material-symbols" aria-hidden="true">map</span>
             Scenes
           </a>
           <a
             [routerLink]="['/project', projectId(), 'tiles']"
-            routerLinkActive="tw-bg-primary/10 tw-text-primary"
-            class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-md tw-text-sm tw-font-medium tw-text-muted-foreground hover:tw-bg-muted tw-transition"
+            routerLinkActive="tw-text-foreground tw-border-accent"
+            ariaCurrentWhenActive="page"
+            class="tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
           >
-            <span class="material-symbols" aria-hidden="true">grid_view</span>
             Tiles
           </a>
           <a
             [routerLink]="['/project', projectId(), 'sprites']"
-            routerLinkActive="tw-bg-primary/10 tw-text-primary"
-            class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-md tw-text-sm tw-font-medium tw-text-muted-foreground hover:tw-bg-muted tw-transition"
+            routerLinkActive="tw-text-foreground tw-border-accent"
+            ariaCurrentWhenActive="page"
+            class="tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
           >
-            <span class="material-symbols" aria-hidden="true">brush</span>
             Sprites
           </a>
         </nav>
@@ -48,16 +48,18 @@
     <button
       type="button"
       (click)="theme.toggle()"
-      class="tw-inline-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-md tw-bg-primary tw-text-primary-foreground tw-transition hover:tw-opacity-90"
+      [attr.aria-label]="
+        theme.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+      "
+      class="tw-inline-flex tw-items-center tw-justify-center tw-p-1.5 tw-rounded-sm tw-text-muted-foreground hover:tw-text-foreground hover:tw-bg-card-bg tw-transition"
     >
-      <span class="material-symbols" aria-hidden="true">
+      <span class="material-symbols tw-text-base" aria-hidden="true">
         @if (theme.theme() === 'dark') {
           light_mode
         } @else {
           dark_mode
         }
       </span>
-      <span>{{ theme.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
     </button>
   </header>
 

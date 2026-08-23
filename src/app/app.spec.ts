@@ -26,7 +26,7 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should highlight the active nav item in the top bar', async () => {
+  it('should mark the active nav tab with aria-current', async () => {
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/project/p1/scenes');
     fixture.detectChanges();
@@ -39,8 +39,19 @@ describe('App', () => {
     const links = Array.from(compiled.querySelectorAll('nav a'));
     expect(links.length).toBe(3);
 
-    const active = links.filter((a) => a.classList.contains('tw-text-primary'));
+    const active = links.filter((a) => a.getAttribute('aria-current') === 'page');
     expect(active).toHaveLength(1);
     expect(active[0].getAttribute('href')).toContain('/project/p1/scenes');
+  });
+
+  it('should render an icon-only theme toggle button', async () => {
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const toggle = compiled.querySelector<HTMLButtonElement>('header button[type="button"]');
+    expect(toggle).toBeTruthy();
+    expect(toggle!.getAttribute('aria-label')).toMatch(/switch to (light|dark) theme/i);
+    // Icon-only: the only text content is the Material Symbols ligature name
+    expect(toggle!.textContent?.replace(/\s+/g, '')).toMatch(/^(light_mode|dark_mode)$/);
   });
 });
