@@ -131,12 +131,12 @@ so no reactive invalidation is needed within the feature.
 
 ## Edge cases
 
-| Case | Behavior |
-| --- | --- |
-| No footprint entry for a tile | Treated as 1x1 |
-| Sprite dims not multiples of cell size | `ceil` — partial edge cell covered |
-| Animated tile | Frame 1 dims apply to all frames |
-| Footprint would exceed scene bounds | Canvas refuses to emit (no partial placement) |
+| Case                                     | Behavior                                                                         |
+| ---------------------------------------- | -------------------------------------------------------------------------------- |
+| No footprint entry for a tile            | Treated as 1x1                                                                   |
+| Sprite dims not multiples of cell size   | `ceil` — partial edge cell covered                                               |
+| Animated tile                            | Frame 1 dims apply to all frames                                                 |
+| Footprint would exceed scene bounds      | Canvas refuses to emit (no partial placement)                                    |
 | Legacy maps with tileSize != 16 projects | Grid rescales via `[tileSize]`; existing single-cell placements render correctly |
 
 ## Error handling

@@ -23,10 +23,12 @@
 ### Task 1: Pure footprint helpers
 
 **Files:**
+
 - Create: `src/app/features/scene-editor/map-footprint.ts`
 - Test: `src/app/features/scene-editor/map-footprint.spec.ts`
 
 **Interfaces:**
+
 - Consumes: nothing (pure).
 - Produces: `type TileFootprint = { w: number; h: number }`, `type TileFootprintMap = Record<number, TileFootprint>`, `getFootprint(tileId: number, footprints: TileFootprintMap): TileFootprint`, `clearOverlappedAnchors(tileData: number[][], x: number, y: number, w: number, h: number, footprints: TileFootprintMap): number[][]`. Later tasks import both types and both functions from `./map-footprint`.
 
@@ -177,11 +179,13 @@ git commit -m "feature-11-tile-screen-rework: add pure tile footprint helpers"
 ### Task 2: Service returns images + footprints
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/services/map-tiles.service.ts` (replace whole method)
 - Modify: `src/app/features/scene-editor/services/map-tiles.service.spec.ts`
 - Modify: `src/app/features/scene-editor/scene-editor.component.ts:61-62,90-119` (data loading adaptation)
 
 **Interfaces:**
+
 - Consumes: `TileFootprintMap` from `../map-footprint`.
 - Produces: `MapTilesService.loadTileVisuals(projectId: string, tileSizePx: number): Promise<{ images: Record<number, string>; footprints: TileFootprintMap }>` (replaces `loadTileImages`, which is deleted). SceneEditor exposes signals `projectTileSize = signal<number>(16)` and `tileFootprints = signal<TileFootprintMap>({})` used by Tasks 4–5.
 
@@ -393,10 +397,12 @@ git commit -m "feature-11-tile-screen-rework: load tile visuals with grid-cell f
 ### Task 3: Canvas renders footprints and bounds-checks placement
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/map-canvas.component.ts`
 - Create: `src/app/features/scene-editor/map-canvas.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `getFootprint`, `TileFootprintMap` from `./map-footprint`.
 - Produces: inputs `tileSize = input(16)` and `tileFootprints = input<TileFootprintMap>({})` consumed by Task 4's template bindings. `tilePlaced` payload unchanged `{ x, y, tileId }`; emission now guaranteed to fit the whole footprint.
 
@@ -646,11 +652,13 @@ git commit -m "feature-11-tile-screen-rework: render multi-cell footprints and b
 ### Task 4: Editor applies the Replace policy
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/scene-editor.component.ts` (imports + `onTilePlaced`)
 - Modify: `src/app/features/scene-editor/scene-editor.component.html:14-19` (canvas bindings)
 - Modify: `src/app/features/scene-editor/scene-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `clearOverlappedAnchors`, `getFootprint` from `./map-footprint`; canvas inputs `tileSize`/`tileFootprints` from Task 3; signal `tileFootprints` from Task 2.
 - Produces: nothing new downstream.
 
@@ -761,12 +769,14 @@ git commit -m "feature-11-tile-screen-rework: replace overlapped tiles on multi-
 ### Task 5: Real thumbnails in the tile palette
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/tile-palette.component.ts`
 - Modify: `src/app/features/scene-editor/tile-palette.component.html`
 - Modify: `src/app/features/scene-editor/scene-editor.component.html` (`<rk-tile-palette>` binding)
 - Create: `src/app/features/scene-editor/tile-palette.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: signal `tileImages` from Task 2 (bound as `[tileImages]`).
 - Produces: input `tileImages = input<Record<number, string>>({})` on `TilePaletteComponent`.
 
@@ -851,11 +861,11 @@ tileImages = input<Record<number, string>>({});
   [title]="tile.name"
 >
   @if (tileImages()[tile.id]) {
-    <img
-      [src]="tileImages()[tile.id]"
-      alt=""
-      class="tw-w-full tw-h-full tw-object-cover tw-pointer-events-none"
-    />
+  <img
+    [src]="tileImages()[tile.id]"
+    alt=""
+    class="tw-w-full tw-h-full tw-object-cover tw-pointer-events-none"
+  />
   }
 </button>
 ```
