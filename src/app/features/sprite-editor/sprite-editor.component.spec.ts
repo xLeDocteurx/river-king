@@ -194,4 +194,23 @@ describe('SpriteEditorComponent', () => {
     expect(errorSpy).toHaveBeenCalledWith('Sprite not found');
     expect(navigateSpy).toHaveBeenCalledWith(['/project', 'test-proj', 'tiles']);
   });
+
+  it('shows an error notification when focus mode fails to load the sprite', async () => {
+    await createProjectWithPalette();
+    await setupWithProject();
+
+    // SpriteService is provided at the component level, so resolve it from
+    // the component's injector to spy on the instance the component actually uses.
+    const service = fixture.debugElement.injector.get(SpriteService);
+    const notification = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notification, 'error');
+    const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    vi.spyOn(service, 'getSprite').mockRejectedValue(new Error('db failure'));
+
+    routeParams.next({ spriteId: '7' });
+    await flushRouteWork();
+
+    expect(errorSpy).toHaveBeenCalledWith('Failed to load sprite');
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
 });

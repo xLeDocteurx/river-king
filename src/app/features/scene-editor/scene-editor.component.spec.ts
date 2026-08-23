@@ -1,10 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
+import { vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { SceneEditorComponent } from './scene-editor.component';
 import { SceneService } from './services/scene.service';
 import { DatabaseService } from '../../core/services/database.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 // jsdom does not implement HTMLDialogElement methods
 const dialogProto = HTMLDialogElement.prototype as unknown as Record<string, unknown>;
@@ -120,6 +122,19 @@ describe('SceneEditorComponent', () => {
     await component.onConfirmDelete();
 
     expect(component.selectedSceneId()).toBe(kept.id);
+  });
+
+  it('shows an error notification when loading the selected scene fails', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const notification = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notification, 'error');
+    vi.spyOn(sceneService, 'getScene').mockRejectedValue(new Error('db failure'));
+
+    await expect(component.selectScene('broken-id')).resolves.toBeUndefined();
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
   });
 
   it('replaces overlapped anchors when placing a multi-cell tile', async () => {

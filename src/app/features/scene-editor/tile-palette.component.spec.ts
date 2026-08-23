@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { TilePaletteComponent } from './tile-palette.component';
 import type { Tile } from '../../shared/models/tile.model';
 
@@ -42,5 +43,18 @@ describe('TilePaletteComponent', () => {
     const compiled = setup([makeTile(2, 'Void')], {}).nativeElement as HTMLElement;
 
     expect(compiled.querySelector('img')).toBeNull();
+  });
+
+  it('emits tileSelect with the tile id when a tile showing an image preview is clicked', () => {
+    const fixtureRef = setup([makeTile(1, 'Water')], { 1: 'data:image/png;base64,IMG' });
+    const spy = vi.fn();
+    fixtureRef.componentInstance.tileSelect.subscribe(spy);
+
+    const button = (fixtureRef.nativeElement as HTMLElement).querySelector(
+      'button',
+    ) as HTMLButtonElement;
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(spy).toHaveBeenCalledWith(1);
   });
 });

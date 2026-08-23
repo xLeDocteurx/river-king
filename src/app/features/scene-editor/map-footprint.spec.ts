@@ -40,6 +40,31 @@ describe('clearOverlappedAnchors', () => {
     expect(result[2][2]).toBe(9);
   });
 
+  it('keeps a multi-cell anchor that only touches the rectangle edge', () => {
+    const tileData = [
+      [1, -1, -1],
+      [-1, -1, -1],
+      [-1, -1, -1],
+    ];
+
+    // Rectangle starts at column 2; tile 1 spans columns 0..1 and merely abuts it.
+    const result = clearOverlappedAnchors(tileData, 2, 0, 1, 2, footprints);
+
+    expect(result[0][0]).toBe(1);
+  });
+
+  it('clears a multi-cell anchor whose body overlaps the rectangle even when its anchor cell lies outside', () => {
+    const tileData = [
+      [1, -1],
+      [-1, -1],
+    ];
+
+    // Anchor cell (0,0) is outside the rect (1,1,1,1) but its 2x2 body covers it.
+    const result = clearOverlappedAnchors(tileData, 1, 1, 1, 1, footprints);
+
+    expect(result[0][0]).toBe(-1);
+  });
+
   it('does not mutate the input array', () => {
     const tileData = [
       [1, -1],

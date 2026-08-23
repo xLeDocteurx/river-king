@@ -125,14 +125,19 @@ export class SpriteEditorComponent implements OnInit {
         return;
       }
       this.focusMode.set(true);
-      await this.loadSprites();
-      const sprite = await this.spriteService.getSprite(Number(raw));
-      if (!sprite) {
-        this.notification.error('Sprite not found');
-        this.backToTiles();
-        return;
+      try {
+        await this.loadSprites();
+        const sprite = await this.spriteService.getSprite(Number(raw));
+        if (!sprite) {
+          this.notification.error('Sprite not found');
+          this.backToTiles();
+          return;
+        }
+        await this.selectSprite(sprite.id);
+      } catch (e) {
+        console.error('Failed to load focused sprite:', e);
+        this.notification.error('Failed to load sprite');
       }
-      await this.selectSprite(sprite.id);
     });
   }
 

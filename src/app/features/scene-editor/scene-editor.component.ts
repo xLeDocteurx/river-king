@@ -161,8 +161,13 @@ export class SceneEditorComponent implements OnInit {
    */
   async selectScene(sceneId: string): Promise<void> {
     this.selectedSceneId.set(sceneId);
-    const scene = await this.sceneService.getScene(sceneId);
-    this.selectedScene.set(scene ?? null);
+    try {
+      const scene = await this.sceneService.getScene(sceneId);
+      this.selectedScene.set(scene ?? null);
+    } catch (e) {
+      console.error('Failed to load scene:', e);
+      this.notification.error('Failed to load the scene.');
+    }
   }
 
   /**
