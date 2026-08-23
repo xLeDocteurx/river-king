@@ -1,7 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
+import { vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { DashboardComponent } from './dashboard.component';
+import { ProjectCreateDialogComponent } from './project-create-dialog.component';
+
+if (!('showModal' in HTMLDialogElement.prototype)) {
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+    value: vi.fn(),
+    writable: true,
+  });
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+    value: vi.fn(),
+    writable: true,
+  });
+}
 import { DatabaseService } from '../../core/services/database.service';
 import type { Project } from '../../shared/models/project.model';
 
@@ -53,11 +67,7 @@ describe('DashboardComponent', () => {
   });
 
   it('should pluralize the project count in the status bar', async () => {
-    await mountWithProjects([
-      makeProject('a'),
-      makeProject('b'),
-      makeProject('c'),
-    ]);
+    await mountWithProjects([makeProject('a'), makeProject('b'), makeProject('c')]);
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('[data-testid="status-count"]')?.textContent?.trim()).toBe(
       '3 projects',
@@ -76,5 +86,38 @@ describe('DashboardComponent', () => {
     await mountWithProjects([makeProject('a'), makeProject('b')]);
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelectorAll('rk-project-card').length).toBe(2);
+  });
+
+  function createDialogSpy(): ReturnType<typeof vi.fn> {
+    const dialogEl = fixture.debugElement.query(By.directive(ProjectCreateDialogComponent))
+      .componentInstance as ProjectCreateDialogComponent;
+    return vi.spyOn(dialogEl, 'open');
+  }
+
+  it('should open the create dialog from the dashed row', async () => {
+    await mountWithProjects([makeProject('a')]);
+    const openSpy = createDialogSpy();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const dashed = compiled.querySelector<HTMLElement>('[data-testid="new-project-dashed"]');
+    expect(dashed).toBeTruthy();
+    dashed!.click();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(openSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should offer the dashed CTA in the empty state and open the dialog', async () => {
+    await mountWithProjects([]);
+    const openSpy = createDialogSpy();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('No projects yet');
+    const cta = compiled.querySelector<HTMLElement>('[data-testid="new-project-empty"]');
+    expect(cta).toBeTruthy();
+    cta!.click();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(openSpy).toHaveBeenCalledTimes(1);
   });
 });

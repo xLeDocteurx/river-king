@@ -9,7 +9,7 @@
           [value]="projectName()"
           (input)="projectName.set($any($event.target).value)"
           placeholder="My Awesome Game"
-          class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+          class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
           required
         />
       </label>
@@ -17,13 +17,13 @@
         <button
           type="button"
           (click)="cancel()"
-          class="tw-px-4 tw-py-2 tw-rounded-md tw-border tw-border-border tw-bg-background tw-text-foreground hover:tw-bg-muted"
+          class="tw-px-4 tw-py-2 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-foreground hover:tw-bg-muted"
         >
           Cancel
         </button>
         <button
           type="submit"
-          class="tw-px-4 tw-py-2 tw-rounded-md tw-bg-primary tw-text-primary-foreground hover:tw-opacity-90"
+          class="tw-px-4 tw-py-2 tw-rounded-sm tw-bg-primary tw-text-primary-foreground hover:tw-opacity-90"
         >
           Create
         </button>

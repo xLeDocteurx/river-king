@@ -24,6 +24,14 @@
         <span class="material-symbols tw-text-5xl tw-mb-3">folder_open</span>
         <p class="tw-text-sm tw-font-semibold">No projects yet</p>
         <p class="tw-text-xs">Create your first project to get started</p>
+        <button
+          type="button"
+          data-testid="new-project-empty"
+          (click)="createDialog.open()"
+          class="tw-mt-4 tw-border tw-border-dashed tw-border-border tw-rounded-sm tw-px-4 tw-py-2 tw-text-xs tw-text-muted-foreground hover:tw-border-accent hover:tw-text-accent tw-transition"
+        >
+          + New Project…
+        </button>
       </div>
     } @else {
       <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 tw-gap-3">
@@ -34,6 +42,14 @@
             (delete)="requestDelete($event)"
           />
         }
+        <button
+          type="button"
+          data-testid="new-project-dashed"
+          (click)="createDialog.open()"
+          class="tw-border tw-border-dashed tw-border-border tw-rounded-sm tw-p-4 tw-text-xs tw-text-muted-foreground hover:tw-border-accent hover:tw-text-accent tw-transition"
+        >
+          + New Project…
+        </button>
       </div>
     }
   </main>
