@@ -13,6 +13,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { SceneService } from './services/scene.service';
 import { MapTilesService } from './services/map-tiles.service';
 import { MapCanvasComponent } from './map-canvas.component';
+import { clearOverlappedAnchors, getFootprint } from './map-footprint';
 import { SceneListComponent } from './scene-list.component';
 import { TilePaletteComponent } from './tile-palette.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -243,7 +244,9 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Handles a tile placement event from the map canvas.
+   * Handles a tile placement event from the map canvas: removes every anchor
+   * overlapping the incoming footprint (Replace policy), writes the new anchor,
+   * then persists the updated grid.
    * @param event Object containing x, y coordinates and the placed tile id.
    */
   async onTilePlaced(event: { x: number; y: number; tileId: number }): Promise<void> {
@@ -251,7 +254,15 @@ export class SceneEditorComponent implements OnInit {
     if (!scene) return;
 
     try {
-      const newTileData = scene.tileData.map((row) => [...row]);
+      const { w, h } = getFootprint(event.tileId, this.tileFootprints());
+      const newTileData = clearOverlappedAnchors(
+        scene.tileData,
+        event.x,
+        event.y,
+        w,
+        h,
+        this.tileFootprints(),
+      );
       newTileData[event.y][event.x] = event.tileId;
 
       await this.sceneService.updateScene(scene.id, { tileData: newTileData });

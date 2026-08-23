@@ -121,4 +121,27 @@ describe('SceneEditorComponent', () => {
 
     expect(component.selectedSceneId()).toBe(kept.id);
   });
+
+  it('replaces overlapped anchors when placing a multi-cell tile', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Footprint', 4, 4);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+    component.tileFootprints.set({ 1: { w: 2, h: 2 } });
+
+    await component.onTilePlaced({ x: 2, y: 1, tileId: 9 });
+    await component.onTilePlaced({ x: 1, y: 1, tileId: 1 });
+
+    const expected = [
+      [-1, -1, -1, -1],
+      [-1, 1, -1, -1],
+      [-1, -1, -1, -1],
+      [-1, -1, -1, -1],
+    ];
+    expect(component.selectedScene()?.tileData).toEqual(expected);
+    const stored = await db.scenes.get(scene.id);
+    expect(stored?.tileData).toEqual(expected);
+  });
 });
