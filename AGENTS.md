@@ -114,6 +114,28 @@ src/app/
 - Render an icon with `<span class="material-symbols" aria-hidden="true">light_mode</span>`.
 - Because Material Symbols is a font, it composes naturally with Tailwind utility classes (size, color).
 
+### Design system (mandatory)
+
+Full reference: `docs/design-system/` — read `foundations.md` plus the relevant pattern file
+before building any UI. Run through `docs/design-system/checklist.md` before delivering any
+UI work.
+
+- Colors: token-bound classes only (`tw-bg-background`, `tw-accent`, …). Never hardcode
+  hex/rgb/hsl or raw Tailwind palette classes. `primary` = the main action, `accent` =
+  highlight/hover/focus, `destructive` = deletion/error only.
+- Density: root is 14px (global); UI text `tw-text-xs`; meta text `tw-text-[11px]`;
+  section labels 12px uppercase tracking-wider.
+- Shape: max radius `tw-rounded-sm`. No blurred shadows, no pills, no gradients.
+- Icons: Material Symbols only.
+- Layout: topbar 35px (root-owned) → scrollable content → status bar 22px app-wide
+  (`bg-primary`, 11px; left = contextual info, right = `River King Engine`).
+- Interactions: visible hover + `tw-cursor-pointer` on interactive surfaces; keyboard
+  operability (`tabindex="0"` + Enter/Space on custom surfaces); never remove the global
+  focus ring.
+- Destructive actions go through `rk-confirm-dialog`; async failures call
+  `NotificationService.error()`.
+- UI copy: English only — absolute.
+
 ---
 
 ## Angular conventions
