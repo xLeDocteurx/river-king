@@ -6,68 +6,98 @@
 
 :root {
   /* Surface & content */
+  /* Page background behind all content */
   --color-background: #f3f3f3;
+  /* Default text color */
   --color-foreground: #1f1f1f;
 
   /* Cards */
+  /* Elevated surfaces: cards, panels */
   --color-card-bg: #ffffff;
+  /* Text on elevated surfaces */
   --color-card-fg: #1f1f1f;
 
   /* Brand – Primary (Blue) */
+  /* Main action color: primary buttons, status bar fill */
   --color-primary: #005fb8;
+  /* Text/icons rendered on primary backgrounds */
   --color-primary-foreground: #ffffff;
 
   /* Brand – Secondary */
+  /* Neutral secondary color (rarely used; prefer muted) */
   --color-secondary: #616161;
+  /* Text on secondary backgrounds */
   --color-secondary-foreground: #ffffff;
 
   /* Accent highlight */
+  /* Highlight state color: hover, focus ring, text selection, active tab underline */
   --color-accent: #005fb8;
+  /* Text rendered on accent backgrounds */
   --color-accent-foreground: #ffffff;
 
   /* Muted / subtle */
+  /* Subtle surfaces: bars, selected rows */
   --color-muted: #e8eaed;
+  /* Secondary/meta text */
   --color-muted-foreground: #616161;
 
   /* Destructive / Error */
+  /* Destruction and errors only */
   --color-destructive: #cd3131;
 
   /* Borders & inputs */
+  /* Structural 1px borders */
   --color-border: #d4d4d4;
+  /* Input field borders */
   --color-input: #d4d4d4;
 }
 
 .dark,
 [data-theme='dark'] {
   /* Surface & content */
+  /* Page background behind all content */
   --color-background: #1e1e1e;
+  /* Default text color */
   --color-foreground: #cccccc;
 
   /* Cards */
+  /* Elevated surfaces: cards, panels */
   --color-card-bg: #252526;
+  /* Text on elevated surfaces */
   --color-card-fg: #cccccc;
 
   /* Brand – Primary (Blue) */
+  /* Main action color: primary buttons, status bar fill */
   --color-primary: #0e639c;
+  /* Text/icons rendered on primary backgrounds */
   --color-primary-foreground: #ffffff;
 
   /* Brand – Secondary */
+  /* Neutral secondary color (rarely used; prefer muted) */
   --color-secondary: #8a8a8a;
+  /* Text on secondary backgrounds */
   --color-secondary-foreground: #1e1e1e;
 
   /* Accent highlight */
+  /* Highlight state color: hover, focus ring, text selection, active tab underline */
   --color-accent: #41a6f6;
+  /* Text rendered on accent backgrounds */
   --color-accent-foreground: #1e1e1e;
 
   /* Muted / subtle */
+  /* Subtle surfaces: bars, selected rows */
   --color-muted: #2d2d2d;
+  /* Secondary/meta text */
   --color-muted-foreground: #969696;
 
   /* Destructive / Error */
+  /* Destruction and errors only */
   --color-destructive: #f14c4c;
 
   /* Borders & inputs */
+  /* Structural 1px borders */
   --color-border: #3c3c3c;
+  /* Input field borders */
   --color-input: #3c3c3c;
 }
 
