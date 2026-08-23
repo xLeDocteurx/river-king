@@ -16,6 +16,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { ProjectCreateDialogComponent } from './project-create-dialog.component';
 import { DatabaseService } from '../../core/services/database.service';
+import { Project } from '../../shared/models/project.model';
 import { ProjectService } from './services/project.service';
 
 describe('ProjectCreateDialogComponent', () => {
@@ -75,5 +76,30 @@ describe('ProjectCreateDialogComponent', () => {
     fixture.componentInstance.open();
 
     expect(fixture.componentInstance.projectName()).toBe('');
+  });
+
+  it('preselects Sweetie 16 and resets on open', () => {
+    fixture.componentInstance.open();
+    expect(fixture.componentInstance.selectedPaletteId()).toBe('sweetie-16');
+
+    fixture.componentInstance.selectPalette('nymph-gb');
+    expect(fixture.componentInstance.selectedPaletteId()).toBe('nymph-gb');
+
+    fixture.componentInstance.open();
+    expect(fixture.componentInstance.selectedPaletteId()).toBe('sweetie-16');
+  });
+
+  it('creates the project with the chosen palette colors prefixed by #', async () => {
+    const createSpy = vi
+      .spyOn(TestBed.inject(ProjectService), 'create')
+      .mockResolvedValue({ id: 'p1' } as Project);
+    fixture.componentInstance.open();
+    setName('Test');
+    fixture.componentInstance.selectedPaletteId.set('nymph-gb');
+
+    await fixture.componentInstance.createProject(new Event('submit'));
+
+    const dto = createSpy.mock.calls[0][0];
+    expect(dto.palette).toEqual(['#2c2137', '#446176', '#3fac95', '#a1ef8c']);
   });
 });

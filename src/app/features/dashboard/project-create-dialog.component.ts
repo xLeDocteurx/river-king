@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { DialogComponent } from '../../shared/components/dialog/dialog.component';
+import { LOSPEC_PALETTES } from '../../core/palettes/lospec-palettes';
 import { NotificationService } from '../../core/services/notification.service';
 import { ProjectService } from './services/project.service';
 
@@ -8,8 +9,9 @@ import { ProjectService } from './services/project.service';
  * Modal dialog for creating a new project.
  *
  * Wraps the native `<rk-dialog>` element and owns the creation form. On
- * submit it creates the project through `ProjectService` (with the default
- * Sweetie-16 palette), closes itself, and navigates to the new project.
+ * submit it creates the project through `ProjectService` with the palette
+ * chosen in the dialog (Sweetie 16 by default), closes itself, and navigates
+ * to the new project.
  */
 @Component({
   selector: 'rk-project-create-dialog',
@@ -35,11 +37,31 @@ export class ProjectCreateDialogComponent {
   /** Draft project name bound to the form input. */
   readonly projectName = signal('');
 
+  /** Id of the palette selected in the picker (Sweetie 16 by default). */
+  readonly selectedPaletteId = signal<string>('sweetie-16');
+
+  /** Palettes offered by the picker. */
+  readonly palettes = LOSPEC_PALETTES;
+
+  /**
+   * Selects a palette in the picker.
+   * @param id - Palette id chosen by the user.
+   */
+  selectPalette(id: string): void {
+    this.selectedPaletteId.set(id);
+  }
+
+  /** Returns the currently selected palette definition. */
+  private selectedPalette() {
+    return this.palettes.find((p) => p.id === this.selectedPaletteId()) ?? this.palettes[0];
+  }
+
   /**
    * Opens the creation dialog and resets any previous draft name.
    */
   open(): void {
     this.projectName.set('');
+    this.selectedPaletteId.set('sweetie-16');
     this.dialogRef().open();
   }
 
@@ -56,24 +78,7 @@ export class ProjectCreateDialogComponent {
     try {
       const project = await this.projectService.create({
         name,
-        palette: [
-          '#1a1c2c',
-          '#5d275d',
-          '#b13e53',
-          '#ef7d57',
-          '#ffcd75',
-          '#a7f070',
-          '#38b764',
-          '#257179',
-          '#29366f',
-          '#3b5dc9',
-          '#41a6f6',
-          '#73eff7',
-          '#f4f4f4',
-          '#94b0c2',
-          '#566c86',
-          '#333c57',
-        ],
+        palette: this.selectedPalette().colors.map((c) => `#${c}`),
         tileSize: 16,
         mapWidth: 40,
         mapHeight: 30,

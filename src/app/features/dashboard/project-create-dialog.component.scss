@@ -1,1 +1,4 @@
-/* Styles intentionally empty: the dialog look is owned by rk-dialog. */
+fieldset {
+  max-height: 220px;
+  overflow-y: auto;
+}
