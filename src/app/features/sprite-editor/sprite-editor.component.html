@@ -1,58 +1,40 @@
 <div class="tw-flex tw-h-full">
   <!-- Left: Sprite List -->
-  @if (!focusMode()) {
-    <div class="tw-w-64 tw-shrink-0 tw-border-r tw-border-border tw-bg-card-bg tw-flex tw-flex-col">
-      <div
-        class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-3 tw-border-b tw-border-border"
-      >
-        <h3 class="tw-font-semibold tw-text-foreground">Sprites</h3>
-      </div>
-      <div class="tw-flex-1 tw-overflow-auto tw-p-2 tw-flex tw-flex-col tw-gap-1">
-        @for (group of spriteGroups(); track group.tile.id) {
-          <div
-            class="tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-xs tw-font-semibold tw-text-muted-foreground tw-uppercase"
-          >
-            <span class="material-symbols" aria-hidden="true">folder</span>
-            <span>{{ group.tile.name }}</span>
-          </div>
-          @for (sprite of group.sprites; track sprite.id) {
-            <button
-              type="button"
-              (click)="selectSprite(sprite.id)"
-              [class.tw-bg-primary/10]="selectedSpriteId() === sprite.id"
-              class="tw-text-left tw-px-3 tw-py-2 tw-rounded-md tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
-            >
-              <span class="material-symbols tw-text-muted-foreground" aria-hidden="true"
-                >image</span
-              >
-              <span>{{ sprite.name }}</span>
-            </button>
-          }
-        } @empty {
-          <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">
-            No sprites yet
-          </div>
-        }
-      </div>
+  <div class="tw-w-64 tw-shrink-0 tw-border-r tw-border-border tw-bg-card-bg tw-flex tw-flex-col">
+    <div class="tw-px-4 tw-py-3 tw-border-b tw-border-border">
+      <h3 class="tw-font-semibold tw-text-foreground">Sprites</h3>
     </div>
-  }
+    <div class="tw-flex-1 tw-overflow-auto tw-p-2 tw-flex tw-flex-col tw-gap-1">
+      @for (group of spriteGroups(); track group.tile.id) {
+        <div
+          class="tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-xs tw-font-semibold tw-text-muted-foreground tw-uppercase"
+        >
+          <span class="material-symbols" aria-hidden="true">folder</span>
+          <span>{{ group.tile.name }}</span>
+        </div>
+        @for (sprite of group.sprites; track sprite.id) {
+          <button
+            type="button"
+            (click)="selectSprite(sprite.id)"
+            [class.tw-bg-primary/10]="selectedSpriteId() === sprite.id"
+            class="tw-text-left tw-px-3 tw-py-2 tw-rounded-md tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
+          >
+            <span class="material-symbols tw-text-muted-foreground" aria-hidden="true">image</span>
+            <span>{{ sprite.name }}</span>
+          </button>
+        }
+      } @empty {
+        <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">No sprites yet</div>
+      }
+    </div>
+  </div>
 
   <!-- Center: Canvas -->
   <div
     class="tw-flex-1 tw-flex tw-flex-col tw-items-center tw-justify-center tw-bg-background tw-p-4 tw-gap-4"
   >
-    @if (focusMode()) {
-      <div class="tw-flex tw-items-center tw-gap-2 tw-w-full">
-        <button
-          type="button"
-          (click)="backToTiles()"
-          class="tw-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1.5 tw-rounded-md hover:tw-bg-muted"
-        >
-          <span class="material-symbols" aria-hidden="true">arrow_back</span>
-          Back to tiles
-        </button>
-        <h2 class="tw-font-semibold tw-text-foreground">{{ selectedSprite()?.name }}</h2>
-      </div>
+    @if (selectedSprite(); as sprite) {
+      <h2 class="tw-font-semibold tw-text-foreground">{{ sprite.name }}</h2>
     }
     @if (selectedSprite() && paletteIndices(); as indices) {
       <rk-pixel-canvas
@@ -68,16 +50,14 @@
   </div>
 
   <!-- Right: Tools -->
-  @if (!focusMode()) {
-    <div
-      class="tw-w-56 tw-shrink-0 tw-border-l tw-border-border tw-bg-card-bg tw-p-4 tw-flex tw-flex-col tw-gap-4"
-    >
-      <rk-palette-manager
-        [palette]="projectPalette()"
-        [selectedIndex]="selectedPaletteIndex()"
-        (selectedIndexChange)="selectedPaletteIndex.set($event)"
-      />
-      <rk-drawing-tools [tool]="selectedTool()" (toolChange)="selectedTool.set($event)" />
-    </div>
-  }
+  <div
+    class="tw-w-56 tw-shrink-0 tw-border-l tw-border-border tw-bg-card-bg tw-p-4 tw-flex tw-flex-col tw-gap-4"
+  >
+    <rk-palette-manager
+      [palette]="projectPalette()"
+      [selectedIndex]="selectedPaletteIndex()"
+      (selectedIndexChange)="selectedPaletteIndex.set($event)"
+    />
+    <rk-drawing-tools [tool]="selectedTool()" (toolChange)="selectedTool.set($event)" />
+  </div>
 </div>

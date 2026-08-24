@@ -132,48 +132,37 @@ describe('SpriteEditorComponent', () => {
     expect(compiled.querySelector('rk-pixel-canvas')).toBeTruthy();
   });
 
-  it('enters focus mode and auto-selects the sprite when a spriteId param is present', async () => {
+  it('keeps the sprite list visible when a spriteId param is present', async () => {
     await createProjectWithPalette();
     const service = TestBed.inject(SpriteService);
-    const sprite = await service.createSprite('test-proj', 'Focused Sprite', 1);
+    const sprite = await service.createSprite('test-proj', 'Deep Linked Sprite', 1);
     await setupWithProject();
 
     routeParams.next({ spriteId: String(sprite.id) });
     await flushRouteWork();
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.focusMode()).toBe(true);
-    expect(fixture.componentInstance.selectedSpriteId()).toBe(sprite.id);
-
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Back to tiles');
-    expect(compiled.textContent).toContain('Focused Sprite');
-    expect(compiled.querySelector('rk-palette-manager')).toBeNull();
-    expect(compiled.querySelector('rk-drawing-tools')).toBeNull();
+    expect(compiled.querySelector('rk-pixel-canvas')).toBeTruthy();
+    expect(compiled.textContent).toContain('Sprites');
   });
 
-  it('stays in normal editing mode when no spriteId param is present', async () => {
+  it('shows the selected sprite name above the canvas', async () => {
     await createProjectWithPalette();
     await setupWithProject();
-
-    routeParams.next({});
-    await flushRouteWork();
+    const service = TestBed.inject(SpriteService);
+    const sprite = await service.createSprite('test-proj', 'frame 1', 1);
+    await fixture.componentInstance.selectSprite(sprite.id);
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.focusMode()).toBe(false);
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).not.toContain('Back to tiles');
-    expect(compiled.querySelector('rk-palette-manager')).toBeTruthy();
-    expect(compiled.querySelector('rk-drawing-tools')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('frame 1');
   });
 
-  it('shows an error and redirects back to tiles for an unknown spriteId param', async () => {
+  it('shows an error and does not navigate for an unknown spriteId param', async () => {
     await createProjectWithPalette();
     await setupWithProject();
 
-    const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     const notification = TestBed.inject(NotificationService);
     const errorSpy = vi.spyOn(notification, 'error');
 
@@ -181,10 +170,10 @@ describe('SpriteEditorComponent', () => {
     await flushRouteWork();
 
     expect(errorSpy).toHaveBeenCalledWith('Sprite not found');
-    expect(navigateSpy).toHaveBeenCalledWith(['/project', 'test-proj', 'tiles']);
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 
-  it('shows an error notification when focus mode fails to load the sprite', async () => {
+  it('shows an error notification when a deep-linked sprite fails to load', async () => {
     await createProjectWithPalette();
     await setupWithProject();
 
