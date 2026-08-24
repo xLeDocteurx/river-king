@@ -8,6 +8,7 @@ import { SceneService } from './services/scene.service';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
+import { StatusBarService } from '../../core/services/status-bar.service';
 import { createEmptySession } from '../../shared/models/session.model';
 import type { Scene } from '../../shared/models/scene.model';
 
@@ -261,5 +262,20 @@ describe('SceneEditorComponent', () => {
 
     expect(component.selectedSceneId()).toBeNull();
     expect(component.restoreCamera()).toBeNull();
+  });
+
+  it('sets the status bar context when a scene is selected', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const statusBar = TestBed.inject(StatusBarService);
+    const spy = vi.spyOn(statusBar, 'setContext');
+    const scene = await sceneService.createScene('p1', 'Forest', 10, 10);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+
+    const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
+    expect(lastCall?.[0]).toContain('Forest');
+    expect(lastCall?.[0]).toContain('10×10');
   });
 });

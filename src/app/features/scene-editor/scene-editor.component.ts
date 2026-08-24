@@ -6,11 +6,13 @@ import {
   ChangeDetectionStrategy,
   computed,
   viewChild,
+  effect,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
+import { StatusBarService } from '../../core/services/status-bar.service';
 import { SceneService } from './services/scene.service';
 import { MapTilesService } from './services/map-tiles.service';
 import { MapCanvasComponent } from './map-canvas.component';
@@ -45,7 +47,9 @@ export class SceneEditorComponent implements OnInit {
   private readonly notification = inject(NotificationService);
   private readonly mapTilesService = inject(MapTilesService);
   private readonly sessions = inject(SessionService);
+  private readonly statusBar = inject(StatusBarService);
   private readonly deleteConfirmDialog = viewChild.required(ConfirmDialogComponent);
+  mapCanvasRef = viewChild(MapCanvasComponent);
 
   /** Currently active project id derived from route params. */
   projectId = signal<string>('');
@@ -73,6 +77,22 @@ export class SceneEditorComponent implements OnInit {
   pendingDeleteSceneId = signal<string | null>(null);
   /** Camera state to restore on the map canvas (consumed once, then null). */
   restoreCamera = signal<{ x: number; y: number; zoom: number } | null>(null);
+
+  /** Effect that updates the global status bar with scene and camera info. */
+  statusBarEffect = effect(() => {
+    const scene = this.selectedScene();
+    const canvas = this.mapCanvasRef();
+    if (!scene || !canvas) {
+      this.statusBar.setContext('No scene selected');
+      return;
+    }
+    const x = Math.round(canvas.cameraX());
+    const y = Math.round(canvas.cameraY());
+    const zoom = Math.round(canvas.zoom() * 100);
+    this.statusBar.setContext(
+      `${scene.name} | ${scene.width}×${scene.height} | Cam: ${x},${y} | Zoom: ${zoom}%`,
+    );
+  });
 
   /** Data for the scene deletion confirmation dialog. */
   deleteDialogData = computed<ConfirmDialogData>(() => {
