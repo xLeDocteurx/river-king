@@ -179,7 +179,7 @@ describe('ProjectCardComponent', () => {
     expect(openEmitted).toBe(false);
   });
 
-  it('should display palette colors', async () => {
+  it('should display every palette color', async () => {
     const fixture = TestBed.createComponent(ProjectCardComponent);
     const palette = [
       '#FF0000',
@@ -190,6 +190,10 @@ describe('ProjectCardComponent', () => {
       '#FF00FF',
       '#FFFFFF',
       '#000000',
+      '#123456',
+      '#654321',
+      '#336699',
+      '#996633',
     ];
     fixture.componentRef.setInput('project', createMockProject({ palette }));
     await fixture.whenStable();
@@ -199,9 +203,9 @@ describe('ProjectCardComponent', () => {
     const paletteContainer = compiled.querySelector('[data-testid="palette-row"]');
     expect(paletteContainer).toBeTruthy();
     const colorDivs = paletteContainer!.querySelectorAll('div');
-    expect(colorDivs.length).toBe(8);
+    expect(colorDivs.length).toBe(12);
 
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 12; i++) {
       const div = colorDivs[i] as HTMLElement;
       expect(div.style.backgroundColor).toBe(hexToRgb(palette[i]));
     }

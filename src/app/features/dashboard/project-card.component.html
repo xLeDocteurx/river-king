@@ -27,12 +27,12 @@
     Updated {{ formatDate(project().updatedAt) }} · Tile {{ project().tileSize }}px ·
     {{ project().mapWidth }}×{{ project().mapHeight }}
   </p>
-  <div data-testid="palette-row" class="tw-flex tw-gap-1">
-    @for (color of project().palette.slice(0, 8); track $index) {
-      <div
-        class="tw-w-3 tw-h-3 tw-border tw-border-border/50"
-        [style.background-color]="color"
-      ></div>
+  <div
+    data-testid="palette-row"
+    class="tw-flex tw-h-3 tw-overflow-hidden tw-rounded-sm tw-border tw-border-border/50"
+  >
+    @for (color of project().palette; track $index) {
+      <div class="tw-h-full tw-flex-1" [style.background-color]="color"></div>
     }
   </div>
 </div>
