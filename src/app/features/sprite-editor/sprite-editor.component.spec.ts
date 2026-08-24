@@ -19,6 +19,8 @@ import { SpriteEditorComponent } from './sprite-editor.component';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SpriteService } from './services/sprite.service';
+import type { Sprite } from '../../shared/models/sprite.model';
+import type { Tile } from '../../shared/models/tile.model';
 
 describe('SpriteEditorComponent', () => {
   let fixture: ComponentFixture<SpriteEditorComponent>;
@@ -98,10 +100,21 @@ describe('SpriteEditorComponent', () => {
 
   it('should list sprites after creating one', async () => {
     await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Base Tile',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 8,
+      properties: { blocking: false, interactable: false },
+    } as Tile);
     await setupWithProject();
     const service = TestBed.inject(SpriteService);
     await service.createSprite('test-proj', 'Test Sprite', 1);
     await fixture.componentInstance.loadSprites();
+    await fixture.componentInstance.loadTiles();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Test Sprite');
@@ -238,6 +251,23 @@ describe('SpriteEditorComponent', () => {
 
     fixture.destroy();
     expect(updateSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('groups sprites under their parent tile in tile-name order', () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.sprites.set([
+      { id: 1, name: 'frame 2', tileId: 20 } as Sprite,
+      { id: 2, name: 'frame 1', tileId: 20 } as Sprite,
+      { id: 3, name: 'frame 1', tileId: 10 } as Sprite,
+    ]);
+    component.tiles.set([
+      { id: 10, name: 'Beta' },
+      { id: 20, name: 'Alpha' },
+    ] as Tile[]);
+
+    expect(component.spriteGroups().map((g) => g.tile.name)).toEqual(['Alpha', 'Beta']);
+    expect(component.spriteGroups()[0].sprites.map((s) => s.name)).toEqual(['frame 1', 'frame 2']);
   });
 
   it('flushes the pending save before switching sprites', async () => {

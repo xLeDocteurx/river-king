@@ -14,8 +14,10 @@ import { PixelCanvasComponent } from './pixel-canvas.component';
 import { PaletteManagerComponent } from './palette-manager.component';
 import { DrawingToolsComponent, type DrawingTool } from './drawing-tools.component';
 import { ProjectService } from '../dashboard/services/project.service';
+import { TileService } from '../tile-manager/services/tile.service';
 import { NotificationService } from '../../core/services/notification.service';
 import type { Sprite } from '../../shared/models/sprite.model';
+import type { Tile } from '../../shared/models/tile.model';
 
 /**
  * Main page component for the sprite editor feature.
@@ -26,7 +28,7 @@ import type { Sprite } from '../../shared/models/sprite.model';
 @Component({
   selector: 'rk-sprite-editor',
   standalone: true,
-  providers: [SpriteService],
+  providers: [SpriteService, TileService],
   imports: [PixelCanvasComponent, PaletteManagerComponent, DrawingToolsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sprite-editor.component.html',
@@ -37,6 +39,7 @@ export class SpriteEditorComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly spriteService = inject(SpriteService);
   private readonly projectService = inject(ProjectService);
+  private readonly tileService = inject(TileService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -51,6 +54,29 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Reactive signal holding the list of sprites. */
   sprites = signal<Sprite[]>([]);
+
+  /** Tiles of the current project, used as group headers for the sprite list. */
+  tiles = signal<Tile[]>([]);
+
+  /** Sprites grouped under their parent tile, ordered by tile then sprite name. */
+  readonly spriteGroups = computed(() => {
+    const tilesById = new Map(this.tiles().map((t) => [t.id, t]));
+    const groups = new Map<number, { tile: Tile; sprites: Sprite[] }>();
+    for (const sprite of this.sprites()) {
+      const tile = tilesById.get(sprite.tileId);
+      if (!tile) continue;
+      let group = groups.get(tile.id);
+      if (!group) {
+        group = { tile, sprites: [] };
+        groups.set(tile.id, group);
+      }
+      group.sprites.push(sprite);
+    }
+    for (const group of groups.values()) {
+      group.sprites.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return [...groups.values()].sort((a, b) => a.tile.name.localeCompare(b.tile.name));
+  });
 
   /** Reactive signal holding the ID of the currently selected sprite. */
   selectedSpriteId = signal<number | null>(null);
@@ -89,6 +115,7 @@ export class SpriteEditorComponent implements OnInit {
         this.projectId.set(id);
         this.loadProjectPalette();
         this.loadSprites();
+        this.loadTiles();
       }
     });
 
@@ -101,6 +128,7 @@ export class SpriteEditorComponent implements OnInit {
       this.focusMode.set(true);
       try {
         await this.loadSprites();
+        this.loadTiles();
         const sprite = await this.spriteService.getSprite(Number(raw));
         if (!sprite) {
           this.notification.error('Sprite not found');
@@ -133,6 +161,16 @@ export class SpriteEditorComponent implements OnInit {
       this.sprites.set(sprites);
     } catch (e) {
       this.notification.error('Failed to load sprites');
+      console.error(e);
+    }
+  }
+
+  /** Loads all tiles of the project for sprite grouping headers. */
+  async loadTiles(): Promise<void> {
+    try {
+      this.tiles.set(await this.tileService.getTiles(this.projectId()));
+    } catch (e) {
+      this.notification.error('Failed to load tiles');
       console.error(e);
     }
   }
