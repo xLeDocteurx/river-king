@@ -21,8 +21,9 @@
             role="radio"
             [aria-checked]="selectedPaletteId() === p.id"
             (click)="selectPalette(p.id)"
-            class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-px-3 tw-py-2 tw-rounded-sm tw-text-left hover:tw-bg-muted"
-            [class.tw-bg-primary/10]="selectedPaletteId() === p.id"
+            class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-l-2 tw-border-transparent tw-px-3 tw-py-2 tw-rounded-sm tw-text-left hover:tw-bg-muted"
+            [class.tw-bg-primary/15]="selectedPaletteId() === p.id"
+            [class.tw-border-accent]="selectedPaletteId() === p.id"
           >
             <span class="tw-text-sm tw-whitespace-nowrap">
               {{ p.name }}

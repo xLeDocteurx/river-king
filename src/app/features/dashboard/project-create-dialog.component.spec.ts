@@ -89,6 +89,21 @@ describe('ProjectCreateDialogComponent', () => {
     expect(fixture.componentInstance.selectedPaletteId()).toBe('sweetie-16');
   });
 
+  it('highlights exactly the selected palette row', () => {
+    fixture.componentInstance.open();
+    fixture.componentInstance.selectPalette('nymph-gb');
+    fixture.detectChanges();
+
+    const rows = Array.from(
+      fixture.nativeElement.querySelectorAll('button[role="radio"]'),
+    ) as HTMLButtonElement[];
+    const highlighted = rows.filter((row) => row.className.includes('tw-border-accent'));
+
+    expect(highlighted.length).toBe(1);
+    const label = (highlighted[0] as HTMLElement).querySelector('span')?.textContent ?? '';
+    expect(label.trim().startsWith('Nymph GB')).toBe(true);
+  });
+
   it('creates the project with the chosen palette colors prefixed by #', async () => {
     const createSpy = vi
       .spyOn(TestBed.inject(ProjectService), 'create')
