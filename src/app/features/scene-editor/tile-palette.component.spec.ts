@@ -37,6 +37,7 @@ describe('TilePaletteComponent', () => {
     const img = compiled.querySelector('img');
     expect(img).toBeTruthy();
     expect(img?.getAttribute('src')).toBe('data:image/png;base64,IMG');
+    expect(img?.className).toContain('pixelated');
   });
 
   it('keeps a plain colored button when no tile image exists', () => {
