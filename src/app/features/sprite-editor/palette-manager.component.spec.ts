@@ -49,4 +49,13 @@ describe('PaletteManagerComponent', () => {
     expect(buttons[1].classList.contains('tw-ring-2')).toBe(true);
     expect(buttons[0].classList.contains('tw-ring-2')).toBe(false);
   });
+
+  it('lays the swatches out in a four-column grid', () => {
+    const colors = Array.from({ length: 16 }, (_, i) => `#${i.toString(16).padStart(2, '0')}0000`);
+    fixture.componentRef.setInput('palette', colors);
+    fixture.componentRef.setInput('selectedIndex', 0);
+    fixture.detectChanges();
+    const grid = fixture.nativeElement.querySelector('[data-testid=palette-grid]');
+    expect(grid.className).toContain('tw-grid-cols-4');
+  });
 });
