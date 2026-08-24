@@ -24,6 +24,9 @@ export class TileListComponent {
   /** Emitted when a tile is clicked. */
   tileSelect = output<number>();
 
+  /** Emitted when the light per-row delete button is clicked. */
+  tileDelete = output<number>();
+
   /** Emitted when the add-tile button is clicked. */
   tileCreate = output<void>();
 }

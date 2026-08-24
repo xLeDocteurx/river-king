@@ -1,15 +1,5 @@
-<form [formGroup]="form" (ngSubmit)="onSubmit()" class="tw-flex tw-flex-col tw-gap-4 tw-max-w-lg">
-  <div class="tw-flex tw-items-center tw-justify-between">
-    <h2 class="tw-text-xl tw-font-bold tw-text-foreground">Tile Properties</h2>
-    <button
-      type="button"
-      (click)="delete.emit(tile()!.id)"
-      class="tw-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1.5 tw-rounded-sm tw-bg-destructive tw-text-destructive-foreground tw-transition hover:tw-opacity-90"
-    >
-      <span class="material-symbols" aria-hidden="true">delete</span>
-      Delete
-    </button>
-  </div>
+<form [formGroup]="form" class="tw-flex tw-flex-col tw-gap-4 tw-max-w-lg">
+  <h2 class="tw-text-xl tw-font-bold tw-text-foreground">Tile Properties</h2>
 
   <label class="tw-flex tw-flex-col tw-gap-1">
     <span class="tw-text-sm tw-font-medium">Name</span>
@@ -168,15 +158,6 @@
         }
       </div>
     }
-  </div>
-
-  <div class="tw-flex tw-justify-end">
-    <button
-      type="submit"
-      class="tw-px-4 tw-py-2 tw-rounded-sm tw-bg-primary tw-text-primary-foreground tw-transition hover:tw-opacity-90"
-    >
-      Save
-    </button>
   </div>
 </form>
 

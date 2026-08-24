@@ -27,7 +27,6 @@ describe('TilePropertiesComponent', () => {
   let component: TilePropertiesComponent;
   let db: DatabaseService;
   const saved: Tile[] = [];
-  const deletedIds: number[] = [];
 
   function makeTile(overrides: Partial<Tile> = {}): Tile {
     return {
@@ -65,7 +64,6 @@ describe('TilePropertiesComponent', () => {
 
   async function setup(tile: Tile): Promise<void> {
     saved.length = 0;
-    deletedIds.length = 0;
     fixture.componentRef.setInput('tile', tile);
     fixture.componentRef.setInput('projectTileSize', 16);
     fixture.componentRef.setInput('projectPalette', ['#ff0000', '#00ff00']);
@@ -87,7 +85,6 @@ describe('TilePropertiesComponent', () => {
 
   beforeEach(async () => {
     saved.length = 0;
-    deletedIds.length = 0;
     await TestBed.configureTestingModule({
       imports: [TilePropertiesComponent],
       providers: [TileSpritesService, TileService, provideRouter([])],
@@ -100,7 +97,6 @@ describe('TilePropertiesComponent', () => {
     await db.sprites.clear();
     // Wire outputs manually
     component.save.subscribe((t) => saved.push(t));
-    component.delete.subscribe((id) => deletedIds.push(id));
   });
 
   it('static tile renders one thumbnail bound to first sprite and navigates to sprite editor on click', async () => {
@@ -256,14 +252,20 @@ describe('TilePropertiesComponent', () => {
     expect(stored?.height).toBe(32);
   });
 
-  it('interactable unchecked hides dropdown and saves actionId undefined', async () => {
-    await setup(makeTile({ type: 'static' }));
-    expect(fixture.debugElement.query(By.css('rk-searchable-select'))).toBeFalsy();
-    const saveBtn = fixture.debugElement
-      .queryAll(By.css('button'))
-      .map((b) => b.nativeElement as HTMLButtonElement)
-      .find((b) => b.textContent?.trim() === 'Save');
-    saveBtn!.click();
+  it('unchecking interactable auto-saves actionId undefined', async () => {
+    await setup(
+      makeTile({
+        type: 'static',
+        properties: { blocking: false, interactable: true, actionId: 'test' },
+      }),
+    );
+    expect(fixture.debugElement.query(By.css('rk-searchable-select'))).toBeTruthy();
+    const cb = fixture.debugElement.query(By.css('input[name="interactable"]'))
+      .nativeElement as HTMLInputElement;
+    cb.checked = false;
+    cb.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    component.flushAutosave();
     fixture.detectChanges();
     expect(saved).toHaveLength(1);
     expect(saved[0].properties.actionId).toBeUndefined();
@@ -286,11 +288,7 @@ describe('TilePropertiesComponent', () => {
       .find((o) => o.nativeElement.textContent.trim() === 'test');
     opt!.nativeElement.click();
     fixture.detectChanges();
-    const saveBtn = fixture.debugElement
-      .queryAll(By.css('button'))
-      .map((b) => b.nativeElement as HTMLButtonElement)
-      .find((b) => b.textContent?.trim() === 'Save');
-    saveBtn!.click();
+    component.flushAutosave();
     fixture.detectChanges();
     expect(saved[0].properties.actionId).toBe('test');
     expect(saved[0].properties.interactable).toBe(true);
@@ -335,11 +333,7 @@ describe('TilePropertiesComponent', () => {
     blockingCb.checked = true;
     blockingCb.dispatchEvent(new Event('change'));
     fixture.detectChanges();
-    const saveBtn = fixture.debugElement
-      .queryAll(By.css('button'))
-      .map((b) => b.nativeElement as HTMLButtonElement)
-      .find((b) => b.textContent?.trim() === 'Save');
-    saveBtn!.click();
+    component.flushAutosave();
     fixture.detectChanges();
     expect(saved).toHaveLength(1);
     expect(saved[0].name).toBe('Renamed');
@@ -347,5 +341,34 @@ describe('TilePropertiesComponent', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).not.toContain('Collision');
     expect(text).not.toContain('Solid');
+  });
+
+  it('renders no Save button', async () => {
+    await setup(makeTile());
+    const saveBtn = fixture.debugElement
+      .queryAll(By.css('button'))
+      .map((b) => b.nativeElement as HTMLButtonElement)
+      .find((b) => b.textContent?.trim() === 'Save');
+    expect(saveBtn).toBeUndefined();
+  });
+
+  it('flushAutosave skips emission when nothing changed', async () => {
+    await setup(makeTile());
+    component.flushAutosave();
+    fixture.detectChanges();
+    expect(saved).toHaveLength(0);
+  });
+
+  it('auto-saves form edits ~400ms after the last change', async () => {
+    await setup(makeTile());
+    const nameInput = fixture.debugElement.query(By.css('input[name="name"]'))
+      .nativeElement as HTMLInputElement;
+    nameInput.value = 'Auto Saved';
+    nameInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(saved).toHaveLength(0);
+    await new Promise((r) => setTimeout(r, 500));
+    expect(saved).toHaveLength(1);
+    expect(saved[0].name).toBe('Auto Saved');
   });
 });

@@ -5,6 +5,7 @@
     [selectedTileId]="selectedTileId()"
     (tileSelect)="selectTile($event)"
     (tileCreate)="createTile()"
+    (tileDelete)="requestDelete($event)"
   />
   <div class="tw-flex-1 tw-p-4 tw-overflow-auto">
     @if (selectedTile()) {
@@ -13,7 +14,6 @@
         [projectTileSize]="tileSize()"
         [projectPalette]="palette()"
         (save)="saveTile($event)"
-        (delete)="requestDelete($event)"
       />
     } @else {
       <div class="tw-text-muted-foreground tw-text-center tw-py-20">

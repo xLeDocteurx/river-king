@@ -1,6 +1,7 @@
 import {
   Component,
   ChangeDetectionStrategy,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -9,6 +10,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -28,8 +30,10 @@ import { TileSpritesService } from '../services/tile-sprites.service';
  * applied to all frames, and blocking/interactable properties (action chosen
  * through a searchable dropdown). Persists frame lifecycle and size changes
  * through {@link TileSpritesService} shared state; navigation to the sprite
- * editor is performed directly via the Router. Only save/delete user
- * submissions are delegated upward. Stored tile values are synced into the
+ * editor is performed directly via the Router. Property edits auto-save:
+ * form changes schedule a trailing save 400 ms after the last keystroke
+ * (flushed on destruction), and the parent is notified through `save`.
+ * Stored tile values are synced into the
  * form only when the edited tile identity changes, so sprite-array mutations
  * (frame create/delete/resize) never discard unsaved edits.
  */
@@ -56,15 +60,16 @@ export class TilePropertiesComponent {
   private readonly tileService = inject(TileService);
   private readonly spriteService = inject(TileSpritesService);
   private readonly notification = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   /** Reactive list of the edited tile's frames (shared feature state). */
   readonly tileSprites = this.spriteService.sprites;
 
-  /** Emitted when the form is submitted with valid data. */
+  /** Emitted whenever the auto-save persists a tile change. */
   save = output<Tile>();
 
-  /** Emitted when the delete button is clicked. */
-  delete = output<number>();
+  /** Handle of the scheduled trailing auto-save timer (null when idle). */
+  private autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** Reference to the dialog confirming frame deletions. */
   private readonly framesDialog = viewChild.required<ConfirmDialogComponent>('framesDialog');
@@ -185,6 +190,21 @@ export class TilePropertiesComponent {
         this.sizeDialog().open();
       }
     });
+
+    // Auto-save: any form change schedules a trailing save 400 ms later.
+    this.form.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.scheduleAutosave());
+
+    // Auto-save also reacts to signal-driven properties (interactable/action).
+    effect(() => {
+      this.interactableChecked();
+      this.actionId();
+      this.scheduleAutosave();
+    });
+
+    // Flush any pending auto-save when the component is destroyed.
+    this.destroyRef.onDestroy(() => this.flushAutosave());
   }
 
   /**
@@ -318,13 +338,14 @@ export class TilePropertiesComponent {
   }
 
   /**
-   * Builds an updated {@link Tile} from the form values plus local signals
-   * and emits it via `save`. actionId is kept only when interactable is checked.
+   * Builds an updated {@link Tile} from the given base plus the current form
+   * values and local signals. actionId is kept only when interactable is checked.
+   * @param base - Tile to derive the update from.
+   * @returns The candidate updated tile.
    */
-  onSubmit(): void {
-    const base = this.tile()!;
+  private buildUpdatedTile(base: Tile): Tile {
     const value = this.form.getRawValue();
-    const updated: Tile = {
+    return {
       ...base,
       name: value.name ?? '',
       type: value.type ?? 'static',
@@ -335,7 +356,43 @@ export class TilePropertiesComponent {
         actionId: this.interactableChecked() ? (this.actionId() ?? undefined) : undefined,
       },
     };
+  }
+
+  /**
+   * Persists the pending form state when it differs from the stored tile.
+   * No-op when no tile is loaded or nothing changed.
+   */
+  private autoSave(): void {
+    const t = this.tile();
+    if (!t) return;
+    const updated = this.buildUpdatedTile(t);
+    if (JSON.stringify(updated) === JSON.stringify(t)) return;
     this.save.emit(updated);
+  }
+
+  /**
+   * Schedules a trailing auto-save 400 ms after the last change, coalescing
+   * rapid keystrokes into a single emission.
+   */
+  private scheduleAutosave(): void {
+    if (!this.tile()) return;
+    if (this.autosaveTimer !== null) clearTimeout(this.autosaveTimer);
+    this.autosaveTimer = setTimeout(() => {
+      this.autosaveTimer = null;
+      this.autoSave();
+    }, 400);
+  }
+
+  /**
+   * Cancels the pending debounced save and persists immediately.
+   * Called on component destruction so late edits are never lost.
+   */
+  flushAutosave(): void {
+    if (this.autosaveTimer !== null) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+    }
+    this.autoSave();
   }
 
   /**

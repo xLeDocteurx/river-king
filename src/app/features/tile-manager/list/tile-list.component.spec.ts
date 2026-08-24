@@ -36,11 +36,12 @@ describe('TileListComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const buttons = compiled.querySelectorAll('button[type="button"]');
-    // first button is the add button, then the tiles
-    expect(buttons.length).toBe(3);
-    expect(buttons[1].textContent?.trim()).toContain('Grass');
-    expect(buttons[2].textContent?.trim()).toContain('Water');
+    const names = Array.from(compiled.querySelectorAll('button'))
+      .filter((b) => !b.getAttribute('title'))
+      .map((b) => b.textContent?.trim());
+    expect(names).toHaveLength(2);
+    expect(names[0]).toContain('Grass');
+    expect(names[1]).toContain('Water');
   });
 
   it('should emit tileSelect when a tile is clicked', async () => {
@@ -59,8 +60,10 @@ describe('TileListComponent', () => {
     });
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const buttons = compiled.querySelectorAll('button[type="button"]');
-    buttons[2].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    const waterButton = Array.from(compiled.querySelectorAll('button')).find(
+      (b) => !b.getAttribute('title') && b.textContent?.includes('Water'),
+    );
+    waterButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(selectedId).toBe(2);
   });
@@ -106,11 +109,51 @@ describe('TileListComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const buttons = compiled.querySelectorAll('button[type="button"]');
-    const grassButton = buttons[1];
-    const waterButton = buttons[2];
+    const [grassButton, waterButton] = Array.from(compiled.querySelectorAll('button')).filter(
+      (b) => !b.getAttribute('title'),
+    );
 
     expect(grassButton.classList.contains('tw-bg-primary/10')).toBe(false);
     expect(waterButton.classList.contains('tw-bg-primary/10')).toBe(true);
+  });
+
+  it('should render one light delete button per row', async () => {
+    const fixture = TestBed.createComponent(TileListComponent);
+    fixture.componentRef.setInput('tiles', [
+      createMockTile({ id: 1, name: 'Grass' }),
+      createMockTile({ id: 2, name: 'Water' }),
+    ]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const deleteButtons = compiled.querySelectorAll('button[title="Delete tile"]');
+    expect(deleteButtons.length).toBe(2);
+  });
+
+  it('should emit tileDelete (not tileSelect) when the row delete button is clicked', async () => {
+    const fixture = TestBed.createComponent(TileListComponent);
+    fixture.componentRef.setInput('tiles', [
+      createMockTile({ id: 1, name: 'Grass' }),
+      createMockTile({ id: 2, name: 'Water' }),
+    ]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    let deletedId: number | undefined;
+    let selectedId: number | undefined;
+    fixture.componentInstance.tileDelete.subscribe((id) => {
+      deletedId = id;
+    });
+    fixture.componentInstance.tileSelect.subscribe((id) => {
+      selectedId = id;
+    });
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const grassDelete = compiled.querySelector('button[title="Delete tile"]') as HTMLButtonElement;
+    grassDelete.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(deletedId).toBe(1);
+    expect(selectedId).toBeUndefined();
   });
 });
