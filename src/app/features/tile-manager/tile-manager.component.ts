@@ -8,7 +8,7 @@ import {
   viewChild,
   effect,
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TileService } from './services/tile.service';
 import { TileSpritesService } from './services/tile-sprites.service';
@@ -40,6 +40,7 @@ import type { Tile } from '../../shared/models/tile.model';
 })
 export class TileManagerComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly tileService = inject(TileService);
   private readonly tileSpritesService = inject(TileSpritesService);
   private readonly projectService = inject(ProjectService);
@@ -103,6 +104,15 @@ export class TileManagerComponent implements OnInit {
         this.loadProject().then(() => this.loadTiles());
       }
     });
+
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const raw = params['tileId'];
+      if (raw === undefined || raw === null) return;
+      const tileId = Number(raw);
+      if (Number.isFinite(tileId) && tileId !== this.selectedTileId()) {
+        void this.restoreSelection(tileId);
+      }
+    });
   }
 
   /**
@@ -147,10 +157,27 @@ export class TileManagerComponent implements OnInit {
       const tile = await this.tileService.getTile(tileId);
       this.selectedTile.set(tile ?? null);
       await this.tileSpritesService.loadForTile(tileId);
+      if (this.route.snapshot.paramMap.get('tileId') !== String(tileId)) {
+        void this.router.navigate(['/project', this.projectId(), 'tiles', tileId]);
+      }
     } catch (e) {
       this.notification.error('Failed to load tile');
       console.error(e);
     }
+  }
+
+  /**
+   * Restores the selected tile after navigation or refresh.
+   * @param tileId - Tile id taken from the URL.
+   */
+  private async restoreSelection(tileId: number): Promise<void> {
+    if (this.tiles().length === 0) await this.loadTiles();
+    const exists = this.tiles().some((t) => t.id === tileId);
+    if (!exists) {
+      this.router.navigate(['/project', this.projectId(), 'tiles']);
+      return;
+    }
+    await this.selectTile(tileId);
   }
 
   /**
@@ -243,6 +270,9 @@ export class TileManagerComponent implements OnInit {
         this.selectedTileId.set(null);
         this.selectedTile.set(null);
         this.tileSpritesService.clearSelection();
+        if (this.route.snapshot.paramMap.get('tileId') !== null) {
+          void this.router.navigate(['/project', this.projectId(), 'tiles']);
+        }
       }
       await this.loadTiles();
     } catch (e) {

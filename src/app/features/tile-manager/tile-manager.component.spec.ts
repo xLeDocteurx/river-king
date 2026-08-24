@@ -12,6 +12,7 @@ import { ProjectService } from '../../features/dashboard/services/project.servic
 describe('TileManagerComponent', () => {
   let fixture: ComponentFixture<TileManagerComponent>;
   const parentParams = new BehaviorSubject<{ id?: string }>({});
+  const routeParams = new BehaviorSubject<{ tileId?: string }>({});
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -25,6 +26,15 @@ describe('TileManagerComponent', () => {
           provide: ActivatedRoute,
           useValue: {
             parent: { params: parentParams.asObservable() },
+            params: routeParams.asObservable(),
+            get snapshot() {
+              return {
+                paramMap: {
+                  get: (key: string) =>
+                    key === 'tileId' ? (routeParams.value.tileId ?? null) : null,
+                },
+              };
+            },
           },
         },
       ],
@@ -36,6 +46,11 @@ describe('TileManagerComponent', () => {
     await db.tiles.clear();
     await db.sprites.clear();
     await db.sessions.clear();
+
+    // Reset route param streams so subscriptions created in the next test
+    // do not replay a stale tileId from a previous test.
+    parentParams.next({});
+    routeParams.next({});
   });
 
   async function setupWithProject() {
@@ -43,6 +58,19 @@ describe('TileManagerComponent', () => {
     fixture = TestBed.createComponent(TileManagerComponent);
     fixture.detectChanges();
     await fixture.whenStable();
+  }
+
+  /** Adds one minimal tile to the test project and returns its generated id. */
+  async function addSeedTile(): Promise<number> {
+    const db = TestBed.inject(DatabaseService);
+    return db.tiles.add({
+      projectId: 'test-proj',
+      name: 'T',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 8,
+      properties: { blocking: false, interactable: false },
+    } as unknown as import('../../shared/models/tile.model').Tile);
   }
 
   it('should create', async () => {
@@ -86,6 +114,7 @@ describe('TileManagerComponent', () => {
       .spyOn(tileSpritesService, 'createBlankFrame')
       .mockResolvedValue({ id: 99 } as never);
     const updateSpy = vi.spyOn(tileService, 'updateTile').mockResolvedValue(undefined);
+    vi.spyOn(comp['router'], 'navigate').mockResolvedValue(true);
 
     await comp.createTile();
 
@@ -132,8 +161,44 @@ describe('TileManagerComponent', () => {
     await setupWithProject();
     const comp = fixture.componentInstance;
     const spriteService = fixture.debugElement.injector.get(TileSpritesService);
+    vi.spyOn(comp['router'], 'navigate').mockResolvedValue(true);
     await comp.selectTile(tileId);
     expect(spriteService.sprites().length).toBe(1);
     expect(spriteService.sprites()[0].pixelData).toContain('SPR');
+  });
+
+  it('navigates to the tile route when a tile is selected', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    const navigateSpy = vi.spyOn(comp['router'], 'navigate').mockResolvedValue(true);
+    await comp.selectTile(7);
+    expect(navigateSpy).toHaveBeenCalledWith(['/project', comp.projectId(), 'tiles', 7]);
+  });
+
+  it('restores the selection from the :tileId route param', async () => {
+    const seedTileId = await addSeedTile();
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 50));
+    const comp = fixture.componentInstance;
+    vi.spyOn(comp['router'], 'navigate').mockResolvedValue(true);
+    // emit params the way the spec's ActivatedRoute stub does for other params
+    routeParams.next({ tileId: String(seedTileId) });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(comp.selectedTileId()).toBe(seedTileId);
+  });
+
+  it('clears the tile param when the selected tile is deleted', async () => {
+    const seedTileId = await addSeedTile();
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 50));
+    const comp = fixture.componentInstance;
+    const navigateSpy = vi.spyOn(comp['router'], 'navigate').mockResolvedValue(true);
+    await comp.selectTile(seedTileId);
+    // Simulate the router having applied the navigation to /tiles/:tileId.
+    routeParams.next({ tileId: String(seedTileId) });
+    await new Promise((r) => setTimeout(r, 50));
+    navigateSpy.mockClear();
+    await comp.deleteTile(seedTileId);
+    expect(navigateSpy).toHaveBeenCalledWith(['/project', comp.projectId(), 'tiles']);
   });
 });
