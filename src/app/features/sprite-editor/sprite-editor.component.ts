@@ -7,7 +7,7 @@ import {
   ChangeDetectionStrategy,
   computed,
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SpriteService } from './services/sprite.service';
 import { PixelCanvasComponent } from './canvas/pixel-canvas.component';
@@ -37,6 +37,7 @@ import type { Tile } from '../../shared/models/tile.model';
 })
 export class SpriteEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly spriteService = inject(SpriteService);
   private readonly projectService = inject(ProjectService);
   private readonly tileService = inject(TileService);
@@ -221,6 +222,9 @@ export class SpriteEditorComponent implements OnInit {
         this.paletteIndices.set(null);
       }
       void this.sessions.updateSession(this.projectId(), { lastSpriteId: spriteId });
+      if (this.route.snapshot.paramMap.get('spriteId') !== String(spriteId)) {
+        void this.router.navigate(['/project', this.projectId(), 'sprites', spriteId]);
+      }
     } catch (e) {
       this.notification.error('Failed to load sprite');
       console.error(e);

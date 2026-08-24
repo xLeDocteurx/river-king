@@ -7,7 +7,7 @@ import {
   computed,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
@@ -39,6 +39,7 @@ import type { TileFootprintMap } from './map-footprint';
 })
 export class SceneEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly sceneService = inject(SceneService);
   private readonly db = inject(DatabaseService);
   private readonly notification = inject(NotificationService);
@@ -100,18 +101,20 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Restores the persisted session for the scenes screen: re-selects the
-   * last active scene and prepares the camera state for the map canvas.
+   * Restores the persisted session for the scenes screen: re-selects the last
+   * active scene (or the scene from the URL when deep-linked) and prepares
+   * the camera state for the map canvas.
    */
   async restoreSession(): Promise<void> {
     const stored = await this.sessions.getSession(this.projectId()).catch(() => undefined);
-    if (!stored) return;
 
-    const target = stored.lastSceneId;
-    if (target && this.scenes().some((s) => s.id === target)) {
-      await this.selectScene(target);
-    }
-    if (stored.cameraX !== 0 || stored.cameraY !== 0 || stored.cameraZoom !== 1) {
+    const urlSceneId = this.route.snapshot.paramMap.get('sceneId');
+    let target = urlSceneId ?? undefined;
+    if (!target && stored?.lastSceneId) target = stored.lastSceneId;
+    if (target && !this.scenes().some((s) => s.id === target)) target = undefined;
+
+    if (target) await this.selectScene(target);
+    if (stored && (stored.cameraX !== 0 || stored.cameraY !== 0 || stored.cameraZoom !== 1)) {
       this.restoreCamera.set({ x: stored.cameraX, y: stored.cameraY, zoom: stored.cameraZoom });
     }
   }
@@ -191,6 +194,9 @@ export class SceneEditorComponent implements OnInit {
         lastScreen: 'scenes',
         lastSceneId: sceneId,
       });
+      if (this.route.snapshot.paramMap.get('sceneId') !== String(sceneId)) {
+        void this.router.navigate(['/project', this.projectId(), 'scenes', sceneId]);
+      }
     } catch (e) {
       console.error('Failed to load scene:', e);
       this.notification.error('Failed to load the scene.');

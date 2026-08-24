@@ -5,4 +5,8 @@ export const SCENE_EDITOR_ROUTES: Routes = [
     path: '',
     loadComponent: () => import('./scene-editor.component').then((m) => m.SceneEditorComponent),
   },
+  {
+    path: ':sceneId',
+    loadComponent: () => import('./scene-editor.component').then((m) => m.SceneEditorComponent),
+  },
 ];

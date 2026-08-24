@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { SceneEditorComponent } from './scene-editor.component';
@@ -43,11 +43,25 @@ describe('SceneEditorComponent', () => {
   let component: SceneEditorComponent;
   let sceneService: SceneService;
   let db: DatabaseService;
+  /** Mutable stand-in for the :sceneId route parameter. */
+  let paramSceneId: string | null = null;
 
   beforeEach(async () => {
+    paramSceneId = null;
     await TestBed.configureTestingModule({
       imports: [SceneEditorComponent],
-      providers: [{ provide: ActivatedRoute, useValue: { parent: { params: of({ id: 'p1' }) } } }],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: { get: (key: string) => (key === 'sceneId' ? paramSceneId : null) },
+            },
+            parent: { params: of({ id: 'p1' }) },
+          },
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(SceneEditorComponent);
@@ -138,6 +152,39 @@ describe('SceneEditorComponent', () => {
     await expect(component.selectScene('broken-id')).resolves.toBeUndefined();
 
     expect(errorSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('updates the URL when a scene is selected', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Routed', 10, 10);
+    await component.loadScenes();
+    const navSpy = vi
+      .spyOn(component['router'], 'navigate')
+      .mockImplementation(() => Promise.resolve(true));
+
+    await component.selectScene(scene.id);
+
+    expect(navSpy).toHaveBeenCalledWith(['/project', 'p1', 'scenes', scene.id]);
+  });
+
+  it('prefers the scene from the URL over the stored session when restoring', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const fromUrl = await sceneService.createScene('p1', 'FromUrl', 10, 10);
+    const fromSession = await sceneService.createScene('p1', 'FromSession', 10, 10);
+    await component.loadScenes();
+    await TestBed.inject(SessionService).updateSession('p1', {
+      lastScreen: 'scenes',
+      lastSceneId: fromSession.id,
+    });
+    paramSceneId = fromUrl.id;
+
+    await component.restoreSession();
+
+    expect(component.selectedSceneId()).toBe(fromUrl.id);
   });
 
   it('replaces overlapped anchors when placing a multi-cell tile', async () => {

@@ -40,6 +40,12 @@ describe('SpriteEditorComponent', () => {
             parent: { params: parentParams.asObservable() },
             params: routeParams.asObservable(),
             pathFromRoot: [] as unknown[],
+            snapshot: {
+              paramMap: {
+                get: (key: string) =>
+                  key === 'spriteId' ? (routeParams.value.spriteId ?? null) : null,
+              },
+            },
           },
         },
       ],
@@ -131,6 +137,22 @@ describe('SpriteEditorComponent', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('rk-pixel-canvas')).toBeTruthy();
+  });
+
+  it('navigates to the sprite route when a sprite is selected', async () => {
+    await createProjectWithPalette();
+    await setupWithProject();
+    const service = TestBed.inject(SpriteService);
+    const sprite = await service.createSprite('test-proj', 'Nav Sprite', 1);
+    const component = fixture.componentInstance;
+    await component.loadSprites();
+    const navSpy = vi
+      .spyOn(component['router'], 'navigate')
+      .mockImplementation(() => Promise.resolve(true));
+
+    await component.selectSprite(sprite.id);
+
+    expect(navSpy).toHaveBeenCalledWith(['/project', 'test-proj', 'sprites', sprite.id]);
   });
 
   it('keeps the sprite list visible when a spriteId param is present', async () => {
