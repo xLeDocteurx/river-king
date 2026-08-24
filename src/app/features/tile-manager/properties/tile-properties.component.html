@@ -4,7 +4,7 @@
     <button
       type="button"
       (click)="delete.emit(tile()!.id)"
-      class="tw-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1.5 tw-rounded-md tw-bg-destructive tw-text-white tw-transition hover:tw-opacity-90"
+      class="tw-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1.5 tw-rounded-sm tw-bg-destructive tw-text-white tw-transition hover:tw-opacity-90"
     >
       <span class="material-symbols" aria-hidden="true">delete</span>
       Delete
@@ -17,7 +17,7 @@
       type="text"
       formControlName="name"
       name="name"
-      class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+      class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
     />
   </label>
 
@@ -27,7 +27,7 @@
       formControlName="type"
       name="type"
       (change)="onTypeChange($any($event.target).value)"
-      class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+      class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
     >
       <option value="static">Static</option>
       <option value="animated">Animated</option>
@@ -49,7 +49,7 @@
         </button>
       } @else {
         <div
-          class="tw-w-16 tw-h-16 tw-border tw-border-dashed tw-border-border tw-rounded-md"
+          class="tw-w-16 tw-h-16 tw-border tw-border-dashed tw-border-border tw-rounded-sm"
           aria-hidden="true"
         ></div>
       }
@@ -67,7 +67,7 @@
           (change)="onFrameCountInput($any($event.target).valueAsNumber)"
           aria-label="Frames"
           name="frames"
-          class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+          class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
         />
       </label>
       <div class="tw-flex tw-gap-2 tw-flex-wrap">
@@ -83,7 +83,7 @@
           </button>
         } @empty {
           <div
-            class="tw-w-16 tw-h-16 tw-border tw-border-dashed tw-border-border tw-rounded-md"
+            class="tw-w-16 tw-h-16 tw-border tw-border-dashed tw-border-border tw-rounded-sm"
             aria-hidden="true"
           ></div>
         }
@@ -96,7 +96,7 @@
         type="number"
         formControlName="animationSpeed"
         name="animationSpeed"
-        class="tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+        class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
       />
     </label>
   }
@@ -111,7 +111,7 @@
         aria-label="Width (tiles)"
         [value]="widthTiles()"
         (input)="widthTiles.set($any($event.target).valueAsNumber)"
-        class="tw-w-24 tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+        class="tw-w-24 tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
       />
     </label>
     <label class="tw-flex tw-flex-col tw-gap-1">
@@ -123,13 +123,13 @@
         aria-label="Height (tiles)"
         [value]="heightTiles()"
         (input)="heightTiles.set($any($event.target).valueAsNumber)"
-        class="tw-w-24 tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+        class="tw-w-24 tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
       />
     </label>
     <button
       type="button"
       (click)="requestSizeApply()"
-      class="tw-px-4 tw-py-2 tw-rounded-md tw-border tw-border-border tw-bg-background tw-text-foreground tw-transition hover:tw-bg-muted"
+      class="tw-px-4 tw-py-2 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-foreground tw-transition hover:tw-bg-muted"
     >
       Apply
     </button>
@@ -173,7 +173,7 @@
   <div class="tw-flex tw-justify-end">
     <button
       type="submit"
-      class="tw-px-4 tw-py-2 tw-rounded-md tw-bg-primary tw-text-primary-foreground tw-transition hover:tw-opacity-90"
+      class="tw-px-4 tw-py-2 tw-rounded-sm tw-bg-primary tw-text-primary-foreground tw-transition hover:tw-opacity-90"
     >
       Save
     </button>

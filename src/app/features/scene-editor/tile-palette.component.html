@@ -9,7 +9,7 @@
           type="button"
           (click)="tileSelect.emit(tile.id)"
           [class.tw-ring-2]="selectedTileId() === tile.id"
-          class="tw-w-10 tw-h-10 tw-rounded-md tw-border tw-border-border tw-transition hover:tw-border-primary tw-overflow-hidden"
+          class="tw-w-10 tw-h-10 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-border-primary tw-overflow-hidden"
           [title]="tile.name"
         >
           @if (tileImages()[tile.id]) {

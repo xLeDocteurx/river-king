@@ -6,7 +6,7 @@
     <button
       type="button"
       (click)="tileCreate.emit()"
-      class="tw-p-1 tw-rounded-md hover:tw-bg-muted"
+      class="tw-p-1 tw-rounded-sm hover:tw-bg-muted"
       title="New Tile"
     >
       <span class="material-symbols" aria-hidden="true">add</span>
@@ -18,7 +18,7 @@
         type="button"
         (click)="tileSelect.emit(tile.id)"
         [class.tw-bg-primary/10]="selectedTileId() === tile.id"
-        class="tw-w-full tw-text-left tw-px-3 tw-py-2 tw-rounded-md tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
+        class="tw-w-full tw-text-left tw-px-3 tw-py-2 tw-rounded-sm tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
       >
         <span class="material-symbols tw-text-muted-foreground" aria-hidden="true">grid_view</span>
         <span>{{ tile.name }}</span>
