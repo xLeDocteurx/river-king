@@ -3,6 +3,8 @@ import { provideRouter, Router } from '@angular/router';
 import { App } from './app';
 import { AppDummyComponent } from './app-dummy.component';
 import { StatusBarService } from './core/services/status-bar.service';
+import { SessionService } from './core/services/session.service';
+import 'fake-indexeddb/auto';
 
 describe('App', () => {
   let fixture: ComponentFixture<App>;
@@ -68,5 +70,15 @@ describe('App', () => {
       '3 projects',
     );
     expect(footer?.textContent).toContain('River King Engine');
+  });
+
+  it('records the visited project screen into the session', async () => {
+    const sessions = TestBed.inject(SessionService);
+    const spy = vi.spyOn(sessions, 'updateSession').mockResolvedValue(undefined);
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/project/p1/tiles');
+
+    expect(spy).toHaveBeenCalledWith('p1', { lastScreen: 'tiles' });
   });
 });

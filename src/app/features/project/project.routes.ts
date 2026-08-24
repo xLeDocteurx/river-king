@@ -20,7 +20,13 @@ export const PROJECT_ROUTES: Routes = [
         loadChildren: () =>
           import('../sprite-editor/sprite-editor.routes').then((m) => m.SPRITE_EDITOR_ROUTES),
       },
-      { path: '', redirectTo: 'scenes', pathMatch: 'full' },
+      {
+        path: '',
+        loadComponent: () =>
+          import('./session-restore/session-restore.component').then(
+            (m) => m.SessionRestoreComponent,
+          ),
+      },
     ],
   },
 ];

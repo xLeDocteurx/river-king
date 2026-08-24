@@ -16,6 +16,7 @@ import { DrawingToolsComponent, type DrawingTool } from './tools/drawing-tools.c
 import { ProjectService } from '../dashboard/services/project.service';
 import { TileService } from '../tile-manager/services/tile.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { SessionService } from '../../core/services/session.service';
 import type { Sprite } from '../../shared/models/sprite.model';
 import type { Tile } from '../../shared/models/tile.model';
 
@@ -40,6 +41,7 @@ export class SpriteEditorComponent implements OnInit {
   private readonly projectService = inject(ProjectService);
   private readonly tileService = inject(TileService);
   private readonly notification = inject(NotificationService);
+  private readonly sessions = inject(SessionService);
   private readonly destroyRef = inject(DestroyRef);
 
   /** Reactive signal holding the current project ID. */
@@ -218,6 +220,7 @@ export class SpriteEditorComponent implements OnInit {
       } else {
         this.paletteIndices.set(null);
       }
+      void this.sessions.updateSession(this.projectId(), { lastSpriteId: spriteId });
     } catch (e) {
       this.notification.error('Failed to load sprite');
       console.error(e);

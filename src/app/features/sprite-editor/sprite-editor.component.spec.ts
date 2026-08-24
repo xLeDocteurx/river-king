@@ -17,6 +17,7 @@ import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import { SpriteEditorComponent } from './sprite-editor.component';
 import { DatabaseService } from '../../core/services/database.service';
+import { SessionService } from '../../core/services/session.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SpriteService } from './services/sprite.service';
 import type { Sprite } from '../../shared/models/sprite.model';
@@ -205,7 +206,9 @@ describe('SpriteEditorComponent', () => {
 
   it('debounces rapid strokes into one updateSprite call', async () => {
     const { spriteService, existingSpriteId } = await seedTwoSprites();
-    const updateSpy = vi.spyOn(spriteService, 'updateSprite').mockResolvedValue(undefined);
+    const updateSpy = vi
+      .spyOn(spriteService, 'updateSprite')
+      .mockImplementation(() => Promise.resolve());
 
     vi.useFakeTimers();
     try {
@@ -230,7 +233,9 @@ describe('SpriteEditorComponent', () => {
 
   it('flushes the pending save when the component is destroyed', async () => {
     const { spriteService, existingSpriteId } = await seedTwoSprites();
-    const updateSpy = vi.spyOn(spriteService, 'updateSprite').mockResolvedValue(undefined);
+    const updateSpy = vi
+      .spyOn(spriteService, 'updateSprite')
+      .mockImplementation(() => Promise.resolve());
     await fixture.componentInstance.selectSprite(existingSpriteId);
     updateSpy.mockClear();
 
@@ -300,7 +305,9 @@ describe('SpriteEditorComponent', () => {
 
   it('flushes the pending save before switching sprites', async () => {
     const { spriteService, existingSpriteId, otherSpriteId } = await seedTwoSprites();
-    const updateSpy = vi.spyOn(spriteService, 'updateSprite').mockResolvedValue(undefined);
+    const updateSpy = vi
+      .spyOn(spriteService, 'updateSprite')
+      .mockImplementation(() => Promise.resolve());
     await fixture.componentInstance.selectSprite(existingSpriteId);
     updateSpy.mockClear();
 
@@ -311,5 +318,31 @@ describe('SpriteEditorComponent', () => {
 
     expect(updateSpy).toHaveBeenCalledTimes(1);
     expect(updateSpy.mock.calls.at(-1)![0]).toBe(existingSpriteId);
+  });
+
+  it('persists the selected sprite into the session', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Base Tile',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 8,
+      properties: { blocking: false, interactable: false },
+    } as Tile);
+    await setupWithProject();
+    const service = TestBed.inject(SpriteService);
+    const spriteId = (await service.createSprite('test-proj', 'frame', 1)).id;
+    const component = fixture.componentInstance;
+    await component.loadSprites();
+    await component.loadTiles();
+    const sessions = TestBed.inject(SessionService);
+    const spy = vi.spyOn(sessions, 'updateSession').mockImplementation(() => Promise.resolve());
+
+    await component.selectSprite(spriteId);
+
+    expect(spy).toHaveBeenCalledWith('test-proj', { lastSpriteId: spriteId });
   });
 });

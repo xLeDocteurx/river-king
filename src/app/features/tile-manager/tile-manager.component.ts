@@ -20,6 +20,7 @@ import {
   ConfirmDialogData,
 } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { NotificationService } from '../../core/services/notification.service';
+import { SessionService } from '../../core/services/session.service';
 import type { Tile } from '../../shared/models/tile.model';
 
 /**
@@ -44,6 +45,7 @@ export class TileManagerComponent implements OnInit {
   private readonly tileService = inject(TileService);
   private readonly tileSpritesService = inject(TileSpritesService);
   private readonly projectService = inject(ProjectService);
+  private readonly sessions = inject(SessionService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -157,6 +159,7 @@ export class TileManagerComponent implements OnInit {
       const tile = await this.tileService.getTile(tileId);
       this.selectedTile.set(tile ?? null);
       await this.tileSpritesService.loadForTile(tileId);
+      void this.sessions.updateSession(this.projectId(), { lastTileId: tileId });
       if (this.route.snapshot.paramMap.get('tileId') !== String(tileId)) {
         void this.router.navigate(['/project', this.projectId(), 'tiles', tileId]);
       }

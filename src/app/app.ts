@@ -3,6 +3,7 @@ import { Router, RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd } fro
 import { filter } from 'rxjs/operators';
 import { ThemeService } from './core/services/theme.service';
 import { StatusBarService } from './core/services/status-bar.service';
+import { SessionService, screenFromUrl } from './core/services/session.service';
 import { ToastComponent } from './shared/components/toast/toast.component';
 
 /**
@@ -22,6 +23,7 @@ export class App {
   protected readonly theme = inject(ThemeService);
   protected readonly status = inject(StatusBarService);
   private readonly router = inject(Router);
+  private readonly sessions = inject(SessionService);
 
   /** Whether the current route is under /project/:id (shows workspace nav). */
   isProjectRoute = signal(false);
@@ -35,6 +37,10 @@ export class App {
       if (match) {
         this.projectId.set(match[1]);
         this.isProjectRoute.set(true);
+        const screen = screenFromUrl(nav.urlAfterRedirects);
+        if (screen) {
+          void this.sessions.updateSession(match[1], { lastScreen: screen });
+        }
       } else {
         this.projectId.set(null);
         this.isProjectRoute.set(false);

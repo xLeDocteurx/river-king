@@ -5,6 +5,7 @@ import { ActivatedRoute, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import { TileManagerComponent } from './tile-manager.component';
 import { DatabaseService } from '../../core/services/database.service';
+import { SessionService } from '../../core/services/session.service';
 import { TileService } from './services/tile.service';
 import { TileSpritesService } from './services/tile-sprites.service';
 import { ProjectService } from '../../features/dashboard/services/project.service';
@@ -113,7 +114,9 @@ describe('TileManagerComponent', () => {
     const frameSpy = vi
       .spyOn(tileSpritesService, 'createBlankFrame')
       .mockResolvedValue({ id: 99 } as never);
-    const updateSpy = vi.spyOn(tileService, 'updateTile').mockResolvedValue(undefined);
+    const updateSpy = vi
+      .spyOn(tileService, 'updateTile')
+      .mockImplementation(() => Promise.resolve());
     vi.spyOn(comp['router'], 'navigate').mockResolvedValue(true);
 
     await comp.createTile();
@@ -200,5 +203,16 @@ describe('TileManagerComponent', () => {
     navigateSpy.mockClear();
     await comp.deleteTile(seedTileId);
     expect(navigateSpy).toHaveBeenCalledWith(['/project', comp.projectId(), 'tiles']);
+  });
+
+  it('persists the selected tile into the session', async () => {
+    await setupWithProject();
+    const tileId = await addSeedTile();
+    const sessions = TestBed.inject(SessionService);
+    const spy = vi.spyOn(sessions, 'updateSession').mockImplementation(() => Promise.resolve());
+
+    await fixture.componentInstance.selectTile(tileId);
+
+    expect(spy).toHaveBeenCalledWith('test-proj', { lastTileId: tileId });
   });
 });

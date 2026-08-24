@@ -10,6 +10,7 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { SessionService } from '../../core/services/session.service';
 import { SceneService } from './services/scene.service';
 import { MapTilesService } from './services/map-tiles.service';
 import { MapCanvasComponent } from './map-canvas.component';
@@ -42,6 +43,7 @@ export class SceneEditorComponent implements OnInit {
   private readonly db = inject(DatabaseService);
   private readonly notification = inject(NotificationService);
   private readonly mapTilesService = inject(MapTilesService);
+  private readonly sessions = inject(SessionService);
   private readonly deleteConfirmDialog = viewChild.required(ConfirmDialogComponent);
 
   /** Currently active project id derived from route params. */
@@ -68,6 +70,8 @@ export class SceneEditorComponent implements OnInit {
   projectTileSize = signal<number>(16);
   /** Id of the scene pending deletion confirmation. */
   pendingDeleteSceneId = signal<string | null>(null);
+  /** Camera state to restore on the map canvas (consumed once, then null). */
+  restoreCamera = signal<{ x: number; y: number; zoom: number } | null>(null);
 
   /** Data for the scene deletion confirmation dialog. */
   deleteDialogData = computed<ConfirmDialogData>(() => {
@@ -87,10 +91,29 @@ export class SceneEditorComponent implements OnInit {
       if (id) {
         this.projectId.set(id);
         this.loadProjectData();
-        this.loadScenes();
+        this.loadScenes()
+          .then(() => this.restoreSession())
+          .catch(() => undefined);
         this.loadFolders();
       }
     });
+  }
+
+  /**
+   * Restores the persisted session for the scenes screen: re-selects the
+   * last active scene and prepares the camera state for the map canvas.
+   */
+  async restoreSession(): Promise<void> {
+    const stored = await this.sessions.getSession(this.projectId()).catch(() => undefined);
+    if (!stored) return;
+
+    const target = stored.lastSceneId;
+    if (target && this.scenes().some((s) => s.id === target)) {
+      await this.selectScene(target);
+    }
+    if (stored.cameraX !== 0 || stored.cameraY !== 0 || stored.cameraZoom !== 1) {
+      this.restoreCamera.set({ x: stored.cameraX, y: stored.cameraY, zoom: stored.cameraZoom });
+    }
   }
 
   /**
@@ -164,6 +187,10 @@ export class SceneEditorComponent implements OnInit {
     try {
       const scene = await this.sceneService.getScene(sceneId);
       this.selectedScene.set(scene ?? null);
+      void this.sessions.updateSession(this.projectId(), {
+        lastScreen: 'scenes',
+        lastSceneId: sceneId,
+      });
     } catch (e) {
       console.error('Failed to load scene:', e);
       this.notification.error('Failed to load the scene.');

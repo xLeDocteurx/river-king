@@ -7,6 +7,9 @@ import { SceneEditorComponent } from './scene-editor.component';
 import { SceneService } from './services/scene.service';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { SessionService } from '../../core/services/session.service';
+import { createEmptySession } from '../../shared/models/session.model';
+import type { Scene } from '../../shared/models/scene.model';
 
 // jsdom does not implement HTMLDialogElement methods
 const dialogProto = HTMLDialogElement.prototype as unknown as Record<string, unknown>;
@@ -158,5 +161,58 @@ describe('SceneEditorComponent', () => {
     expect(component.selectedScene()?.tileData).toEqual(expected);
     const stored = await db.scenes.get(scene.id);
     expect(stored?.tileData).toEqual(expected);
+  });
+
+  it('persists the selected scene into the session', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const sessions = TestBed.inject(SessionService);
+    const spy = vi.spyOn(sessions, 'updateSession').mockImplementation(() => Promise.resolve());
+    const scene = await sceneService.createScene('p1', 'S1', 8, 8);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+
+    expect(spy).toHaveBeenCalledWith('p1', { lastScreen: 'scenes', lastSceneId: scene.id });
+  });
+
+  it('restores the stored scene and camera state', async () => {
+    // Isolated from the shared fake IndexedDB: concurrent spec files in the
+    // same worker race on it, so both session and scenes are mocked.
+    const storedScene = {
+      id: 'scene-rest',
+      projectId: 'p1',
+      name: 'Resumed',
+      folderPath: '',
+      width: 8,
+      height: 8,
+      tileData: [],
+    } as Scene;
+    const svc = fixture.debugElement.injector.get(SceneService);
+    vi.spyOn(svc, 'getScenes').mockResolvedValue([storedScene]);
+    vi.spyOn(svc, 'getScene').mockResolvedValue(storedScene);
+    const sessions = TestBed.inject(SessionService);
+    vi.spyOn(sessions, 'getSession').mockResolvedValue({
+      ...createEmptySession('p1'),
+      lastSceneId: 'scene-rest',
+      cameraX: 30,
+      cameraY: 40,
+      cameraZoom: 2,
+    });
+    await component.loadScenes();
+    await component.restoreSession();
+
+    expect(component.selectedSceneId()).toBe('scene-rest');
+    expect(component.restoreCamera()).toEqual({ x: 30, y: 40, zoom: 2 });
+  });
+
+  it('keeps defaults when no session exists', async () => {
+    const sessions = TestBed.inject(SessionService);
+    vi.spyOn(sessions, 'getSession').mockResolvedValue(undefined);
+
+    await component.restoreSession();
+
+    expect(component.selectedSceneId()).toBeNull();
+    expect(component.restoreCamera()).toBeNull();
   });
 });

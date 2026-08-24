@@ -1,5 +1,6 @@
 import {
   Component,
+  inject,
   input,
   output,
   viewChild,
@@ -13,6 +14,7 @@ import type { Scene } from '../../shared/models/scene.model';
 import { getFootprint } from './map-footprint';
 import type { TileFootprintMap } from './map-footprint';
 import { gridStrokeColor } from './grid-color';
+import { SessionService } from '../../core/services/session.service';
 
 /**
  * Canvas-based map renderer for a single scene.
@@ -41,6 +43,8 @@ export class MapCanvasComponent implements AfterViewInit {
   tileSize = input(16);
   /** Grid-cell footprint of each tile id; missing entries mean 1x1. */
   tileFootprints = input<TileFootprintMap>({});
+  /** Camera state to restore once at startup (from the persisted session). */
+  restoreCamera = input<{ x: number; y: number; zoom: number } | null>(null);
   /** Emitted when a tile is placed on the canvas. */
   tilePlaced = output<{ x: number; y: number; tileId: number }>();
 
@@ -63,6 +67,13 @@ export class MapCanvasComponent implements AfterViewInit {
   private lastMouseX = 0;
   /** @internal Last mouse Y position for pan delta calculation. */
   private lastMouseY = 0;
+  /** @internal Timer id of the pending debounced camera persist. */
+  private cameraPersistTimer: ReturnType<typeof setTimeout> | null = null;
+  /** @internal Whether restoreCamera input has already been consumed. */
+  private cameraRestored = false;
+
+  /** Persists camera state so a project reopens where the user left it. */
+  private readonly sessions = inject(SessionService);
 
   constructor() {
     effect(() => {
@@ -123,6 +134,13 @@ export class MapCanvasComponent implements AfterViewInit {
     const parent = canvas.parentElement!;
     canvas.width = parent.clientWidth;
     canvas.height = parent.clientHeight;
+    if (!this.cameraRestored && this.restoreCamera()) {
+      const rc = this.restoreCamera()!;
+      this.cameraX.set(rc.x);
+      this.cameraY.set(rc.y);
+      this.zoom.set(rc.zoom);
+      this.cameraRestored = true;
+    }
     this.ctx = canvas.getContext('2d');
     this.render();
 
@@ -246,6 +264,7 @@ export class MapCanvasComponent implements AfterViewInit {
     this.cameraY.update((v) => v + dy);
     this.lastMouseX = event.clientX;
     this.lastMouseY = event.clientY;
+    this.scheduleCameraPersist();
     this.render();
   }
 
@@ -264,7 +283,28 @@ export class MapCanvasComponent implements AfterViewInit {
     event.preventDefault();
     const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
     this.zoom.update((z) => Math.max(0.1, Math.min(5, z * zoomFactor)));
+    this.scheduleCameraPersist();
     this.render();
+  }
+
+  /**
+   * Debounces the session write of the current camera state (400 ms
+   * trailing edge) so panning and zooming do not hammer IndexedDB.
+   */
+  private scheduleCameraPersist(): void {
+    if (this.cameraPersistTimer !== null) {
+      clearTimeout(this.cameraPersistTimer);
+    }
+    this.cameraPersistTimer = setTimeout(() => {
+      this.cameraPersistTimer = null;
+      const projectId = this.scene()?.projectId;
+      if (!projectId) return;
+      void this.sessions.updateSession(projectId, {
+        cameraX: this.cameraX(),
+        cameraY: this.cameraY(),
+        cameraZoom: this.zoom(),
+      });
+    }, 400);
   }
 
   /** @internal Calculates grid coordinates and emits a tilePlaced event. The whole footprint must fit inside the scene. */
