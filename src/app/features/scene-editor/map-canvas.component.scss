@@ -1,1 +1,13 @@
 /* Map canvas styles */
+
+/*
+ * The host must be a sized block: MapCanvasComponent reads
+ * parentElement.clientWidth/clientHeight to size the canvas bitmap,
+ * and an unsized inline custom element reports 0x0, leaving the
+ * canvas permanently blank.
+ */
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

@@ -12,6 +12,7 @@ import {
 import type { Scene } from '../../shared/models/scene.model';
 import { getFootprint } from './map-footprint';
 import type { TileFootprintMap } from './map-footprint';
+import { gridStrokeColor } from './grid-color';
 
 /**
  * Canvas-based map renderer for a single scene.
@@ -189,7 +190,7 @@ export class MapCanvasComponent implements AfterViewInit {
     height: number,
     cell: number,
   ): void {
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.strokeStyle = gridStrokeColor(this.canvasRef().nativeElement);
     ctx.lineWidth = 1;
 
     for (let x = 0; x <= width; x++) {
