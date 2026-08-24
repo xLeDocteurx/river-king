@@ -28,6 +28,7 @@ The Scene Editor (`src/app/features/scene-editor/scene-editor.component.html`) c
 ```
 
 Problems:
+
 - **No status-bar context**: the editor never pushes data to `StatusBarService`, so the global footer shows only the static "River King Engine" label.
 - **Generic spacing**: `tw-w-64` panels and default paddings feel wasteful for an editor.
 - **No panel chrome**: sidebars have limited visible borders and headers, so they blend into the canvas area — the screen feels flat and unfinished.
@@ -58,11 +59,11 @@ A single flex row filling the routed viewport. The global topbar (35 px) and glo
 
 #### Column widths
 
-| Region | Width | Rationale |
-|--------|-------|-----------|
-| Scene list | `tw-w-56` (224 px) | Compact but readable; one icon + truncated scene name. |
-| Canvas | `tw-flex-1` | Always claims remaining space; never scrolls, the canvas itself pans/zooms. |
-| Right panel | `tw-w-52` (208 px) | Narrower than today; will host layers + mini-palette stacked vertically. |
+| Region      | Width              | Rationale                                                                   |
+| ----------- | ------------------ | --------------------------------------------------------------------------- |
+| Scene list  | `tw-w-56` (224 px) | Compact but readable; one icon + truncated scene name.                      |
+| Canvas      | `tw-flex-1`        | Always claims remaining space; never scrolls, the canvas itself pans/zooms. |
+| Right panel | `tw-w-52` (208 px) | Narrower than today; will host layers + mini-palette stacked vertically.    |
 
 #### Chrome & borders
 
@@ -74,6 +75,7 @@ A single flex row filling the routed viewport. The global topbar (35 px) and glo
 ### 3.2 Scene List (rk-scene-list)
 
 **Header row** (restyled):
+
 - `tw-flex tw-items-center tw-justify-between tw-px-3 tw-py-2 tw-border-b tw-border-border`
 - Left: section label `SCENES` in `tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground`
 - Right: two ghost icon buttons (`tw-p-1 tw-rounded-sm hover:tw-bg-muted`):
@@ -81,6 +83,7 @@ A single flex row filling the routed viewport. The global topbar (35 px) and glo
   - `add` → create scene
 
 **List body**:
+
 - `tw-flex-1 tw-overflow-auto tw-px-2 tw-py-2`
 - Group headers: `tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground tw-px-2 tw-py-1`
 - Scene rows: `tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1.5 tw-rounded-sm tw-text-xs tw-text-foreground hover:tw-bg-muted tw-transition-colors`
@@ -94,11 +97,13 @@ A single flex row filling the routed viewport. The global topbar (35 px) and glo
 The right side is already `rk-tile-palette` with an existing header and a `tw-flex-wrap` grid. This redesign keeps the same structure but tightens spacing and cell sizes.
 
 **Header row** (restyled):
+
 - Same anatomy as the scene list header.
 - Label: `TILES`
 - Optional future action: a collapse-toggle icon (out of scope for this redesign; header is visual prep only).
 
 **Tile grid**:
+
 - Smaller padding on the panel root: `tw-p-2` instead of `tw-p-4`.
 - Tighter gap: `tw-gap-1` instead of `tw-gap-2`.
 - Smaller cells: `tw-w-8 tw-h-8` instead of `tw-w-10 tw-h-10` (32 px instead of 40 px).
@@ -125,16 +130,19 @@ The Scene Editor component owns an `effect` that updates `StatusBarService.conte
 ```
 
 Example:
+
 ```
 Forest Level | 40×30 | Cam: 120,-80 | Zoom: 150%
 ```
 
 If no scene is selected, show:
+
 ```
 No scene selected
 ```
 
 Implementation: `SceneEditorComponent` calls `statusBar.setContext(...)` inside an `effect` that watches:
+
 - `selectedScene()` (for name and dimensions)
 - `mapCanvas.cameraX()`, `cameraY()`, `zoom()` (exposed via an output or direct service access)
 
@@ -148,11 +156,13 @@ Implementation: `SceneEditorComponent` calls `statusBar.setContext(...)` inside 
 ### 4.1 scene-editor.component.ts
 
 **Add:**
+
 - `private readonly statusBar = inject(StatusBarService)`
 - `mapCanvasRef = viewChild.required(MapCanvasComponent)`
 - `effect` block that builds the context string whenever selected scene or camera state changes.
 
 **Modify:**
+
 - Remove the `restoreCamera` input plumbing if it becomes redundant (keep the session restore logic, just don't plumb it as an `@Input` if the parent can call a method instead).  
   **Decision**: keep `restoreCamera` as `@Input` — it is consumed once in `ngAfterViewInit`; changing the wiring is unnecessary churn.
 
@@ -207,17 +217,17 @@ No structural changes. Existing camera signals (`cameraX`, `cameraY`, `zoom`) ar
 
 ## 5. Token Usage Reference
 
-| Element | Background | Text | Border | Notes |
-|---------|-----------|------|--------|-------|
-| Scene list panel | `tw-bg-card-bg` | — | `tw-border-r tw-border-border` | Right border only |
-| Scene list header | same as panel | `tw-text-muted-foreground` | `tw-border-b tw-border-border` | |
-| Scene row hover | `hover:tw-bg-muted` | `tw-text-foreground` | — | |
-| Scene row selected | `tw-bg-primary/10` | `tw-text-foreground` | — | |
-| Right panel | `tw-bg-card-bg` | — | `tw-border-l tw-border-border` | Left border only |
-| Tile cell hover | — | — | `hover:tw-border-accent` | |
-| Tile cell selected | — | — | `tw-border-accent tw-ring-1 tw-ring-accent` | |
-| Canvas area | `tw-bg-background` | — | — | Base page color |
-| Status bar | `tw-bg-primary` (global) | `tw-text-primary-foreground` (global) | — | Set via `StatusBarService` |
+| Element            | Background               | Text                                  | Border                                      | Notes                      |
+| ------------------ | ------------------------ | ------------------------------------- | ------------------------------------------- | -------------------------- |
+| Scene list panel   | `tw-bg-card-bg`          | —                                     | `tw-border-r tw-border-border`              | Right border only          |
+| Scene list header  | same as panel            | `tw-text-muted-foreground`            | `tw-border-b tw-border-border`              |                            |
+| Scene row hover    | `hover:tw-bg-muted`      | `tw-text-foreground`                  | —                                           |                            |
+| Scene row selected | `tw-bg-primary/10`       | `tw-text-foreground`                  | —                                           |                            |
+| Right panel        | `tw-bg-card-bg`          | —                                     | `tw-border-l tw-border-border`              | Left border only           |
+| Tile cell hover    | —                        | —                                     | `hover:tw-border-accent`                    |                            |
+| Tile cell selected | —                        | —                                     | `tw-border-accent tw-ring-1 tw-ring-accent` |                            |
+| Canvas area        | `tw-bg-background`       | —                                     | —                                           | Base page color            |
+| Status bar         | `tw-bg-primary` (global) | `tw-text-primary-foreground` (global) | —                                           | Set via `StatusBarService` |
 
 All typography follows the design-system levels (§Typography & density in foundations.md).
 
@@ -252,11 +262,11 @@ All typography follows the design-system levels (§Typography & density in found
 
 ## 9. Open Decisions (resolved)
 
-| Question | Decision | Rationale |
-|----------|----------|-----------|
-| Info bar above canvas? | **No** | User confirmed removal; blue status bar at the bottom is sufficient. |
+| Question                             | Decision      | Rationale                                                                                          |
+| ------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------- |
+| Info bar above canvas?               | **No**        | User confirmed removal; blue status bar at the bottom is sufficient.                               |
 | Camera readout: output vs viewChild? | **viewChild** | Parent already uses `viewChild` for `ConfirmDialogComponent`; same pattern avoids output chaining. |
-| Palette layout: list vs grid? | **Grid** | Grid is denser, aligns with Aseprite palette identity, and fits the narrower `tw-w-52` panel. |
+| Palette layout: list vs grid?        | **Grid**      | Grid is denser, aligns with Aseprite palette identity, and fits the narrower `tw-w-52` panel.      |
 
 ---
 

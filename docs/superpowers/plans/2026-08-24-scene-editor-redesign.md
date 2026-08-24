@@ -25,11 +25,13 @@
 ### Task 1: SceneEditorComponent — Layout & Status Bar
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/scene-editor.component.ts`
 - Modify: `src/app/features/scene-editor/scene-editor.component.html`
 - Test: `src/app/features/scene-editor/scene-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `StatusBarService` from `core/services/status-bar.service.ts`, `MapCanvasComponent.cameraX`, `cameraY`, `zoom`
 - Produces: `mapCanvasRef = viewChild.required(MapCanvasComponent)`, `statusBar` injected, status-bar context effect
 
@@ -70,20 +72,20 @@ Wait — looking at the current component, it has no constructor. The `effect()`
 
 ```typescript
 // Add after the existing signals, before the methods:
-  statusBarEffect = effect(() => {
-    const scene = this.selectedScene();
-    const canvas = this.mapCanvasRef();
-    if (!scene || !canvas) {
-      this.statusBar.setContext('No scene selected');
-      return;
-    }
-    const x = Math.round(canvas.cameraX());
-    const y = Math.round(canvas.cameraY());
-    const zoom = Math.round(canvas.zoom() * 100);
-    this.statusBar.setContext(
-      `${scene.name} | ${scene.width}×${scene.height} | Cam: ${x},${y} | Zoom: ${zoom}%`
-    );
-  });
+statusBarEffect = effect(() => {
+  const scene = this.selectedScene();
+  const canvas = this.mapCanvasRef();
+  if (!scene || !canvas) {
+    this.statusBar.setContext('No scene selected');
+    return;
+  }
+  const x = Math.round(canvas.cameraX());
+  const y = Math.round(canvas.cameraY());
+  const zoom = Math.round(canvas.zoom() * 100);
+  this.statusBar.setContext(
+    `${scene.name} | ${scene.width}×${scene.height} | Cam: ${x},${y} | Zoom: ${zoom}%`,
+  );
+});
 ```
 
 - [ ] **Step 2: Modify scene-editor.component.html**
@@ -134,21 +136,21 @@ Adjust layout classes:
 Add a test verifying `StatusBarService.setContext` is called. The service is already provided in root, but we spy on it:
 
 ```typescript
-  it('sets the status bar context when a scene is selected', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
+it('sets the status bar context when a scene is selected', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
 
-    const statusBar = TestBed.inject(StatusBarService);
-    const spy = vi.spyOn(statusBar, 'setContext');
-    const scene = await sceneService.createScene('p1', 'Forest', 10, 10);
-    await component.loadScenes();
-    await component.selectScene(scene.id);
+  const statusBar = TestBed.inject(StatusBarService);
+  const spy = vi.spyOn(statusBar, 'setContext');
+  const scene = await sceneService.createScene('p1', 'Forest', 10, 10);
+  await component.loadScenes();
+  await component.selectScene(scene.id);
 
-    // After selection, statusBar.setContext should have been called with the scene name
-    const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
-    expect(lastCall?.[0]).toContain('Forest');
-    expect(lastCall?.[0]).toContain('10×10');
-  });
+  // After selection, statusBar.setContext should have been called with the scene name
+  const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
+  expect(lastCall?.[0]).toContain('Forest');
+  expect(lastCall?.[0]).toContain('10×10');
+});
 ```
 
 Add `StatusBarService` to the imports in the spec file.
@@ -173,10 +175,12 @@ git commit -m "feat(scene-editor): add status bar context and tighten layout"
 ### Task 2: SceneListComponent — Dense Restyle
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/scene-list.component.html`
 - Test: `src/app/features/scene-editor/scene-list.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: same inputs/outputs (unchanged API)
 - Produces: denser DOM with same event emitters
 
@@ -219,16 +223,19 @@ git commit -m "feat(scene-list): restyle with denser spacing and header token"
 ### Task 3: TilePaletteComponent — Dense Restyle
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/tile-palette.component.html`
 - Test: `src/app/features/scene-editor/tile-palette.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: same inputs/outputs (unchanged API)
 - Produces: smaller cells and tighter padding
 
 - [ ] **Step 1: Restyle tile palette**
 
 Update root div classes:
+
 - Change `tw-p-4` to `tw-p-2`
 - Keep or add header with `TILES` label in uppercase tracking-wider style if missing. Currently the component has `<h3 class="tw-font-semibold tw-text-foreground tw-mb-3">Tiles</h3>` — change to the standard header pattern.
 
@@ -251,40 +258,41 @@ Restyled template:
   </div>
   <div class="tw-flex-1 tw-overflow-auto tw-p-2">
     @if (tiles().length === 0) {
-      <p class="tw-text-xs tw-text-muted-foreground">No tiles in this project.</p>
+    <p class="tw-text-xs tw-text-muted-foreground">No tiles in this project.</p>
     } @else {
-      <div class="tw-flex tw-flex-wrap tw-gap-1">
-        @for (tile of tiles(); track tile.id) {
-          <button
-            type="button"
-            (click)="tileSelect.emit(tile.id)"
-            [class.tw-border-accent]="selectedTileId() === tile.id"
-            [class.tw-ring-1]="selectedTileId() === tile.id"
-            [class.tw-ring-accent]="selectedTileId() === tile.id"
-            class="tw-w-8 tw-h-8 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-border-accent tw-overflow-hidden"
-            [title]="tile.name"
-          >
-            @if (tileImages()[tile.id]) {
-              <img
-                [src]="tileImages()[tile.id]"
-                alt=""
-                class="tw-w-full tw-h-full tw-object-cover tw-pointer-events-none tw-rounded-sm [image-rendering:pixelated]"
-              />
-            } @else {
-              <div
-                class="tw-w-full tw-h-full tw-rounded-sm"
-                [style.background-color]="palette()[tile.id % palette().length] ?? '#94b0c2'"
-              ></div>
-            }
-          </button>
+    <div class="tw-flex tw-flex-wrap tw-gap-1">
+      @for (tile of tiles(); track tile.id) {
+      <button
+        type="button"
+        (click)="tileSelect.emit(tile.id)"
+        [class.tw-border-accent]="selectedTileId() === tile.id"
+        [class.tw-ring-1]="selectedTileId() === tile.id"
+        [class.tw-ring-accent]="selectedTileId() === tile.id"
+        class="tw-w-8 tw-h-8 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-border-accent tw-overflow-hidden"
+        [title]="tile.name"
+      >
+        @if (tileImages()[tile.id]) {
+        <img
+          [src]="tileImages()[tile.id]"
+          alt=""
+          class="tw-w-full tw-h-full tw-object-cover tw-pointer-events-none tw-rounded-sm [image-rendering:pixelated]"
+        />
+        } @else {
+        <div
+          class="tw-w-full tw-h-full tw-rounded-sm"
+          [style.background-color]="palette()[tile.id % palette().length] ?? '#94b0c2'"
+        ></div>
         }
-      </div>
+      </button>
+      }
+    </div>
     }
   </div>
 </div>
 ```
 
 Changes from current:
+
 - Added outer structure with header row matching scene list header.
 - `tw-p-4` → `tw-p-2` on content area.
 - `tw-gap-2` → `tw-gap-1`.
@@ -304,15 +312,18 @@ Better: use `[style.image-rendering]="'pixelated'"` to be cleaner. But the test 
 Simplest fix: keep the `[image-rendering:pixelated]` class in the class list:
 
 ```html
-class="tw-w-full tw-h-full tw-object-cover tw-pointer-events-none tw-rounded-sm [image-rendering:pixelated]"
+class="tw-w-full tw-h-full tw-object-cover tw-pointer-events-none tw-rounded-sm
+[image-rendering:pixelated]"
 ```
 
 Also update the empty tiles message class check if any test asserts on text size. Looking at the current tests, they don't check the "No tiles in this project" text styling. They only check for `img` presence/absence and click emission.
 
 One small thing: the `img` className assertion in the test:
+
 ```typescript
 expect(img?.className).toContain('pixelated');
 ```
+
 If the className contains `[image-rendering:pixelated]`, does it contain the substring `pixelated`? Yes — the string `[image-rendering:pixelated]` contains `pixelated`. So the test still passes.
 
 Run: `npm run test -- src/app/features/scene-editor/tile-palette.component.spec.ts --run`
@@ -334,6 +345,7 @@ git commit -m "feat(tile-palette): add header, shrink cells, tighten spacing"
 ### Task 4: Format, Lint & Full Test Verification
 
 **Files:**
+
 - All modified files
 
 - [ ] **Step 1: Run Prettier format**
@@ -352,6 +364,7 @@ Run: `npm run test`
 Expected: all tests pass.
 
 If failures:
+
 1. Read the error output.
 2. Fix the source or test code.
 3. Re-run.
@@ -370,6 +383,7 @@ git commit -m "style(scene-editor): format and lint fixes"
 ### Task 5: Merge to main & Cleanup
 
 **Files:**
+
 - Git repository
 
 - [ ] **Step 1: Final commit if needed**
