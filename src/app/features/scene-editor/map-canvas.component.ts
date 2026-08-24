@@ -13,7 +13,7 @@ import {
 import type { Scene } from '../../shared/models/scene.model';
 import { getFootprint } from './map-footprint';
 import type { TileFootprintMap } from './map-footprint';
-import { gridStrokeColor } from './grid-color';
+import { cssTokenColor, gridStrokeColor } from './grid-color';
 import { SessionService } from '../../core/services/session.service';
 
 /**
@@ -71,6 +71,14 @@ export class MapCanvasComponent implements AfterViewInit {
   private cameraPersistTimer: ReturnType<typeof setTimeout> | null = null;
   /** @internal Whether restoreCamera input has already been consumed. */
   private cameraRestored = false;
+
+  /**
+   * Grid area under the cursor that the selected tile would occupy:
+   * anchor cell plus footprint size, or null when no tile is selected,
+   * the pointer is outside the scene, or the footprint would not fit.
+   * Drives the placement preview rectangle.
+   */
+  readonly hoverCell = signal<{ x: number; y: number; w: number; h: number } | null>(null);
 
   /** Persists camera state so a project reopens where the user left it. */
   private readonly sessions = inject(SessionService);
@@ -201,6 +209,18 @@ export class MapCanvasComponent implements AfterViewInit {
       }
     }
 
+    const hover = this.hoverCell();
+    if (hover) {
+      const stroke = cssTokenColor(this.canvasRef().nativeElement, '--accent', '#ffffff');
+      ctx.fillStyle = stroke;
+      ctx.globalAlpha = 0.18;
+      ctx.fillRect(hover.x * cell, hover.y * cell, hover.w * cell, hover.h * cell);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(hover.x * cell, hover.y * cell, hover.w * cell, hover.h * cell);
+    }
+
     ctx.restore();
   }
 
@@ -253,10 +273,11 @@ export class MapCanvasComponent implements AfterViewInit {
   }
 
   /**
-   * Handles mouse move for canvas panning.
+   * Handles mouse move for the placement preview and canvas panning.
    * @param event The native mouse event.
    */
   onMouseMove(event: MouseEvent): void {
+    this.updateHoverPreview(event);
     if (!this.isDragging) return;
     const dx = event.clientX - this.lastMouseX;
     const dy = event.clientY - this.lastMouseY;
@@ -273,6 +294,18 @@ export class MapCanvasComponent implements AfterViewInit {
    */
   onMouseUp(): void {
     this.isDragging = false;
+  }
+
+  /**
+   * Stops panning and clears the placement preview when the pointer
+   * leaves the canvas.
+   */
+  onMouseLeave(): void {
+    this.isDragging = false;
+    if (this.hoverCell() !== null) {
+      this.hoverCell.set(null);
+      this.render();
+    }
   }
 
   /**
@@ -307,20 +340,51 @@ export class MapCanvasComponent implements AfterViewInit {
     }, 400);
   }
 
-  /** @internal Calculates grid coordinates and emits a tilePlaced event. The whole footprint must fit inside the scene. */
-  private placeTile(event: MouseEvent): void {
+  /**
+   * Recomputes the preview rectangle for the current pointer position and
+   * re-renders only when the hovered cell actually changed.
+   * @param event The native mouse event.
+   */
+  private updateHoverPreview(event: MouseEvent): void {
+    const next = this.footprintRectFor(event);
+    const prev = this.hoverCell();
+    if (prev?.x === next?.x && prev?.y === next?.y && prev?.w === next?.w && prev?.h === next?.h) {
+      return;
+    }
+    this.hoverCell.set(next);
+    this.render();
+  }
+
+  /**
+   * Computes the grid area the selected tile would occupy for a pointer
+   * position, applying the same bounds rule as placement.
+   * @param event The native mouse event.
+   * @returns Anchor cell plus footprint size, or null when no tile is
+   *     selected, the pointer is outside the scene, or it would not fit.
+   */
+  private footprintRectFor(
+    event: MouseEvent,
+  ): { x: number; y: number; w: number; h: number } | null {
+    const scene = this.scene();
+    const tileId = this.selectedTileId();
+    if (!scene || tileId === null) return null;
+
     const canvas = this.canvasRef().nativeElement;
     const rect = canvas.getBoundingClientRect();
     const cell = this.tileSize();
     const x = Math.floor((event.clientX - rect.left - this.cameraX()) / (cell * this.zoom()));
     const y = Math.floor((event.clientY - rect.top - this.cameraY()) / (cell * this.zoom()));
-    const scene = this.scene();
-    const tileId = this.selectedTileId();
-    if (!scene || tileId === null) return;
-
     const { w, h } = getFootprint(tileId, this.tileFootprints());
-    if (x >= 0 && y >= 0 && x + w <= scene.width && y + h <= scene.height) {
-      this.tilePlaced.emit({ x, y, tileId });
-    }
+    if (x < 0 || y < 0 || x + w > scene.width || y + h > scene.height) return null;
+    return { x, y, w, h };
+  }
+
+  /** @internal Calculates grid coordinates and emits a tilePlaced event. The whole footprint must fit inside the scene. */
+  private placeTile(event: MouseEvent): void {
+    const tileId = this.selectedTileId();
+    if (this.scene() === null || tileId === null) return;
+    const rect = this.footprintRectFor(event);
+    if (!rect) return;
+    this.tilePlaced.emit({ x: rect.x, y: rect.y, tileId });
   }
 }

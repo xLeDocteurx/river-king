@@ -134,4 +134,44 @@ describe('MapCanvasComponent', () => {
       vi.useRealTimers();
     }
   });
+
+  it('shows the footprint preview under the cursor when a tile is selected', () => {
+    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    const instance = fixture.componentInstance;
+
+    instance.onMouseMove(new MouseEvent('mousemove', { clientX: 33, clientY: 20 }));
+
+    expect(instance.hoverCell()).toEqual({ x: 2, y: 1, w: 2, h: 2 });
+  });
+
+  it('shows no preview without a selected tile', () => {
+    setup(makeScene(4, 4));
+    fixture.componentRef.setInput('selectedTileId', null);
+    const instance = fixture.componentInstance;
+
+    instance.onMouseMove(new MouseEvent('mousemove', { clientX: 33, clientY: 20 }));
+
+    expect(instance.hoverCell()).toBeNull();
+  });
+
+  it('shows no preview when the footprint would exceed the scene bounds', () => {
+    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    const instance = fixture.componentInstance;
+
+    // Anchor cell (3,0): 3 + 2 > width 4, same rule as placement.
+    instance.onMouseMove(new MouseEvent('mousemove', { clientX: 50, clientY: 5 }));
+
+    expect(instance.hoverCell()).toBeNull();
+  });
+
+  it('clears the preview when the pointer leaves the canvas', () => {
+    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    const instance = fixture.componentInstance;
+    instance.onMouseMove(new MouseEvent('mousemove', { clientX: 33, clientY: 20 }));
+    expect(instance.hoverCell()).not.toBeNull();
+
+    instance.onMouseLeave();
+
+    expect(instance.hoverCell()).toBeNull();
+  });
 });
