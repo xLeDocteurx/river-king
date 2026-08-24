@@ -5,23 +5,28 @@
 >
   @for (msg of messages(); track msg.id) {
     <div
-      class="tw-flex tw-items-start tw-gap-3 tw-min-w-[20rem] tw-max-w-[24rem] tw-rounded-md tw-border tw-shadow-lg tw-px-4 tw-py-3"
-      [class.tw-bg-destructive]="msg.type === 'error'"
-      [class.tw-bg-green-600]="msg.type === 'success'"
-      [class.tw-bg-blue-600]="msg.type === 'info'"
-      [class.tw-bg-yellow-600]="msg.type === 'warning'"
-      [class.tw-text-white]="true"
-      [class.tw-border-transparent]="true"
+      class="tw-flex tw-items-start tw-gap-3 tw-min-w-[20rem] tw-max-w-[24rem] tw-rounded-sm tw-border tw-border-border tw-bg-card-bg tw-text-card-fg tw-border-l-2 tw-px-4 tw-py-3"
+      [class.tw-border-l-primary]="msg.type === 'success'"
+      [class.tw-border-l-destructive]="msg.type === 'error'"
+      [class.tw-border-l-accent]="msg.type === 'info'"
+      [class.tw-border-l-muted-foreground]="msg.type === 'warning'"
       role="alert"
     >
-      <span class="material-symbols" aria-hidden="true">
+      <span
+        class="material-symbols"
+        aria-hidden="true"
+        [class.tw-text-primary]="msg.type === 'success'"
+        [class.tw-text-destructive]="msg.type === 'error'"
+        [class.tw-text-accent]="msg.type === 'info'"
+        [class.tw-text-muted-foreground]="msg.type === 'warning'"
+      >
         {{ iconFor(msg.type) }}
       </span>
       <span class="tw-flex-1 tw-text-sm">{{ msg.message }}</span>
       <button
         type="button"
         (click)="dismiss(msg.id)"
-        class="tw-p-1 tw-rounded-md hover:tw-bg-white/20 tw-transition tw-leading-none"
+        class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition tw-leading-none"
         aria-label="Close notification"
       >
         <span class="material-symbols" aria-hidden="true">close</span>

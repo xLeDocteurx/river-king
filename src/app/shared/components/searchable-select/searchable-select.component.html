@@ -15,14 +15,14 @@
     [attr.aria-controls]="open() ? listId : null"
     aria-autocomplete="list"
     [attr.aria-activedescendant]="activeDescendantId()"
-    class="tw-w-full tw-px-3 tw-py-2 tw-rounded-md tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+    class="tw-w-full tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
     aria-label="Action"
   />
   @if (open()) {
     <ul
       role="listbox"
       [attr.id]="listId"
-      class="tw-absolute tw-top-full tw-z-10 tw-mt-1 tw-max-h-48 tw-w-full tw-overflow-auto tw-rounded-md tw-border tw-border-border tw-bg-background tw-shadow-md"
+      class="tw-absolute tw-top-full tw-z-10 tw-mt-1 tw-max-h-48 tw-w-full tw-overflow-auto tw-rounded-sm tw-border tw-border-border tw-bg-background"
     >
       @for (option of filtered(); track option; let i = $index) {
         <li>

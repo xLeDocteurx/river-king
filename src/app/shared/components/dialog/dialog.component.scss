@@ -1,5 +1,5 @@
 .rk-dialog {
-  @apply tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-foreground tw-shadow-xl;
+  @apply tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-foreground;
   @apply tw-p-0 tw-max-w-lg tw-w-full;
 
   &::backdrop {

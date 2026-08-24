@@ -9,14 +9,14 @@
       <button
         type="button"
         (click)="onCancel()"
-        class="tw-px-4 tw-py-2 tw-rounded-md tw-border tw-border-border tw-bg-background tw-text-foreground tw-transition hover:tw-bg-muted"
+        class="tw-px-4 tw-py-2 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-foreground tw-transition hover:tw-bg-muted"
       >
         {{ data().cancelLabel || 'Cancel' }}
       </button>
       <button
         type="button"
         (click)="onConfirm()"
-        class="tw-px-4 tw-py-2 tw-rounded-md tw-bg-destructive tw-text-white tw-transition hover:tw-opacity-90"
+        class="tw-px-4 tw-py-2 tw-rounded-sm tw-bg-destructive tw-text-destructive-foreground tw-transition hover:tw-opacity-90"
       >
         {{ data().confirmLabel || 'Delete' }}
       </button>

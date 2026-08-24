@@ -15,6 +15,7 @@ module.exports = {
         muted: 'var(--color-muted)',
         'muted-foreground': 'var(--color-muted-foreground)',
         destructive: 'var(--color-destructive)',
+        'destructive-foreground': 'var(--color-destructive-foreground)',
         background: 'var(--color-background)',
         foreground: 'var(--color-foreground)',
         'card-bg': 'var(--color-card-bg)',

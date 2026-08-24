@@ -32,4 +32,21 @@ describe('ToastComponent', () => {
     fixture.detectChanges();
     expect(notification.messages()).toHaveLength(0);
   });
+
+  it('styles toasts on-token with a type-colored left edge', () => {
+    notification.error('Boom');
+    fixture.detectChanges();
+    const alert = fixture.nativeElement.querySelector('[role="alert"]') as HTMLElement;
+    expect(alert.className).toContain('tw-rounded-sm');
+    expect(alert.className).toContain('tw-bg-card-bg');
+    expect(alert.className).toContain('tw-border-l-destructive');
+    expect(alert.className).not.toContain('shadow');
+  });
+
+  it('uses primary edge for success', () => {
+    notification.success('Saved');
+    fixture.detectChanges();
+    const alert = fixture.nativeElement.querySelector('[role="alert"]') as HTMLElement;
+    expect(alert.className).toContain('tw-border-l-primary');
+  });
 });
