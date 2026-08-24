@@ -1,5 +1,5 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
-import type { Tile } from '../../shared/models/tile.model';
+import type { Tile } from '../../../shared/models/tile.model';
 
 /**
  * Tile list sidebar component.

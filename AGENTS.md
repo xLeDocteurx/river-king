@@ -72,21 +72,27 @@ src/app/
 │   ├── models/       # Pure TS interfaces/types (Project, Scene, Tile, Sprite, Session)
 │   ├── directives/
 │   └── pipes/
-└── features/      # Lazy-loaded business features (flat structure)
+└── features/      # Lazy-loaded business features
     ├── dashboard/
     │   ├── *.component.{ts,html,scss,spec.ts}
     │   ├── *.service.{ts,spec.ts}
     │   └── *.routes.ts
     ├── project/
     ├── scene-editor/
-    ├── tile-manager/
-    └── sprite-editor/
+    ├── sprite-editor/
+    │   ├── canvas/ | palette/ | tools/   # one subfolder per child component
+    │   ├── services/
+    │   └── *.routes.ts
+    └── tile-manager/
+        ├── list/ | properties/           # one subfolder per child component
+        ├── services/
+        └── *.routes.ts
 ```
 
 **Rules:**
 
 - `core/` must stay independent; it is not allowed to import from `shared/` or `features/`.
-- `features/` should expose lazy-loaded routes and keep internal files private. Flat structure: no `pages/` or `components/` sub-folders inside a feature.
+- `features/` should expose lazy-loaded routes and keep internal files private. Features organize children into subfolders that mirror their component hierarchy (e.g. `canvas/`, `palette/`, `tools/`, `list/`, `properties/`): each subfolder holds one component's `.ts`, `.html`, `.scss`, and `.spec.ts`. The feature root keeps the routes file, the shell component, and the feature's services. Small features (a single component) may stay flat.
 - `shared/` is for code that is truly reusable across features. Services belong in `core/services/`, not `shared/services/`.
 - Every folder above contains a `README.md` describing its purpose.
 

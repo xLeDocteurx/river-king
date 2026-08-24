@@ -3,11 +3,11 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import { TilePropertiesComponent } from './tile-properties.component';
-import { TileSpritesService } from './services/tile-sprites.service';
-import { TileService } from './services/tile.service';
-import { DatabaseService } from '../../core/services/database.service';
-import type { Tile } from '../../shared/models/tile.model';
-import type { Sprite } from '../../shared/models/sprite.model';
+import { TileSpritesService } from '../services/tile-sprites.service';
+import { TileService } from '../services/tile.service';
+import { DatabaseService } from '../../../core/services/database.service';
+import type { Tile } from '../../../shared/models/tile.model';
+import type { Sprite } from '../../../shared/models/sprite.model';
 
 const dialogProto = HTMLDialogElement.prototype as unknown as Record<string, unknown>;
 if (typeof dialogProto['showModal'] !== 'function') {

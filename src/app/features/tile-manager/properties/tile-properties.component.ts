@@ -11,14 +11,14 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { SearchableSelectComponent } from '../../shared/components/searchable-select/searchable-select.component';
-import { NotificationService } from '../../core/services/notification.service';
-import { listGameActions } from '../../core/actions/game-actions';
-import type { ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import type { Tile } from '../../shared/models/tile.model';
-import { TileService } from './services/tile.service';
-import { TileSpritesService } from './services/tile-sprites.service';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { SearchableSelectComponent } from '../../../shared/components/searchable-select/searchable-select.component';
+import { NotificationService } from '../../../core/services/notification.service';
+import { listGameActions } from '../../../core/actions/game-actions';
+import type { ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import type { Tile } from '../../../shared/models/tile.model';
+import { TileService } from '../services/tile.service';
+import { TileSpritesService } from '../services/tile-sprites.service';
 
 /**
  * Tile properties form component.

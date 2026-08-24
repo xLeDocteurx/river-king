@@ -6,11 +6,11 @@ Chaque sous-dossier représente une **feature métier** indépendante du reste d
 
 ```
 features/{feature-name}/
-├── components/       # composants propres à la feature
-├── pages/            # pages / écrans accessibles par le routeur
-├── services/         # services internes à la feature
-├── models/           # modèles et DTOs spécifiques
-└── {feature}.routes.ts # lazy-loaded routes
+├── {child}/                 # un sous-dossier par composant enfant
+│   └── {child}.component.{ts,html,scss,spec.ts}
+├── services/                # services internes à la feature
+├── {feature}.component.{ts,html,scss} # shell de la feature
+└── {feature}.routes.ts      # lazy-loaded routes
 ```
 
 ## Règles

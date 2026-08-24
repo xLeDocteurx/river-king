@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { TileListComponent } from './tile-list.component';
-import type { Tile } from '../../shared/models/tile.model';
+import type { Tile } from '../../../shared/models/tile.model';
 
 function createMockTile(overrides: Partial<Tile> = {}): Tile {
   return {

@@ -10,9 +10,9 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SpriteService } from './services/sprite.service';
-import { PixelCanvasComponent } from './pixel-canvas.component';
-import { PaletteManagerComponent } from './palette-manager.component';
-import { DrawingToolsComponent, type DrawingTool } from './drawing-tools.component';
+import { PixelCanvasComponent } from './canvas/pixel-canvas.component';
+import { PaletteManagerComponent } from './palette/palette-manager.component';
+import { DrawingToolsComponent, type DrawingTool } from './tools/drawing-tools.component';
 import { ProjectService } from '../dashboard/services/project.service';
 import { TileService } from '../tile-manager/services/tile.service';
 import { NotificationService } from '../../core/services/notification.service';

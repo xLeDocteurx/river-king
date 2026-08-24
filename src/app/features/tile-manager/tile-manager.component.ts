@@ -13,8 +13,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TileService } from './services/tile.service';
 import { TileSpritesService } from './services/tile-sprites.service';
 import { ProjectService } from '../../features/dashboard/services/project.service';
-import { TileListComponent } from './tile-list.component';
-import { TilePropertiesComponent } from './tile-properties.component';
+import { TileListComponent } from './list/tile-list.component';
+import { TilePropertiesComponent } from './properties/tile-properties.component';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
