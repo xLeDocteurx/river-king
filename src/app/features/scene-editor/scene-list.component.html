@@ -1,8 +1,10 @@
 <div class="tw-flex tw-flex-col tw-h-full tw-bg-card-bg tw-border-r tw-border-border">
   <div
-    class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-3 tw-border-b tw-border-border"
+    class="tw-flex tw-items-center tw-justify-between tw-px-3 tw-py-2 tw-border-b tw-border-border"
   >
-    <h3 class="tw-font-semibold tw-text-foreground">Scenes</h3>
+    <h3 class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground">
+      Scenes
+    </h3>
     <div class="tw-flex tw-gap-1">
       <button
         type="button"
@@ -29,7 +31,7 @@
           <button
             type="button"
             (click)="toggleGroup(group.folderPath)"
-            class="tw-w-full tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-xs tw-font-semibold tw-text-muted-foreground hover:tw-text-foreground tw-cursor-pointer tw-text-left"
+            class="tw-w-full tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground tw-cursor-pointer tw-text-left"
           >
             <span
               class="material-symbols tw-text-sm tw-transition-transform"
@@ -56,7 +58,7 @@
                     type="button"
                     (click)="sceneSelect.emit(scene.id)"
                     [class.tw-bg-primary/10]="selectedSceneId() === scene.id"
-                    class="tw-flex-1 tw-min-w-0 tw-text-left tw-px-3 tw-py-2 tw-rounded-sm tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition-colors tw-flex tw-items-center tw-gap-2"
+                    class="tw-flex-1 tw-min-w-0 tw-text-left tw-px-2 tw-py-1.5 tw-rounded-sm tw-text-xs tw-text-foreground hover:tw-bg-muted tw-transition-colors tw-flex tw-items-center tw-gap-2"
                   >
                     <span class="material-symbols tw-text-muted-foreground" aria-hidden="true"
                       >map</span
@@ -67,7 +69,7 @@
                     type="button"
                     (click)="sceneDelete.emit(scene.id); $event.stopPropagation()"
                     title="Delete scene"
-                    class="tw-p-1.5 tw-rounded-sm tw-shrink-0 tw-text-muted-foreground hover:tw-text-destructive hover:tw-bg-muted tw-transition-colors"
+                    class="tw-p-1 tw-rounded-sm tw-shrink-0 tw-text-muted-foreground hover:tw-text-destructive hover:tw-bg-muted tw-transition-colors"
                   >
                     <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
                   </button>
