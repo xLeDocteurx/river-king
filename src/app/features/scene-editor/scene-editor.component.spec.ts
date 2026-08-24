@@ -273,6 +273,8 @@ describe('SceneEditorComponent', () => {
     const scene = await sceneService.createScene('p1', 'Forest', 10, 10);
     await component.loadScenes();
     await component.selectScene(scene.id);
+    fixture.detectChanges();
+    await fixture.whenStable();
 
     const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
     expect(lastCall?.[0]).toContain('Forest');
