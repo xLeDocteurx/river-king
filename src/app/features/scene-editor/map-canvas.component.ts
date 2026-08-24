@@ -145,6 +145,9 @@ export class MapCanvasComponent implements AfterViewInit {
     const canvas = this.canvasRef()?.nativeElement;
     if (!ctx || !canvas) return;
 
+    // Re-applied on every render: assigning canvas.width/height (resize) resets
+    // all 2D context state, including smoothing.
+    ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const scene = this.scene();

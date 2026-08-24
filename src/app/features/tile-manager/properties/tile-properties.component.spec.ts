@@ -105,6 +105,7 @@ describe('TilePropertiesComponent', () => {
     const img = fixture.debugElement.query(By.css('img'));
     expect(img).toBeTruthy();
     expect((img.nativeElement as HTMLImageElement).src).toContain('SPR1');
+    expect((img.nativeElement as HTMLImageElement).className).toContain('pixelated');
     const navSpy = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     img.nativeElement.closest('button')!.click();
     fixture.detectChanges();
@@ -119,6 +120,9 @@ describe('TilePropertiesComponent', () => {
     await setup(tile);
     const imgs = fixture.debugElement.queryAll(By.css('img'));
     expect(imgs.length).toBe(3);
+    for (const img of imgs) {
+      expect((img.nativeElement as HTMLImageElement).className).toContain('pixelated');
+    }
   });
 
   it('increasing frame count creates blank frames and refreshes shared sprite state', async () => {

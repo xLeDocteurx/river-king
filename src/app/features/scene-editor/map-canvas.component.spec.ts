@@ -70,4 +70,29 @@ describe('MapCanvasComponent', () => {
 
     expect(placed).toEqual([{ x: 2, y: 1, tileId: 1 }]);
   });
+
+  it('disables image smoothing so upscaled tiles render pixel-perfect', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+
+    try {
+      setup(makeScene());
+      expect(fixture.componentInstance['ctx']).toBe(ctx);
+      expect(ctx.imageSmoothingEnabled).toBe(false);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
 });
