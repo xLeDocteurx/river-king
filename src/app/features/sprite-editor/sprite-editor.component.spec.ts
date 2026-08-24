@@ -259,6 +259,45 @@ describe('SpriteEditorComponent', () => {
     expect(component.spriteGroups()[0].sprites.map((s) => s.name)).toEqual(['frame 1', 'frame 2']);
   });
 
+  it('collapses and expands a tile group when its header is clicked', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Base Tile',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 8,
+      properties: { blocking: false, interactable: false },
+    } as Tile);
+    await setupWithProject();
+    const service = TestBed.inject(SpriteService);
+    await service.createSprite('test-proj', 'alpha frame', 1);
+    await service.createSprite('test-proj', 'beta frame', 1);
+    const component = fixture.componentInstance;
+    await component.loadSprites();
+    await component.loadTiles();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('alpha frame');
+
+    const header = Array.from(compiled.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Base Tile'),
+    ) as HTMLButtonElement;
+    header.click();
+    fixture.detectChanges();
+    expect(component.isTileCollapsed(1)).toBe(true);
+    expect(compiled.textContent).not.toContain('alpha frame');
+    expect(compiled.textContent).not.toContain('beta frame');
+
+    header.click();
+    fixture.detectChanges();
+    expect(component.isTileCollapsed(1)).toBe(false);
+    expect(compiled.textContent).toContain('alpha frame');
+  });
+
   it('flushes the pending save before switching sprites', async () => {
     const { spriteService, existingSpriteId, otherSpriteId } = await seedTwoSprites();
     const updateSpy = vi.spyOn(spriteService, 'updateSprite').mockResolvedValue(undefined);

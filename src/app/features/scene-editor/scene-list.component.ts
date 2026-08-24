@@ -1,4 +1,4 @@
-import { Component, input, output, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CdkDropListGroup, CdkDropList, CdkDrag, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import type { Scene } from '../../shared/models/scene.model';
 
@@ -34,6 +34,9 @@ export class SceneListComponent {
   /** Emitted when the user requests creation of a new folder (carries its path). */
   createFolder = output<string>();
 
+  /** Folder paths currently collapsed in the list (session-only state). */
+  collapsedFolders = signal<Set<string>>(new Set());
+
   /** Computed grouping of scenes by folderPath, including persisted empty folders. */
   groups = computed<{ folderPath: string; scenes: Scene[] }[]>(() => {
     const map = new Map<string, Scene[]>();
@@ -52,6 +55,31 @@ export class SceneListComponent {
       .map(([folderPath, scenes]) => ({ folderPath, scenes }))
       .sort((a, b) => a.folderPath.localeCompare(b.folderPath));
   });
+
+  /**
+   * Toggles the collapsed state of a folder group.
+   * @param folderPath - Path of the folder whose header was clicked.
+   */
+  toggleGroup(folderPath: string): void {
+    this.collapsedFolders.update((current) => {
+      const next = new Set(current);
+      if (next.has(folderPath)) {
+        next.delete(folderPath);
+      } else {
+        next.add(folderPath);
+      }
+      return next;
+    });
+  }
+
+  /**
+   * Whether a folder group is currently collapsed.
+   * @param folderPath - Path of the folder to check.
+   * @returns True when the group's scenes are hidden.
+   */
+  isCollapsed(folderPath: string): boolean {
+    return this.collapsedFolders().has(folderPath);
+  }
 
   /**
    * Prompts the user for a group name and emits it for persistence.

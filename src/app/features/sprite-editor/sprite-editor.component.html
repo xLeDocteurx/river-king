@@ -6,22 +6,33 @@
     </div>
     <div class="tw-flex-1 tw-overflow-auto tw-p-2 tw-flex tw-flex-col tw-gap-1">
       @for (group of spriteGroups(); track group.tile.id) {
-        <div
-          class="tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-xs tw-font-semibold tw-text-muted-foreground tw-uppercase"
+        <button
+          type="button"
+          (click)="toggleTileGroup(group.tile.id)"
+          class="tw-w-full tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-xs tw-font-semibold tw-text-muted-foreground hover:tw-text-foreground tw-cursor-pointer tw-text-left"
         >
-          <span class="material-symbols" aria-hidden="true">folder</span>
-          <span>{{ group.tile.name }}</span>
-        </div>
-        @for (sprite of group.sprites; track sprite.id) {
-          <button
-            type="button"
-            (click)="selectSprite(sprite.id)"
-            [class.tw-bg-primary/10]="selectedSpriteId() === sprite.id"
-            class="tw-text-left tw-px-3 tw-py-2 tw-rounded-sm tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
+          <span
+            class="material-symbols tw-text-sm tw-transition-transform"
+            [class.-tw-rotate-90]="isTileCollapsed(group.tile.id)"
+            aria-hidden="true"
+            >expand_more</span
           >
-            <span class="material-symbols tw-text-muted-foreground" aria-hidden="true">image</span>
-            <span>{{ sprite.name }}</span>
-          </button>
+          <span>{{ group.tile.name }}</span>
+        </button>
+        @if (!isTileCollapsed(group.tile.id)) {
+          @for (sprite of group.sprites; track sprite.id) {
+            <button
+              type="button"
+              (click)="selectSprite(sprite.id)"
+              [class.tw-bg-primary/10]="selectedSpriteId() === sprite.id"
+              class="tw-text-left tw-px-3 tw-py-2 tw-rounded-sm tw-text-sm tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
+            >
+              <span class="material-symbols tw-text-muted-foreground" aria-hidden="true"
+                >image</span
+              >
+              <span>{{ sprite.name }}</span>
+            </button>
+          }
         }
       } @empty {
         <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">No sprites yet</div>

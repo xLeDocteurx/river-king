@@ -74,6 +74,34 @@ export class SpriteEditorComponent implements OnInit {
     return [...groups.values()].sort((a, b) => a.tile.name.localeCompare(b.tile.name));
   });
 
+  /** Tile IDs whose sprite groups are currently collapsed (session-only state). */
+  readonly collapsedTiles = signal<Set<number>>(new Set());
+
+  /**
+   * Toggles the collapsed state of a tile's sprite group.
+   * @param tileId - ID of the tile whose header was clicked.
+   */
+  toggleTileGroup(tileId: number): void {
+    this.collapsedTiles.update((current) => {
+      const next = new Set(current);
+      if (next.has(tileId)) {
+        next.delete(tileId);
+      } else {
+        next.add(tileId);
+      }
+      return next;
+    });
+  }
+
+  /**
+   * Whether a tile's sprite group is currently collapsed.
+   * @param tileId - ID of the tile to check.
+   * @returns True when the group's sprites are hidden.
+   */
+  isTileCollapsed(tileId: number): boolean {
+    return this.collapsedTiles().has(tileId);
+  }
+
   /** Reactive signal holding the ID of the currently selected sprite. */
   selectedSpriteId = signal<number | null>(null);
 

@@ -62,6 +62,34 @@ describe('SceneListComponent', () => {
     expect(component.groups().some((g) => g.folderPath === 'mountain')).toBe(true);
   });
 
+  it('should collapse and expand a folder when its header is clicked', () => {
+    const scenes: Scene[] = [
+      makeScene('s1', 'Forest 1', 'forest'),
+      makeScene('s2', 'Cave 1', 'caves'),
+    ];
+    fixture.componentRef.setInput('scenes', scenes);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const headerFor = (path: string) =>
+      Array.from(compiled.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes(path),
+      ) as HTMLButtonElement;
+
+    headerFor('forest')!.click();
+    fixture.detectChanges();
+    expect(component.isCollapsed('forest')).toBe(true);
+    expect(compiled.textContent).not.toContain('Forest 1');
+    expect(compiled.textContent).toContain('Cave 1');
+    expect(compiled.querySelectorAll('[cdkDropList]').length).toBe(1);
+
+    headerFor('forest')!.click();
+    fixture.detectChanges();
+    expect(component.isCollapsed('forest')).toBe(false);
+    expect(compiled.textContent).toContain('Forest 1');
+    expect(compiled.querySelectorAll('[cdkDropList]').length).toBe(2);
+  });
+
   it('should emit createFolder (not keep local state) when onCreateGroup is invoked', () => {
     fixture.componentRef.setInput('scenes', []);
     fixture.detectChanges();
