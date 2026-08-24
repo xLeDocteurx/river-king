@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { App } from './app';
 import { AppDummyComponent } from './app-dummy.component';
+import { StatusBarService } from './core/services/status-bar.service';
 
 describe('App', () => {
   let fixture: ComponentFixture<App>;
@@ -53,5 +54,19 @@ describe('App', () => {
     expect(toggle!.getAttribute('aria-label')).toMatch(/switch to (light|dark) theme/i);
     // Icon-only: the only text content is the Material Symbols ligature name
     expect(toggle!.textContent?.replace(/\s+/g, '')).toMatch(/^(light_mode|dark_mode)$/);
+  });
+
+  it('should render the app-wide status bar with context and branding', () => {
+    const status = TestBed.inject(StatusBarService);
+    status.setContext('3 projects');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const footer = compiled.querySelector('footer');
+    expect(footer).toBeTruthy();
+    expect(compiled.querySelector('[data-testid="status-context"]')?.textContent?.trim()).toBe(
+      '3 projects',
+    );
+    expect(footer?.textContent).toContain('River King Engine');
   });
 });

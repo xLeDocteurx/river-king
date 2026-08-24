@@ -2,13 +2,15 @@ import { Component, inject, signal } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ThemeService } from './core/services/theme.service';
+import { StatusBarService } from './core/services/status-bar.service';
 import { ToastComponent } from './shared/components/toast/toast.component';
 
 /**
  * Root application component.
  *
  * Provides a global top bar with branding, contextual project navigation,
- * and dark-mode toggle. Hosts the router outlet below.
+ * and dark-mode toggle, plus the app-wide status bar. Hosts the router
+ * outlet between them.
  */
 @Component({
   imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastComponent],
@@ -18,6 +20,7 @@ import { ToastComponent } from './shared/components/toast/toast.component';
 })
 export class App {
   protected readonly theme = inject(ThemeService);
+  protected readonly status = inject(StatusBarService);
   private readonly router = inject(Router);
 
   /** Whether the current route is under /project/:id (shows workspace nav). */

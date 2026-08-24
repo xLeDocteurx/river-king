@@ -66,20 +66,14 @@ describe('DashboardComponent', () => {
     );
   });
 
-  it('should pluralize the project count in the status bar', async () => {
+  it('should pluralize the project count label', async () => {
     await mountWithProjects([makeProject('a'), makeProject('b'), makeProject('c')]);
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('[data-testid="status-count"]')?.textContent?.trim()).toBe(
-      '3 projects',
-    );
+    expect(fixture.componentInstance.countLabel(3)).toBe('3 projects');
   });
 
   it('should use singular wording for a single project', async () => {
     await mountWithProjects([makeProject('only')]);
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('[data-testid="status-count"]')?.textContent?.trim()).toBe(
-      '1 project',
-    );
+    expect(fixture.componentInstance.countLabel(1)).toBe('1 project');
   });
 
   it('should render one card per project', async () => {

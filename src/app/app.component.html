@@ -64,6 +64,13 @@
   <main class="tw-flex-1 tw-overflow-hidden">
     <router-outlet />
   </main>
+
+  <footer
+    class="tw-h-[22px] tw-flex tw-items-center tw-justify-between tw-px-3 tw-bg-primary tw-text-primary-foreground tw-text-[11px]"
+  >
+    <span data-testid="status-context">{{ status.context() }}</span>
+    <span>River King Engine</span>
+  </footer>
 </div>
 
 <rk-toast />

@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { ProjectService } from './services/project.service';
+import { StatusBarService } from '../../core/services/status-bar.service';
 import type { Project } from '../../shared/models/project.model';
 import { ProjectCardComponent } from './project-card.component';
 import { ProjectCreateDialogComponent } from './project-create-dialog.component';
@@ -30,6 +31,7 @@ import {
 export class DashboardComponent {
   private readonly projectService = inject(ProjectService);
   private readonly router = inject(Router);
+  private readonly statusBar = inject(StatusBarService);
 
   /** Signal holding the list of loaded projects. */
   projects = signal<Project[]>([]);
@@ -50,6 +52,10 @@ export class DashboardComponent {
 
   constructor() {
     this.loadProjects();
+
+    effect(() => {
+      this.statusBar.setContext(this.countLabel(this.projects().length));
+    });
 
     effect(() => {
       if (this.projectToDelete()) {
