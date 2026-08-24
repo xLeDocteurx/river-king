@@ -1,0 +1,12 @@
+/*
+ * Active-tab styling lives here instead of Tailwind utilities because
+ * routerLinkActive classes share specificity with the static utility
+ * classes on the same element — the compiled CSS source order decides
+ * the winner (muted-foreground currently sorts after foreground),
+ * which made the active tab indistinguishable. An attribute selector
+ * inside the component scope outranks any single utility class.
+ */
+.nav-tab[aria-current='page'] {
+  color: var(--color-foreground);
+  border-color: var(--color-accent);
+}

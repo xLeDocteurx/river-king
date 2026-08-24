@@ -1,0 +1,8 @@
+/*
+ * Same specificity rationale as app.component.scss: the active state is
+ * expressed through aria-current so it always outranks static utility
+ * classes, regardless of compiled CSS order.
+ */
+a[aria-current='page'] {
+  color: var(--color-primary);
+}
