@@ -232,9 +232,7 @@ describe('PixelCanvasComponent', () => {
 
     // Click at position that maps to grid cell (2, 3) at zoom 1.1
     // effectiveScale = 16 * 1.1 = 17.6, so clientX = 2 * 17.6 + 8 = 43.2
-    canvas.dispatchEvent(
-      new MouseEvent('mousedown', { clientX: 43, clientY: 60, bubbles: true }),
-    );
+    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 43, clientY: 60, bubbles: true }));
     canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
 
     expect(spy).toHaveBeenCalled();
