@@ -91,7 +91,7 @@ export class PixelCanvasComponent implements AfterViewInit {
     ref.nativeElement.height = this.canvasHeight();
   }
 
-  /** Renders the pixel grid, background, and pixel data onto the canvas. */
+  /** Renders the background, pixel data, then the grid on top so cell boundaries stay visible. */
   private render() {
     const canvas = this.canvasRef()?.nativeElement;
     if (!canvas) return;
@@ -108,7 +108,24 @@ export class PixelCanvasComponent implements AfterViewInit {
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw grid
+    // Draw pixels
+    const indices = this.localPaletteIndices;
+    if (indices.length > 0) {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const idx = indices[y]?.[x] ?? 0;
+          if (idx > 0) {
+            const color = this.palette()[idx - 1];
+            if (color) {
+              ctx.fillStyle = color;
+              ctx.fillRect(x * scale, y * scale, scale, scale);
+            }
+          }
+        }
+      }
+    }
+
+    // Draw grid LAST so it stays visible over painted pixels
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
     for (let x = 0; x <= cols; x++) {
@@ -122,23 +139,6 @@ export class PixelCanvasComponent implements AfterViewInit {
       ctx.moveTo(0, y * scale);
       ctx.lineTo(width, y * scale);
       ctx.stroke();
-    }
-
-    // Draw pixels
-    const indices = this.localPaletteIndices;
-    if (indices.length === 0) return;
-
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        const idx = indices[y]?.[x] ?? 0;
-        if (idx > 0) {
-          const color = this.palette()[idx - 1];
-          if (color) {
-            ctx.fillStyle = color;
-            ctx.fillRect(x * scale, y * scale, scale, scale);
-          }
-        }
-      }
     }
   }
 
