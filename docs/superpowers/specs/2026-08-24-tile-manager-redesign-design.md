@@ -27,6 +27,7 @@ The Tile Manager (`tile-manager.component.html`) renders a two-column layout:
 ```
 
 Problems:
+
 - **No status-bar context**: the tile manager never pushes data to `StatusBarService`.
 - **Generic list spacing**: same `w-64` and loose paddings as the old scene list.
 - **Flat form**: all fields are stacked vertically with no visual grouping — Name, Type, Sprite, Frames, Dimensions, Properties all look equally important.
@@ -59,10 +60,10 @@ A single flex row filling the routed viewport.
 
 #### Column widths
 
-| Region | Width | Rationale |
-|--------|-------|-----------|
-| Tile list | `tw-w-56` (224 px) | Same as scene list for visual coherence. |
-| Properties | `tw-flex-1` | Claims remaining space; scrolls vertically. |
+| Region     | Width              | Rationale                                   |
+| ---------- | ------------------ | ------------------------------------------- |
+| Tile list  | `tw-w-56` (224 px) | Same as scene list for visual coherence.    |
+| Properties | `tw-flex-1`        | Claims remaining space; scrolls vertically. |
 
 #### Chrome & borders
 
@@ -75,11 +76,13 @@ A single flex row filling the routed viewport.
 Same density treatment as the scene list.
 
 **Header row:**
+
 - `tw-flex tw-items-center tw-justify-between tw-px-3 tw-py-2 tw-border-b tw-border-border`
 - Left: section label `TILES` in `tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground`
 - Right: ghost icon button `add` → create tile (`tw-p-1 tw-rounded-sm hover:tw-bg-muted`)
 
 **List body:**
+
 - `tw-flex-1 tw-overflow-auto tw-px-2 tw-py-2`
 - Tile rows: `tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1.5 tw-rounded-sm tw-text-xs tw-text-foreground hover:tw-bg-muted tw-transition-colors`
   - Selected row: `tw-bg-primary/10`
@@ -91,6 +94,7 @@ Same density treatment as the scene list.
 The form is reorganized into **four sections** separated by horizontal rules (`tw-border-b tw-border-border`). Each section has a small uppercase label. Fields within a section are arranged horizontally where it makes sense.
 
 **Section 1: Identity**
+
 - Label: `IDENTITY` (`tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground tw-mb-2`)
 - Name input: full width (it's the primary identifier)
 - Type select: inline next to Name, or below — keep it simple, full width is fine for this one
@@ -99,6 +103,7 @@ The form is reorganized into **four sections** separated by horizontal rules (`t
 Simpler decision for density: stack Name and Type horizontally in a 2-column grid when space allows, but for consistency and predictability, keep them stacked but dense.
 
 Actually, let's do a **2-column grid** for short fields:
+
 ```
 Name            [input full width]
 Type [select]   Speed (fps) [input number]
@@ -107,21 +112,25 @@ Type [select]   Speed (fps) [input number]
 Implementation: `tw-grid tw-grid-cols-2 tw-gap-3` for fields that fit side-by-side.
 
 **Section 2: Sprite / Frames**
+
 - Label: `SPRITE`
 - For static: a single clickable thumbnail with a label "Click to edit in Sprite Editor"
 - For animated: frame count input + horizontal row of frame thumbnails
 
 **Section 3: Dimensions**
+
 - Label: `SIZE`
 - Width (tiles) + Height (tiles) side by side, then Apply button
 - `tw-grid tw-grid-cols-3 tw-gap-3` where col 1 and 2 are the number inputs, col 3 is the Apply button aligned bottom.
 
 **Section 4: Properties**
+
 - Label: `PROPERTIES`
 - Blocking checkbox + Interactable checkbox side by side when room allows
 - Action dropdown appears below when Interactable is checked
 
 **Global form changes:**
+
 - Remove `tw-max-w-lg` constraint — let the form breathe to the right edge.
 - Reduce label text to `tw-text-[11px]`.
 - Reduce input padding to `tw-px-2 tw-py-1.5`.
@@ -135,15 +144,19 @@ Actually, to make the form feel like an inspector panel, wrap it in a container 
 Tile Manager pushes context to `StatusBarService` via an `effect`.
 
 **When no tile is selected:**
+
 ```
 {n} tiles
 ```
+
 Example: `12 tiles`
 
 **When a tile is selected:**
+
 ```
 {tileName} | {type} | {w}×{h} tiles | {blocking?"Blocking":"Passable"} | {frames} frames
 ```
+
 Example: `Water | static | 1×1 | Passable | 1 frame`
 Example: `Torch | animated | 1×1 | Passable | 4 frames`
 
@@ -156,25 +169,26 @@ Implementation: `TileManagerComponent` injects `StatusBarService` and calls `set
 ### 4.1 tile-manager.component.ts
 
 **Add:**
+
 - `private readonly statusBar = inject(StatusBarService)`
 - `effect` block that builds the context string
 
 ```typescript
-  statusBarEffect = effect(() => {
-    const selected = this.selectedTile();
-    const count = this.tiles().length;
-    if (!selected) {
-      this.statusBar.setContext(`${count} tile${count === 1 ? '' : 's'}`);
-      return;
-    }
-    const sprites = this.tileSpritesService.sprites();
-    const frameCount = sprites.length;
-    const blocking = selected.properties.blocking ? 'Blocking' : 'Passable';
-    const size = `${this.currentTiles().w}×${this.currentTiles().h}`;
-    this.statusBar.setContext(
-      `${selected.name} | ${selected.type} | ${size} tiles | ${blocking} | ${frameCount} frame${frameCount === 1 ? '' : 's'}`
-    );
-  });
+statusBarEffect = effect(() => {
+  const selected = this.selectedTile();
+  const count = this.tiles().length;
+  if (!selected) {
+    this.statusBar.setContext(`${count} tile${count === 1 ? '' : 's'}`);
+    return;
+  }
+  const sprites = this.tileSpritesService.sprites();
+  const frameCount = sprites.length;
+  const blocking = selected.properties.blocking ? 'Blocking' : 'Passable';
+  const size = `${this.currentTiles().w}×${this.currentTiles().h}`;
+  this.statusBar.setContext(
+    `${selected.name} | ${selected.type} | ${size} tiles | ${blocking} | ${frameCount} frame${frameCount === 1 ? '' : 's'}`,
+  );
+});
 ```
 
 **Note:** `currentTiles()` is a private method on `TilePropertiesComponent`, not on `TileManagerComponent`. To get dimensions, we can either:
@@ -196,19 +210,19 @@ But `tileSpritesService.sprites()` is a signal in `TileSpritesService`... wait, 
 Simpler approach: just show `tile.type` and `frameCount` from `tile.spriteIds.length`:
 
 ```typescript
-  statusBarEffect = effect(() => {
-    const selected = this.selectedTile();
-    const count = this.tiles().length;
-    if (!selected) {
-      this.statusBar.setContext(`${count} tile${count === 1 ? '' : 's'}`);
-      return;
-    }
-    const frameCount = selected.spriteIds.length;
-    const blocking = selected.properties.blocking ? 'Blocking' : 'Passable';
-    this.statusBar.setContext(
-      `${selected.name} | ${selected.type} | ${blocking} | ${frameCount} frame${frameCount === 1 ? '' : 's'}`
-    );
-  });
+statusBarEffect = effect(() => {
+  const selected = this.selectedTile();
+  const count = this.tiles().length;
+  if (!selected) {
+    this.statusBar.setContext(`${count} tile${count === 1 ? '' : 's'}`);
+    return;
+  }
+  const frameCount = selected.spriteIds.length;
+  const blocking = selected.properties.blocking ? 'Blocking' : 'Passable';
+  this.statusBar.setContext(
+    `${selected.name} | ${selected.type} | ${blocking} | ${frameCount} frame${frameCount === 1 ? '' : 's'}`,
+  );
+});
 ```
 
 This is clean and doesn't require cross-component data access.
@@ -227,18 +241,20 @@ This is clean and doesn't require cross-component data access.
   />
   <div class="tw-flex-1 tw-overflow-auto tw-p-4 tw-bg-background">
     @if (selectedTile()) {
-      <rk-tile-properties
-        [tile]="selectedTile()!"
-        [projectTileSize]="tileSize()"
-        [projectPalette]="palette()"
-        (save)="saveTile($event)"
-      />
+    <rk-tile-properties
+      [tile]="selectedTile()!"
+      [projectTileSize]="tileSize()"
+      [projectPalette]="palette()"
+      (save)="saveTile($event)"
+    />
     } @else {
-      <div class="tw-h-full tw-flex tw-flex-col tw-items-center tw-justify-center tw-text-muted-foreground">
-        <span class="material-symbols tw-text-5xl tw-mb-3" aria-hidden="true">grid_view</span>
-        <p class="tw-text-sm tw-font-semibold">No tile selected</p>
-        <p class="tw-text-xs">Select a tile from the list to edit its properties</p>
-      </div>
+    <div
+      class="tw-h-full tw-flex tw-flex-col tw-items-center tw-justify-center tw-text-muted-foreground"
+    >
+      <span class="material-symbols tw-text-5xl tw-mb-3" aria-hidden="true">grid_view</span>
+      <p class="tw-text-sm tw-font-semibold">No tile selected</p>
+      <p class="tw-text-xs">Select a tile from the list to edit its properties</p>
+    </div>
     }
   </div>
 </div>
@@ -258,6 +274,7 @@ Restyle per §3.2. Keep component API unchanged.
 ### 4.4 tile-properties.component.html
 
 Full restyle with sections. Key changes:
+
 - Wrap form in a `tw-flex tw-flex-col` with section blocks separated by borders.
 - Each section starts with an uppercase label.
 - Inputs use `tw-px-2 tw-py-1.5` (not `tw-px-3 tw-py-2`).
@@ -272,10 +289,17 @@ Section layout sketch:
 <form [formGroup]="form" class="tw-flex tw-flex-col tw-gap-6">
   <!-- Identity -->
   <div class="tw-flex tw-flex-col tw-gap-3">
-    <h4 class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground">Identity</h4>
+    <h4
+      class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+    >
+      Identity
+    </h4>
     <div class="tw-flex tw-flex-col tw-gap-1">
       <label class="tw-text-[11px] tw-text-muted-foreground">Name</label>
-      <input ... class="tw-px-2 tw-py-1.5 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground" />
+      <input
+        ...
+        class="tw-px-2 tw-py-1.5 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
+      />
     </div>
     <div class="tw-grid tw-grid-cols-2 tw-gap-3">
       <div class="tw-flex tw-flex-col tw-gap-1">
@@ -283,10 +307,10 @@ Section layout sketch:
         <select ... />
       </div>
       @if (typeSelected() === 'animated') {
-        <div class="tw-flex tw-flex-col tw-gap-1">
-          <label class="tw-text-[11px] tw-text-muted-foreground">Speed (fps)</label>
-          <input ... />
-        </div>
+      <div class="tw-flex tw-flex-col tw-gap-1">
+        <label class="tw-text-[11px] tw-text-muted-foreground">Speed (fps)</label>
+        <input ... />
+      </div>
       }
     </div>
   </div>
@@ -296,7 +320,11 @@ Section layout sketch:
 
   <!-- Sprite -->
   <div class="tw-flex tw-flex-col tw-gap-3">
-    <h4 class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground">Sprite</h4>
+    <h4
+      class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+    >
+      Sprite
+    </h4>
     <!-- static or animated sprite rendering -->
   </div>
 
@@ -305,7 +333,11 @@ Section layout sketch:
 
   <!-- Size -->
   <div class="tw-flex tw-flex-col tw-gap-3">
-    <h4 class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground">Size</h4>
+    <h4
+      class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+    >
+      Size
+    </h4>
     <div class="tw-grid tw-grid-cols-3 tw-gap-3 tw-items-end">
       <!-- width, height, apply button -->
     </div>
@@ -316,7 +348,11 @@ Section layout sketch:
 
   <!-- Properties -->
   <div class="tw-flex tw-flex-col tw-gap-3">
-    <h4 class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground">Properties</h4>
+    <h4
+      class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+    >
+      Properties
+    </h4>
     <!-- blocking, interactable, action dropdown -->
   </div>
 </form>
@@ -326,17 +362,17 @@ Section layout sketch:
 
 ## 5. Token Usage Reference
 
-| Element | Background | Text | Border | Notes |
-|---------|-----------|------|--------|-------|
-| Tile list panel | `tw-bg-card-bg` | — | `tw-border-r tw-border-border` | Right border only |
-| Tile list header | same as panel | `tw-text-muted-foreground` | `tw-border-b tw-border-border` | |
-| Tile row hover | `hover:tw-bg-muted` | `tw-text-foreground` | — | |
-| Tile row selected | `tw-bg-primary/10` | `tw-text-foreground` | — | |
-| Properties area | `tw-bg-background` | — | — | Base page color |
-| Section label | — | `tw-text-muted-foreground` | — | 11px uppercase |
-| Input | `tw-bg-background` | `tw-text-foreground` | `tw-border-input` | |
-| Sprite thumbnail | — | — | `tw-border-border` | hover: `tw-border-accent` |
-| Status bar | `tw-bg-primary` (global) | `tw-text-primary-foreground` (global) | — | Set via `StatusBarService` |
+| Element           | Background               | Text                                  | Border                         | Notes                      |
+| ----------------- | ------------------------ | ------------------------------------- | ------------------------------ | -------------------------- |
+| Tile list panel   | `tw-bg-card-bg`          | —                                     | `tw-border-r tw-border-border` | Right border only          |
+| Tile list header  | same as panel            | `tw-text-muted-foreground`            | `tw-border-b tw-border-border` |                            |
+| Tile row hover    | `hover:tw-bg-muted`      | `tw-text-foreground`                  | —                              |                            |
+| Tile row selected | `tw-bg-primary/10`       | `tw-text-foreground`                  | —                              |                            |
+| Properties area   | `tw-bg-background`       | —                                     | —                              | Base page color            |
+| Section label     | —                        | `tw-text-muted-foreground`            | —                              | 11px uppercase             |
+| Input             | `tw-bg-background`       | `tw-text-foreground`                  | `tw-border-input`              |                            |
+| Sprite thumbnail  | —                        | —                                     | `tw-border-border`             | hover: `tw-border-accent`  |
+| Status bar        | `tw-bg-primary` (global) | `tw-text-primary-foreground` (global) | —                              | Set via `StatusBarService` |
 
 ---
 

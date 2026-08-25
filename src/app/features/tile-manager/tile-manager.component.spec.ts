@@ -6,6 +6,7 @@ import { BehaviorSubject } from 'rxjs';
 import { TileManagerComponent } from './tile-manager.component';
 import { DatabaseService } from '../../core/services/database.service';
 import { SessionService } from '../../core/services/session.service';
+import { StatusBarService } from '../../core/services/status-bar.service';
 import { TileService } from './services/tile.service';
 import { TileSpritesService } from './services/tile-sprites.service';
 import { ProjectService } from '../../features/dashboard/services/project.service';
@@ -83,7 +84,7 @@ describe('TileManagerComponent', () => {
     await setupWithProject();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Select a tile to edit its properties');
+    expect(compiled.textContent).toContain('Select a tile from the list to edit its properties');
   });
 
   it('loads project palette and tileSize on init', async () => {
@@ -214,5 +215,24 @@ describe('TileManagerComponent', () => {
     await fixture.componentInstance.selectTile(tileId);
 
     expect(spy).toHaveBeenCalledWith('test-proj', { lastTileId: tileId });
+  });
+
+  it('sets the status bar context when a tile is selected', async () => {
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 50));
+    const comp = fixture.componentInstance;
+    const statusBar = TestBed.inject(StatusBarService);
+    const spy = vi.spyOn(statusBar, 'setContext');
+
+    const tileId = await addSeedTile();
+    vi.spyOn(comp['router'], 'navigate').mockResolvedValue(true);
+
+    await comp.selectTile(tileId);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const lastCall = spy.mock.calls[spy.mock.calls.length - 1][0] as string;
+    expect(lastCall).toContain('T');
+    expect(lastCall).toContain('frames');
   });
 });

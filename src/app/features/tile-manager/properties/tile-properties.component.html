@@ -1,150 +1,183 @@
-<form [formGroup]="form" class="tw-flex tw-flex-col tw-gap-4 tw-max-w-lg">
-  <h2 class="tw-text-xl tw-font-bold tw-text-foreground">Tile Properties</h2>
-
-  <label class="tw-flex tw-flex-col tw-gap-1">
-    <span class="tw-text-sm tw-font-medium">Name</span>
-    <input
-      type="text"
-      formControlName="name"
-      name="name"
-      class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
-    />
-  </label>
-
-  <label class="tw-flex tw-flex-col tw-gap-1">
-    <span class="tw-text-sm tw-font-medium">Type</span>
-    <select
-      formControlName="type"
-      name="type"
-      (change)="onTypeChange($any($event.target).value)"
-      class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
+<form [formGroup]="form" class="tw-flex tw-flex-col tw-gap-6">
+  <!-- Identity -->
+  <div class="tw-flex tw-flex-col tw-gap-3">
+    <h4
+      class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
     >
-      <option value="static">Static</option>
-      <option value="animated">Animated</option>
-    </select>
-  </label>
-
-  @if (typeSelected() === 'static') {
+      Identity
+    </h4>
     <div class="tw-flex tw-flex-col tw-gap-1">
-      <span class="tw-text-sm tw-font-medium">Sprite</span>
-      @if (tileSprites()?.[0]; as sprite) {
-        <button type="button" (click)="openSprite(sprite.id)" class="tw-w-fit">
-          <img
-            [src]="sprite.pixelData"
-            alt="Sprite preview"
-            width="64"
-            height="64"
-            class="tw-w-16 tw-h-16 tw-border tw-border-border tw-cursor-pointer [image-rendering:pixelated]"
+      <span class="tw-text-[11px] tw-text-muted-foreground">Name</span>
+      <input
+        type="text"
+        formControlName="name"
+        name="name"
+        class="tw-w-full tw-px-2 tw-py-1.5 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
+      />
+    </div>
+    <div class="tw-grid tw-grid-cols-2 tw-gap-3">
+      <div class="tw-flex tw-flex-col tw-gap-1">
+        <span class="tw-text-[11px] tw-text-muted-foreground">Type</span>
+        <select
+          formControlName="type"
+          name="type"
+          (change)="onTypeChange($any($event.target).value)"
+          class="tw-w-full tw-px-2 tw-py-1.5 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
+        >
+          <option value="static">Static</option>
+          <option value="animated">Animated</option>
+        </select>
+      </div>
+      @if (typeSelected() === 'animated') {
+        <div class="tw-flex tw-flex-col tw-gap-1">
+          <span class="tw-text-[11px] tw-text-muted-foreground">Speed (fps)</span>
+          <input
+            type="number"
+            formControlName="animationSpeed"
+            name="animationSpeed"
+            class="tw-w-full tw-px-2 tw-py-1.5 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
           />
-        </button>
-      } @else {
-        <div
-          class="tw-w-16 tw-h-16 tw-border tw-border-dashed tw-border-border tw-rounded-sm"
-          aria-hidden="true"
-        ></div>
+        </div>
       }
     </div>
-  }
+  </div>
 
-  @if (typeSelected() === 'animated') {
-    <div class="tw-flex tw-flex-col tw-gap-2">
-      <label class="tw-flex tw-flex-col tw-gap-1">
-        <span class="tw-text-sm tw-font-medium">Frames</span>
-        <input
-          type="number"
-          min="1"
-          [value]="frameCount()"
-          (change)="onFrameCountInput($any($event.target).valueAsNumber)"
-          aria-label="Frames"
-          name="frames"
-          class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
-        />
-      </label>
-      <div class="tw-flex tw-gap-2 tw-flex-wrap">
-        @for (sprite of tileSprites() ?? []; track sprite.id) {
-          <button type="button" (click)="openSprite(sprite.id)">
+  <div class="tw-border-b tw-border-border"></div>
+
+  <!-- Sprite -->
+  <div class="tw-flex tw-flex-col tw-gap-3">
+    <h4
+      class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+    >
+      Sprite
+    </h4>
+    @if (typeSelected() === 'static') {
+      <div class="tw-flex tw-flex-col tw-gap-1">
+        @if (tileSprites()?.[0]; as sprite) {
+          <button type="button" (click)="openSprite(sprite.id)" class="tw-w-fit">
             <img
               [src]="sprite.pixelData"
-              [alt]="'Frame ' + $index"
+              alt="Sprite preview"
               width="64"
               height="64"
               class="tw-w-16 tw-h-16 tw-border tw-border-border tw-cursor-pointer [image-rendering:pixelated]"
             />
           </button>
-        } @empty {
+        } @else {
           <div
             class="tw-w-16 tw-h-16 tw-border tw-border-dashed tw-border-border tw-rounded-sm"
             aria-hidden="true"
           ></div>
         }
       </div>
-    </div>
+    }
 
-    <label class="tw-flex tw-flex-col tw-gap-1">
-      <span class="tw-text-sm tw-font-medium">Animation Speed (fps)</span>
-      <input
-        type="number"
-        formControlName="animationSpeed"
-        name="animationSpeed"
-        class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
-      />
-    </label>
-  }
-
-  <div class="tw-flex tw-items-end tw-gap-2">
-    <label class="tw-flex tw-flex-col tw-gap-1">
-      <span class="tw-text-sm tw-font-medium">Width (tiles)</span>
-      <input
-        type="number"
-        min="1"
-        name="widthTiles"
-        aria-label="Width (tiles)"
-        [value]="widthTiles()"
-        (input)="widthTiles.set($any($event.target).valueAsNumber)"
-        class="tw-w-24 tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
-      />
-    </label>
-    <label class="tw-flex tw-flex-col tw-gap-1">
-      <span class="tw-text-sm tw-font-medium">Height (tiles)</span>
-      <input
-        type="number"
-        min="1"
-        name="heightTiles"
-        aria-label="Height (tiles)"
-        [value]="heightTiles()"
-        (input)="heightTiles.set($any($event.target).valueAsNumber)"
-        class="tw-w-24 tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-ring"
-      />
-    </label>
-    <button
-      type="button"
-      (click)="requestSizeApply()"
-      class="tw-px-4 tw-py-2 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-foreground tw-transition hover:tw-bg-muted"
-    >
-      Apply
-    </button>
+    @if (typeSelected() === 'animated') {
+      <div class="tw-flex tw-flex-col tw-gap-2">
+        <div class="tw-flex tw-flex-col tw-gap-1">
+          <span class="tw-text-[11px] tw-text-muted-foreground">Frames</span>
+          <input
+            type="number"
+            min="1"
+            [value]="frameCount()"
+            (change)="onFrameCountInput($any($event.target).valueAsNumber)"
+            aria-label="Frames"
+            name="frames"
+            class="tw-w-full tw-px-2 tw-py-1.5 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
+          />
+        </div>
+        <div class="tw-flex tw-gap-2 tw-flex-wrap">
+          @for (sprite of tileSprites() ?? []; track sprite.id) {
+            <button type="button" (click)="openSprite(sprite.id)">
+              <img
+                [src]="sprite.pixelData"
+                [alt]="'Frame ' + $index"
+                width="64"
+                height="64"
+                class="tw-w-16 tw-h-16 tw-border tw-border-border tw-cursor-pointer [image-rendering:pixelated]"
+              />
+            </button>
+          } @empty {
+            <div
+              class="tw-w-16 tw-h-16 tw-border tw-border-dashed tw-border-border tw-rounded-sm"
+              aria-hidden="true"
+            ></div>
+          }
+        </div>
+      </div>
+    }
   </div>
 
-  <div class="tw-flex tw-flex-col tw-gap-2" formGroupName="properties">
-    <span class="tw-text-sm tw-font-medium">Properties</span>
+  <div class="tw-border-b tw-border-border"></div>
 
-    <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-      <input type="checkbox" formControlName="blocking" name="blocking" class="tw-w-4 tw-h-4" />
-      <span>Blocking</span>
-    </label>
+  <!-- Size -->
+  <div class="tw-flex tw-flex-col tw-gap-3">
+    <h4
+      class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+    >
+      Size
+    </h4>
+    <div class="tw-grid tw-grid-cols-3 tw-gap-3 tw-items-end">
+      <div class="tw-flex tw-flex-col tw-gap-1">
+        <span class="tw-text-[11px] tw-text-muted-foreground">Width</span>
+        <input
+          type="number"
+          min="1"
+          name="widthTiles"
+          aria-label="Width (tiles)"
+          [value]="widthTiles()"
+          (input)="widthTiles.set($any($event.target).valueAsNumber)"
+          class="tw-w-full tw-px-2 tw-py-1.5 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
+        />
+      </div>
+      <div class="tw-flex tw-flex-col tw-gap-1">
+        <span class="tw-text-[11px] tw-text-muted-foreground">Height</span>
+        <input
+          type="number"
+          min="1"
+          name="heightTiles"
+          aria-label="Height (tiles)"
+          [value]="heightTiles()"
+          (input)="heightTiles.set($any($event.target).valueAsNumber)"
+          class="tw-w-full tw-px-2 tw-py-1.5 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
+        />
+      </div>
+      <button
+        type="button"
+        (click)="requestSizeApply()"
+        class="tw-px-4 tw-py-1.5 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-foreground tw-transition hover:tw-bg-muted"
+      >
+        Apply
+      </button>
+    </div>
+  </div>
 
-    <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
-      <input
-        type="checkbox"
-        name="interactable"
-        aria-label="Interactable"
-        [checked]="interactableChecked()"
-        (change)="interactableChecked.set($any($event.target).checked)"
-        class="tw-w-4 tw-h-4"
-      />
-      <span>Interactable</span>
-    </label>
+  <div class="tw-border-b tw-border-border"></div>
 
+  <!-- Properties -->
+  <div class="tw-flex tw-flex-col tw-gap-3" formGroupName="properties">
+    <h4
+      class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+    >
+      Properties
+    </h4>
+    <div class="tw-flex tw-gap-6">
+      <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
+        <input type="checkbox" formControlName="blocking" name="blocking" class="tw-w-4 tw-h-4" />
+        <span class="tw-text-[11px] tw-text-muted-foreground">Blocking</span>
+      </label>
+      <label class="tw-flex tw-items-center tw-gap-2 tw-cursor-pointer">
+        <input
+          type="checkbox"
+          name="interactable"
+          aria-label="Interactable"
+          [checked]="interactableChecked()"
+          (change)="interactableChecked.set($any($event.target).checked)"
+          class="tw-w-4 tw-h-4"
+        />
+        <span class="tw-text-[11px] tw-text-muted-foreground">Interactable</span>
+      </label>
+    </div>
     @if (interactableChecked()) {
       <div class="tw-flex tw-items-center tw-gap-2">
         <rk-searchable-select

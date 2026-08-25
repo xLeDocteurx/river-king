@@ -21,6 +21,7 @@ import {
 } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
+import { StatusBarService } from '../../core/services/status-bar.service';
 import type { Tile } from '../../shared/models/tile.model';
 
 /**
@@ -47,6 +48,7 @@ export class TileManagerComponent implements OnInit {
   private readonly projectService = inject(ProjectService);
   private readonly sessions = inject(SessionService);
   private readonly notification = inject(NotificationService);
+  private readonly statusBar = inject(StatusBarService);
   private readonly destroyRef = inject(DestroyRef);
 
   /** Reference to the confirm-dialog component for programmatic open/close. */
@@ -94,6 +96,21 @@ export class TileManagerComponent implements OnInit {
       const version = this.tileSpritesService.mutationVersion();
       if (version === 0) return;
       void this.reloadAfterSpriteMutation();
+    });
+
+    // Push contextual info to the status bar.
+    effect(() => {
+      const selected = this.selectedTile();
+      const count = this.tiles().length;
+      if (!selected) {
+        this.statusBar.setContext(`${count} tile${count === 1 ? '' : 's'}`);
+        return;
+      }
+      const frameCount = selected.spriteIds.length;
+      const blocking = selected.properties.blocking ? 'Blocking' : 'Passable';
+      this.statusBar.setContext(
+        `${selected.name} | ${selected.type} | ${blocking} | ${frameCount} frame${frameCount === 1 ? '' : 's'}`,
+      );
     });
   }
 

@@ -1,6 +1,6 @@
 <div class="tw-flex tw-h-full">
   <rk-tile-list
-    class="tw-w-64 tw-shrink-0 tw-border-r tw-border-border"
+    class="tw-w-56 tw-shrink-0 tw-bg-card-bg tw-border-r tw-border-border"
     [tiles]="tiles()"
     [selectedTileId]="selectedTileId()"
     (tileSelect)="selectTile($event)"
@@ -16,8 +16,12 @@
         (save)="saveTile($event)"
       />
     } @else {
-      <div class="tw-text-muted-foreground tw-text-center tw-py-20">
-        Select a tile to edit its properties
+      <div
+        class="tw-h-full tw-flex tw-flex-col tw-items-center tw-justify-center tw-text-muted-foreground"
+      >
+        <span class="material-symbols tw-text-5xl tw-mb-3" aria-hidden="true">grid_view</span>
+        <p class="tw-text-sm tw-font-semibold">No tile selected</p>
+        <p class="tw-text-xs">Select a tile from the list to edit its properties</p>
       </div>
     }
   </div>
