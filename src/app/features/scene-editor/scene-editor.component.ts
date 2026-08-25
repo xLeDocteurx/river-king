@@ -7,6 +7,7 @@ import {
   computed,
   viewChild,
   effect,
+  DestroyRef,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatabaseService } from '../../core/services/database.service';
@@ -48,8 +49,17 @@ export class SceneEditorComponent implements OnInit {
   private readonly mapTilesService = inject(MapTilesService);
   private readonly sessions = inject(SessionService);
   private readonly statusBar = inject(StatusBarService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly deleteConfirmDialog = viewChild.required(ConfirmDialogComponent);
   mapCanvasRef = viewChild(MapCanvasComponent);
+
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.cameraSaveTimer !== null) {
+        clearTimeout(this.cameraSaveTimer);
+      }
+    });
+  }
 
   /** Currently active project id derived from route params. */
   projectId = signal<string>('');
@@ -77,6 +87,16 @@ export class SceneEditorComponent implements OnInit {
   pendingDeleteSceneId = signal<string | null>(null);
   /** Camera state to restore on the map canvas (consumed once, then null). */
   restoreCamera = signal<{ x: number; y: number; zoom: number } | null>(null);
+  /**
+   * Horizontal camera offset bound to the map canvas. Updated whenever a
+   * scene is selected so the canvas snaps to the last stored position.
+   */
+  initialCameraX = signal(0);
+  /**
+   * Vertical camera offset bound to the map canvas. Updated whenever a
+   * scene is selected so the canvas snaps to the last stored position.
+   */
+  initialCameraY = signal(0);
 
   /** Effect that updates the global status bar with scene and camera info. */
   statusBarEffect = effect(() => {
@@ -92,6 +112,40 @@ export class SceneEditorComponent implements OnInit {
     this.statusBar.setContext(
       `${scene.name} | ${scene.width}×${scene.height} | Cam: ${x},${y} | Zoom: ${zoom}%`,
     );
+  });
+
+  /** @internal Last camera X written to the session (avoids redundant writes). */
+  private lastSavedCameraX = 0;
+  /** @internal Last camera Y written to the session (avoids redundant writes). */
+  private lastSavedCameraY = 0;
+  /** @internal Timer id for the trailing-edge debounce of camera persistence. */
+  private cameraSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Debounced effect that writes camera position back to the session (400 ms trailing). */
+  private readonly cameraSaveEffect = effect(() => {
+    const canvas = this.mapCanvasRef();
+    const scene = this.selectedScene();
+    if (!canvas || !scene) return;
+
+    const x = Math.round(canvas.cameraX());
+    const y = Math.round(canvas.cameraY());
+    void x;
+    void y;
+
+    if (this.cameraSaveTimer !== null) {
+      clearTimeout(this.cameraSaveTimer);
+    }
+    this.cameraSaveTimer = setTimeout(() => {
+      this.cameraSaveTimer = null;
+      const projId = this.projectId();
+      if (!projId || !this.selectedScene()) return;
+      const cx = Math.round(canvas.cameraX());
+      const cy = Math.round(canvas.cameraY());
+      if (cx === this.lastSavedCameraX && cy === this.lastSavedCameraY) return;
+      this.lastSavedCameraX = cx;
+      this.lastSavedCameraY = cy;
+      void this.sessions.updateSession(projId, { cameraX: cx, cameraY: cy });
+    }, 400);
   });
 
   /** Data for the scene deletion confirmation dialog. */
@@ -214,6 +268,11 @@ export class SceneEditorComponent implements OnInit {
         lastScreen: 'scenes',
         lastSceneId: sceneId,
       });
+      const stored = await this.sessions.getSession(this.projectId()).catch(() => undefined);
+      this.initialCameraX.set(stored?.cameraX ?? 0);
+      this.initialCameraY.set(stored?.cameraY ?? 0);
+      this.lastSavedCameraX = stored?.cameraX ?? 0;
+      this.lastSavedCameraY = stored?.cameraY ?? 0;
       if (this.route.snapshot.paramMap.get('sceneId') !== String(sceneId)) {
         void this.router.navigate(['/project', this.projectId(), 'scenes', sceneId]);
       }

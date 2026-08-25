@@ -45,6 +45,18 @@ export class MapCanvasComponent implements AfterViewInit {
   tileFootprints = input<TileFootprintMap>({});
   /** Camera state to restore once at startup (from the persisted session). */
   restoreCamera = input<{ x: number; y: number; zoom: number } | null>(null);
+  /**
+   * Horizontal camera offset to restore when the parent signals a scene
+   * switch or initial load. Reactively snaps the internal cameraX whenever
+   * the parent writes a new value.
+   */
+  initialCameraX = input(0);
+  /**
+   * Vertical camera offset to restore when the parent signals a scene
+   * switch or initial load. Reactively snaps the internal cameraY whenever
+   * the parent writes a new value.
+   */
+  initialCameraY = input(0);
   /** Emitted when a tile is placed on the canvas. */
   tilePlaced = output<{ x: number; y: number; tileId: number }>();
 
@@ -91,6 +103,14 @@ export class MapCanvasComponent implements AfterViewInit {
       this.tileFootprints();
       const sources = this.tileImages();
       void this.rebuildImageCache(sources);
+      this.render();
+    });
+
+    effect(() => {
+      const x = this.initialCameraX();
+      const y = this.initialCameraY();
+      this.cameraX.set(x);
+      this.cameraY.set(y);
       this.render();
     });
   }

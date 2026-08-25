@@ -164,6 +164,21 @@ describe('MapCanvasComponent', () => {
     expect(instance.hoverCell()).toBeNull();
   });
 
+  it('snaps camera to initialCameraX/Y inputs when they change', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+
+    expect(instance.cameraX()).toBe(0);
+    expect(instance.cameraY()).toBe(0);
+
+    fixture.componentRef.setInput('initialCameraX', 120);
+    fixture.componentRef.setInput('initialCameraY', 80);
+    fixture.detectChanges();
+
+    expect(instance.cameraX()).toBe(120);
+    expect(instance.cameraY()).toBe(80);
+  });
+
   it('clears the preview when the pointer leaves the canvas', () => {
     setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
     const instance = fixture.componentInstance;
