@@ -1,5 +1,6 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 
+/** Supported drawing tool identifiers for the sprite canvas. */
 export type DrawingTool = 'brush' | 'eraser' | 'fill';
 
 /**

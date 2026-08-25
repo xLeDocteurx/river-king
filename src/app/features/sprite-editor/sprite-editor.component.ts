@@ -133,10 +133,10 @@ export class SpriteEditorComponent implements OnInit {
   /** Reactive signal holding the decoded palette indices for the canvas. */
   paletteIndices = signal<number[][] | null>(null);
 
-  /** Handle of the scheduled trailing save timer (null when idle). */
+  /** @internal Handle of the scheduled trailing save timer (null when idle). */
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Payload waiting to be persisted once drawing pauses. */
+  /** @internal Payload waiting to be persisted once drawing pauses. */
   private pendingSave: { spriteId: number; indices: number[][]; pixelData: string } | null = null;
 
   /** Computed signal deriving the selected color index (palette index + 1). */
@@ -284,7 +284,7 @@ export class SpriteEditorComponent implements OnInit {
   }
 
   /**
-   * Stores the payload and (re)starts the 250 ms trailing timer.
+   * @internal Stores the payload and (re)starts the 250 ms trailing timer.
    * @param spriteId - Sprite being edited.
    * @param indices - Latest palette indices.
    * @param pixelData - Encoded pixel payload.
@@ -299,7 +299,7 @@ export class SpriteEditorComponent implements OnInit {
   }
 
   /**
-   * Writes the pending payload to IndexedDB immediately (no-op when empty).
+   * @internal Writes the pending payload to IndexedDB immediately (no-op when empty).
    * Called by the timer, before sprite switches, and on destruction.
    */
   private async flushPersist(): Promise<void> {

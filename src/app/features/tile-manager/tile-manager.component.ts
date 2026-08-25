@@ -187,7 +187,7 @@ export class TileManagerComponent implements OnInit {
   }
 
   /**
-   * Restores the selected tile after navigation or refresh.
+   * @internal Restores the selected tile after navigation or refresh.
    * @param tileId - Tile id taken from the URL.
    */
   private async restoreSelection(tileId: number): Promise<void> {
@@ -201,7 +201,7 @@ export class TileManagerComponent implements OnInit {
   }
 
   /**
-   * Reloads the tiles list and the selected tile object after the sprite
+   * @internal Reloads the tiles list and the selected tile object after the sprite
    * state service reports a frame lifecycle or size mutation.
    */
   private async reloadAfterSpriteMutation(): Promise<void> {

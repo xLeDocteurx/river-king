@@ -3,11 +3,24 @@ import { DatabaseService } from '../../../core/services/database.service';
 import type { Scene } from '../../../shared/models/scene.model';
 import type { Folder } from '../../../shared/models/folder.model';
 
+/**
+ * Feature-private service providing CRUD operations for scenes and folders.
+ *
+ * Scenes represent tile-based maps within a project. Each scene stores a 2D
+ * grid of tile ids (tileData) and belongs to an optional folder for
+ * hierarchical organization.
+ *
+ * @see MapTilesService for tile visual data loading.
+ */
 @Injectable()
 export class SceneService {
   private readonly db = inject(DatabaseService);
 
-  /** Returns all scenes belonging to a project. */
+  /**
+   * Returns all scenes belonging to a project.
+   * @param projectId - The owning project id.
+   * @returns Scenes for the project in database order.
+   */
   async getScenes(projectId: string): Promise<Scene[]> {
     return this.db.scenes.where('projectId').equals(projectId).toArray();
   }
@@ -57,7 +70,10 @@ export class SceneService {
     await this.db.scenes.update(sceneId, { folderPath });
   }
 
-  /** Deletes a scene by id. */
+  /**
+   * Deletes a scene by id.
+   * @param id - The scene id to delete.
+   */
   async deleteScene(id: string): Promise<void> {
     await this.db.scenes.delete(id);
   }

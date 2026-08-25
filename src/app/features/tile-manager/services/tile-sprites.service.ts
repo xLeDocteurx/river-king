@@ -61,7 +61,7 @@ export class TileSpritesService {
   }
 
   /**
-   * Reloads {@link sprites} for the current tile id.
+   * @internal Reloads {@link sprites} for the current tile id.
    */
   private async refresh(): Promise<void> {
     if (this.currentTileId === null) {

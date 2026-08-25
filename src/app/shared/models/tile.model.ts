@@ -1,10 +1,23 @@
+/**
+ * A tile definition stored in the project database.
+ *
+ * Tiles reference one or more sprites for rendering and carry runtime
+ * properties (blocking, interactable) consumed by the scene engine.
+ */
 export interface Tile {
+  /** Auto-incremented primary key. */
   id: number;
+  /** Id of the owning project. */
   projectId: string;
+  /** Human-readable tile name (unique within a project). */
   name: string;
+  /** Whether the tile is a single frame or a frame sequence. */
   type: 'static' | 'animated';
-  spriteIds: number[]; // references to Sprite.id
-  animationSpeed: number; // fps (frames per second), default 8
+  /** Ordered sprite ids composing the tile's frames (references `Sprite.id`). */
+  spriteIds: number[];
+  /** Animation playback speed in frames per second. Defaults to `8`. */
+  animationSpeed: number;
+  /** Runtime behaviour properties consumed by the scene engine. */
   properties: TileProperties;
 }
 

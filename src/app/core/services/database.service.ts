@@ -23,13 +23,27 @@ export function migrateTileProperties(
   };
 }
 
+/**
+ * IndexedDB wrapper for all persistent application data.
+ *
+ * Extends Dexie to define the schema and expose typed table references.
+ * Schema migrations are handled via `this.version(N).stores(…).upgrade(…)`.
+ *
+ * @see {@link migrateTileProperties} for the v3 tile migration helper.
+ */
 @Injectable({ providedIn: 'root' })
 export class DatabaseService extends Dexie {
+  /** Projects table — keyed by UUID. */
   projects!: Table<Project, string>;
+  /** Scenes table — keyed by UUID, indexed by `projectId` and `folderPath`. */
   scenes!: Table<Scene, string>;
+  /** Tiles table — auto-incremented id, indexed by `projectId` and `type`. */
   tiles!: Table<Tile, number>;
+  /** Sprites table — auto-incremented id, indexed by `projectId` and `tileId`. */
   sprites!: Table<Sprite, number>;
+  /** Sessions table — keyed by `projectId` (one session per project). */
   sessions!: Table<Session, string>;
+  /** Folders table — keyed by UUID, indexed by `projectId` and `path`. */
   folders!: Table<Folder, string>;
 
   constructor() {
