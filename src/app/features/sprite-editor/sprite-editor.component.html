@@ -28,7 +28,8 @@
             <button
               type="button"
               (click)="selectSprite(sprite.id)"
-              [class.tw-bg-primary/10]="selectedSpriteId() === sprite.id"
+              [class.tw-bg-muted]="selectedSpriteId() === sprite.id"
+              [class.tw-font-medium]="selectedSpriteId() === sprite.id"
               class="tw-text-left tw-px-2 tw-py-1.5 tw-rounded-sm tw-text-xs tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
             >
               <span class="material-symbols tw-text-sm tw-text-muted-foreground" aria-hidden="true"
