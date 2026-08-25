@@ -1,0 +1,10 @@
+<div
+  class="tw-w-full tw-overflow-hidden tw-border-b tw-border-border"
+  [style.aspect-ratio]="scene().width + ' / ' + scene().height"
+>
+  <canvas
+    #minimap
+    class="tw-w-full tw-h-full tw-cursor-pointer tw-block"
+    (click)="onMinimapClick($event)"
+  ></canvas>
+</div>

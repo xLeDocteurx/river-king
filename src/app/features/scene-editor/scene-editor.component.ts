@@ -7,7 +7,6 @@ import {
   computed,
   viewChild,
   effect,
-  DestroyRef,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatabaseService } from '../../core/services/database.service';
@@ -16,7 +15,9 @@ import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
 import { SceneService } from './services/scene.service';
 import { MapTilesService } from './services/map-tiles.service';
+import type { TileAnimationMeta } from './services/map-tiles.service';
 import { MapCanvasComponent } from './map-canvas.component';
+import { SceneMinimapComponent } from './minimap/scene-minimap.component';
 import { clearOverlappedAnchors, getFootprint } from './map-footprint';
 import { SceneListComponent } from './scene-list.component';
 import { TilePaletteComponent } from './tile-palette.component';
@@ -35,7 +36,13 @@ import type { TileFootprintMap } from './map-footprint';
   selector: 'rk-scene-editor',
   standalone: true,
   providers: [SceneService, MapTilesService],
-  imports: [MapCanvasComponent, SceneListComponent, TilePaletteComponent, ConfirmDialogComponent],
+  imports: [
+    MapCanvasComponent,
+    SceneMinimapComponent,
+    SceneListComponent,
+    TilePaletteComponent,
+    ConfirmDialogComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './scene-editor.component.html',
   styleUrl: './scene-editor.component.scss',
@@ -49,17 +56,8 @@ export class SceneEditorComponent implements OnInit {
   private readonly mapTilesService = inject(MapTilesService);
   private readonly sessions = inject(SessionService);
   private readonly statusBar = inject(StatusBarService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly deleteConfirmDialog = viewChild.required(ConfirmDialogComponent);
   mapCanvasRef = viewChild(MapCanvasComponent);
-
-  constructor() {
-    this.destroyRef.onDestroy(() => {
-      if (this.cameraSaveTimer !== null) {
-        clearTimeout(this.cameraSaveTimer);
-      }
-    });
-  }
 
   /** Currently active project id derived from route params. */
   projectId = signal<string>('');
@@ -77,8 +75,12 @@ export class SceneEditorComponent implements OnInit {
   selectedScene = signal<Scene | null>(null);
   /** Id of the tile currently selected in the palette. */
   selectedTileId = signal<number | null>(null);
-  /** Cached tileId -> image source map for canvas rendering. */
-  tileImages = signal<Record<number, string>>({});
+  /** Cached tileId -> frame image sources map for canvas rendering. */
+  tileImages = signal<Record<number, string[]>>({});
+  /** First-frame image per tile for the palette sidebar. */
+  tileFirstFrames = signal<Record<number, string>>({});
+  /** Animation metadata per tile id (absent for static tiles). */
+  tileAnimations = signal<Record<number, TileAnimationMeta>>({});
   /** Grid-cell footprint of each tile, derived from its first sprite. */
   tileFootprints = signal<TileFootprintMap>({});
   /** Size of one grid cell in pixels, from the project settings. */
@@ -112,40 +114,6 @@ export class SceneEditorComponent implements OnInit {
     this.statusBar.setContext(
       `${scene.name} | ${scene.width}×${scene.height} | Cam: ${x},${y} | Zoom: ${zoom}%`,
     );
-  });
-
-  /** @internal Last camera X written to the session (avoids redundant writes). */
-  private lastSavedCameraX = 0;
-  /** @internal Last camera Y written to the session (avoids redundant writes). */
-  private lastSavedCameraY = 0;
-  /** @internal Timer id for the trailing-edge debounce of camera persistence. */
-  private cameraSaveTimer: ReturnType<typeof setTimeout> | null = null;
-
-  /** Debounced effect that writes camera position back to the session (400 ms trailing). */
-  private readonly cameraSaveEffect = effect(() => {
-    const canvas = this.mapCanvasRef();
-    const scene = this.selectedScene();
-    if (!canvas || !scene) return;
-
-    const x = Math.round(canvas.cameraX());
-    const y = Math.round(canvas.cameraY());
-    void x;
-    void y;
-
-    if (this.cameraSaveTimer !== null) {
-      clearTimeout(this.cameraSaveTimer);
-    }
-    this.cameraSaveTimer = setTimeout(() => {
-      this.cameraSaveTimer = null;
-      const projId = this.projectId();
-      if (!projId || !this.selectedScene()) return;
-      const cx = Math.round(canvas.cameraX());
-      const cy = Math.round(canvas.cameraY());
-      if (cx === this.lastSavedCameraX && cy === this.lastSavedCameraY) return;
-      this.lastSavedCameraX = cx;
-      this.lastSavedCameraY = cy;
-      void this.sessions.updateSession(projId, { cameraX: cx, cameraY: cy });
-    }, 400);
   });
 
   /** Data for the scene deletion confirmation dialog. */
@@ -213,16 +181,23 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Loads the first sprite image and footprint of each tile in the project.
+   * Loads all sprite frame images, animation metadata, and footprints of each tile in the project.
    */
   async loadTileVisuals(): Promise<void> {
     try {
-      const { images, footprints } = await this.mapTilesService.loadTileVisuals(
+      const { images, animations, footprints } = await this.mapTilesService.loadTileVisuals(
         this.projectId(),
         this.projectTileSize(),
       );
       this.tileImages.set(images);
+      this.tileAnimations.set(animations);
       this.tileFootprints.set(footprints);
+      // Derive first-frame map for the palette sidebar.
+      const firstFrames: Record<number, string> = {};
+      for (const tileId of Object.keys(images).map(Number)) {
+        if (images[tileId].length > 0) firstFrames[tileId] = images[tileId][0];
+      }
+      this.tileFirstFrames.set(firstFrames);
     } catch (e) {
       console.error('Failed to load tile images:', e);
       this.notification.error('Failed to load tile images.');
@@ -271,8 +246,6 @@ export class SceneEditorComponent implements OnInit {
       const stored = await this.sessions.getSession(this.projectId()).catch(() => undefined);
       this.initialCameraX.set(stored?.cameraX ?? 0);
       this.initialCameraY.set(stored?.cameraY ?? 0);
-      this.lastSavedCameraX = stored?.cameraX ?? 0;
-      this.lastSavedCameraY = stored?.cameraY ?? 0;
       if (this.route.snapshot.paramMap.get('sceneId') !== String(sceneId)) {
         void this.router.navigate(['/project', this.projectId(), 'scenes', sceneId]);
       }
@@ -358,6 +331,15 @@ export class SceneEditorComponent implements OnInit {
       console.error('Failed to move scene:', e);
       this.notification.error('Failed to move the scene.');
     }
+  }
+
+  /**
+   * Handles a camera jump from the minimap: centers the canvas on the
+   * clicked world-space point.
+   * @param event Object containing the world-space x, y to center on.
+   */
+  onMinimapJump(event: { x: number; y: number }): void {
+    this.mapCanvasRef()?.centerOn(event.x, event.y);
   }
 
   /**

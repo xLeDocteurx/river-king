@@ -18,20 +18,37 @@
       [tileImages]="tileImages()"
       [tileSize]="projectTileSize()"
       [tileFootprints]="tileFootprints()"
+      [tileAnimations]="tileAnimations()"
       [restoreCamera]="restoreCamera()"
       [initialCameraX]="initialCameraX()"
       [initialCameraY]="initialCameraY()"
       (tilePlaced)="onTilePlaced($event)"
     />
   </div>
-  <rk-tile-palette
-    class="tw-w-52 tw-shrink-0 tw-bg-card-bg tw-border-l tw-border-border"
-    [tiles]="projectTiles()"
-    [selectedTileId]="selectedTileId()"
-    [palette]="projectPalette()"
-    [tileImages]="tileImages()"
-    (tileSelect)="selectedTileId.set($event)"
-  />
+  <div class="tw-w-52 tw-shrink-0 tw-bg-card-bg tw-border-l tw-border-border tw-flex tw-flex-col">
+    @if (selectedScene(); as scene) {
+      <rk-scene-minimap
+        [scene]="scene"
+        [tileImages]="tileImages()"
+        [tileSize]="projectTileSize()"
+        [tileFootprints]="tileFootprints()"
+        [viewportWidth]="mapCanvasRef()?.viewportWidth() ?? 0"
+        [viewportHeight]="mapCanvasRef()?.viewportHeight() ?? 0"
+        [cameraX]="mapCanvasRef()?.cameraX() ?? 0"
+        [cameraY]="mapCanvasRef()?.cameraY() ?? 0"
+        [zoom]="mapCanvasRef()?.zoom() ?? 1"
+        (cameraJump)="onMinimapJump($event)"
+      />
+    }
+    <rk-tile-palette
+      class="tw-flex-1 tw-overflow-auto"
+      [tiles]="projectTiles()"
+      [selectedTileId]="selectedTileId()"
+      [palette]="projectPalette()"
+      [tileImages]="tileFirstFrames()"
+      (tileSelect)="selectedTileId.set($event)"
+    />
+  </div>
 </div>
 
 <rk-confirm-dialog [data]="deleteDialogData()" (confirmed)="onConfirmDelete()" />

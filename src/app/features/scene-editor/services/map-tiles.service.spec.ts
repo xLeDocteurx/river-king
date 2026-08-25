@@ -37,26 +37,26 @@ describe('MapTilesService', () => {
     expect(images).toEqual({});
   });
 
-  it('maps each tileId to the pixelData of its first (lowest-id) frame', async () => {
+  it('maps each tileId to an array of all frame pixelDatas sorted by id', async () => {
     const first = await seedSprite({ tileId: 1, pixelData: 'data:image/png;base64,F1' });
     const second = await seedSprite({ tileId: 1, pixelData: 'data:image/png;base64,F2' });
     const other = await seedSprite({ tileId: 2, pixelData: 'data:image/png;base64,T2' });
 
     const { images } = await service.loadTileVisuals('proj-1', 16);
 
-    expect(images[1]).toBe(first.pixelData);
-    expect(images[1]).not.toBe(second.pixelData);
-    expect(images[2]).toBe(other.pixelData);
+    expect(images[1]).toEqual([first.pixelData, second.pixelData]);
+    expect(images[2]).toEqual([other.pixelData]);
     expect(Object.keys(images)).toHaveLength(2);
   });
 
-  it('returns exactly one entry per tile when several frames exist', async () => {
+  it('returns all frames for a tile when several frames exist', async () => {
     await seedSprite({ tileId: 5, pixelData: 'data:image/png;base64,A' });
     await seedSprite({ tileId: 5, pixelData: 'data:image/png;base64,B' });
 
     const { images } = await service.loadTileVisuals('proj-1', 16);
 
     expect(Object.keys(images)).toEqual(['5']);
+    expect(images[5]).toHaveLength(2);
   });
 
   it('ignores standalone sprites (tileId <= 0)', async () => {
@@ -72,7 +72,7 @@ describe('MapTilesService', () => {
 
     const { images } = await service.loadTileVisuals('proj-1', 16);
 
-    expect(images[3]).toBe(mine.pixelData);
+    expect(images[3]).toEqual([mine.pixelData]);
   });
 
   it('computes footprints in grid cells using ceil of sprite dimensions', async () => {
@@ -98,5 +98,39 @@ describe('MapTilesService', () => {
     const { footprints } = await service.loadTileVisuals('proj-1', 24);
 
     expect(footprints[1]).toEqual({ w: 2, h: 1 });
+  });
+
+  it('returns animation metadata for tiles with animated type and multiple frames', async () => {
+    const tileId = await db.tiles.add({
+      projectId: 'proj-1',
+      name: 'anim',
+      type: 'animated',
+      spriteIds: [],
+      animationSpeed: 12,
+      properties: { blocking: false, interactable: false },
+    } as unknown as import('../../../shared/models/tile.model').Tile);
+    await seedSprite({ tileId, pixelData: 'data:image/png;base64,A' });
+    await seedSprite({ tileId, pixelData: 'data:image/png;base64,B' });
+    await seedSprite({ tileId, pixelData: 'data:image/png;base64,C' });
+
+    const { animations } = await service.loadTileVisuals('proj-1', 16);
+
+    expect(animations[tileId]).toEqual({ frameCount: 3, fps: 12 });
+  });
+
+  it('does not return animation metadata for static tiles', async () => {
+    const tileId = await db.tiles.add({
+      projectId: 'proj-1',
+      name: 'static',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 8,
+      properties: { blocking: false, interactable: false },
+    } as unknown as import('../../../shared/models/tile.model').Tile);
+    await seedSprite({ tileId, pixelData: 'data:image/png;base64,X' });
+
+    const { animations } = await service.loadTileVisuals('proj-1', 16);
+
+    expect(animations).toEqual({});
   });
 });

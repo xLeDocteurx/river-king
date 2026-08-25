@@ -8,7 +8,7 @@ export interface TileFootprint {
   h: number;
 }
 
-/** Map of tile id to its grid-cell footprint. */
+/** Map of tile id to its grid-cell footprint. Entries may be absent for 1×1 tiles. */
 export type TileFootprintMap = Record<number, TileFootprint>;
 
 /**
