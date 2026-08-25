@@ -185,16 +185,10 @@ describe('TilePropertiesComponent', () => {
     const s = await seedSprite({ width: 32, height: 32, paletteIndices: big });
     const tile = await seedTile({ type: 'animated', spriteIds: [s.id] });
     await setup(tile);
-    const w = fixture.debugElement.query(By.css('input[aria-label="Width (tiles)"]'));
-    const h = fixture.debugElement.query(By.css('input[aria-label="Height (tiles)"]'));
-    w.triggerEventHandler('input', { target: { value: '1', valueAsNumber: 1 } });
-    h.triggerEventHandler('input', { target: { value: '1', valueAsNumber: 1 } });
+    component.onSizeInput('width', 1);
+    component.onSizeInput('height', 1);
     fixture.detectChanges();
-    const applyBtn = fixture.debugElement
-      .queryAll(By.css('button'))
-      .map((b) => b.nativeElement as HTMLButtonElement)
-      .find((b) => b.textContent?.trim() === 'Apply');
-    applyBtn!.click();
+    await new Promise((r) => setTimeout(r, 500));
     fixture.detectChanges();
     const btn = confirmButtonFor('Crop');
     expect(btn).toBeTruthy();
@@ -211,20 +205,14 @@ describe('TilePropertiesComponent', () => {
     const s = await seedSprite({ width: 32, height: 32, paletteIndices: big });
     const tile = await seedTile({ type: 'animated', spriteIds: [s.id] });
     await setup(tile);
-    const w = fixture.debugElement.query(By.css('input[aria-label="Width (tiles)"]'));
-    const h = fixture.debugElement.query(By.css('input[aria-label="Height (tiles)"]'));
-    w.triggerEventHandler('input', { target: { value: '1', valueAsNumber: 1 } });
-    h.triggerEventHandler('input', { target: { value: '1', valueAsNumber: 1 } });
+    component.onSizeInput('width', 1);
+    component.onSizeInput('height', 1);
     fixture.detectChanges();
-    const applyBtn = fixture.debugElement
-      .queryAll(By.css('button'))
-      .map((b) => b.nativeElement as HTMLButtonElement)
-      .find((b) => b.textContent?.trim() === 'Apply');
-    applyBtn!.click();
+    await new Promise((r) => setTimeout(r, 500));
     fixture.detectChanges();
     // User edits the inputs while the Crop dialog is open.
-    w.triggerEventHandler('input', { target: { value: '3', valueAsNumber: 3 } });
-    h.triggerEventHandler('input', { target: { value: '3', valueAsNumber: 3 } });
+    component.onSizeInput('width', 3);
+    component.onSizeInput('height', 3);
     fixture.detectChanges();
     const btn = confirmButtonFor('Crop');
     expect(btn).toBeTruthy();
@@ -240,16 +228,10 @@ describe('TilePropertiesComponent', () => {
     const s = await seedSprite({});
     const tile = await seedTile({ type: 'animated', spriteIds: [s.id] });
     await setup(tile);
-    const w = fixture.debugElement.query(By.css('input[aria-label="Width (tiles)"]'));
-    const h = fixture.debugElement.query(By.css('input[aria-label="Height (tiles)"]'));
-    w.triggerEventHandler('input', { target: { value: '2', valueAsNumber: 2 } });
-    h.triggerEventHandler('input', { target: { value: '2', valueAsNumber: 2 } });
+    component.onSizeInput('width', 2);
+    component.onSizeInput('height', 2);
     fixture.detectChanges();
-    const applyBtn = fixture.debugElement
-      .queryAll(By.css('button'))
-      .map((b) => b.nativeElement as HTMLButtonElement)
-      .find((b) => b.textContent?.trim() === 'Apply');
-    applyBtn!.click();
+    await new Promise((r) => setTimeout(r, 500));
     await fixture.whenStable();
     const stored = await db.sprites.get(s.id);
     expect(stored?.width).toBe(32);

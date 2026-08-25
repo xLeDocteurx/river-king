@@ -71,6 +71,9 @@ export class TilePropertiesComponent {
   /** Handle of the scheduled trailing auto-save timer (null when idle). */
   private autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** Handle of the scheduled trailing auto-apply for size changes (null when idle). */
+  private sizeAutoApplyTimer: ReturnType<typeof setTimeout> | null = null;
+
   /** Reference to the dialog confirming frame deletions. */
   private readonly framesDialog = viewChild.required<ConfirmDialogComponent>('framesDialog');
 
@@ -204,7 +207,10 @@ export class TilePropertiesComponent {
     });
 
     // Flush any pending auto-save when the component is destroyed.
-    this.destroyRef.onDestroy(() => this.flushAutosave());
+    this.destroyRef.onDestroy(() => {
+      this.flushAutosave();
+      if (this.sizeAutoApplyTimer !== null) clearTimeout(this.sizeAutoApplyTimer);
+    });
   }
 
   /**
@@ -252,6 +258,19 @@ export class TilePropertiesComponent {
     } catch {
       this.notification.error('Failed to create frames');
     }
+  }
+
+  /**
+   * Handles a size input change: updates the corresponding signal and
+   * schedules a debounced auto-apply (400 ms trailing edge). Grows are
+   * applied immediately; shrinks open the crop confirmation dialog.
+   * @param axis - Which dimension changed.
+   * @param value - New value in tile units from the input field.
+   */
+  onSizeInput(axis: 'width' | 'height', value: number): void {
+    if (axis === 'width') this.widthTiles.set(value);
+    else this.heightTiles.set(value);
+    this.scheduleSizeAutoApply();
   }
 
   /**
@@ -338,7 +357,7 @@ export class TilePropertiesComponent {
   }
 
   /**
-   * Builds an updated {@link Tile} from the given base plus the current form
+   * @internal Builds an updated {@link Tile} from the given base plus the current form
    * values and local signals. actionId is kept only when interactable is checked.
    * @param base - Tile to derive the update from.
    * @returns The candidate updated tile.
@@ -359,7 +378,7 @@ export class TilePropertiesComponent {
   }
 
   /**
-   * Persists the pending form state when it differs from the stored tile.
+   * @internal Persists the pending form state when it differs from the stored tile.
    * No-op when no tile is loaded or nothing changed.
    */
   private autoSave(): void {
@@ -371,7 +390,7 @@ export class TilePropertiesComponent {
   }
 
   /**
-   * Schedules a trailing auto-save 400 ms after the last change, coalescing
+   * @internal Schedules a trailing auto-save 400 ms after the last change, coalescing
    * rapid keystrokes into a single emission.
    */
   private scheduleAutosave(): void {
@@ -396,7 +415,20 @@ export class TilePropertiesComponent {
   }
 
   /**
-   * Creates blank frames appended after the existing ones and syncs spriteIds.
+   * @internal Schedules a trailing auto-apply for size changes (400 ms trailing edge).
+   * Coalesces rapid keystrokes so only the final value triggers a resize.
+   * Growth applies silently; shrink opens the crop confirmation dialog.
+   */
+  private scheduleSizeAutoApply(): void {
+    if (this.sizeAutoApplyTimer !== null) clearTimeout(this.sizeAutoApplyTimer);
+    this.sizeAutoApplyTimer = setTimeout(() => {
+      this.sizeAutoApplyTimer = null;
+      void this.requestSizeApply();
+    }, 400);
+  }
+
+  /**
+   * @internal Creates blank frames appended after the existing ones and syncs spriteIds.
    * @param from - Current frame count.
    * @param to - Target frame count.
    */

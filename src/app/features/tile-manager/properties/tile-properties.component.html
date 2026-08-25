@@ -117,7 +117,7 @@
     >
       Size
     </h4>
-    <div class="tw-grid tw-grid-cols-3 tw-gap-3 tw-items-end">
+    <div class="tw-grid tw-grid-cols-2 tw-gap-3">
       <div class="tw-flex tw-flex-col tw-gap-1">
         <span class="tw-text-[11px] tw-text-muted-foreground">Width</span>
         <input
@@ -126,7 +126,7 @@
           name="widthTiles"
           aria-label="Width (tiles)"
           [value]="widthTiles()"
-          (input)="widthTiles.set($any($event.target).valueAsNumber)"
+          (input)="onSizeInput('width', $any($event.target).valueAsNumber)"
           class="tw-w-full tw-px-2 tw-py-1.5 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
         />
       </div>
@@ -138,17 +138,10 @@
           name="heightTiles"
           aria-label="Height (tiles)"
           [value]="heightTiles()"
-          (input)="heightTiles.set($any($event.target).valueAsNumber)"
+          (input)="onSizeInput('height', $any($event.target).valueAsNumber)"
           class="tw-w-full tw-px-2 tw-py-1.5 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
         />
       </div>
-      <button
-        type="button"
-        (click)="requestSizeApply()"
-        class="tw-px-4 tw-py-1.5 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-foreground tw-transition hover:tw-bg-muted"
-      >
-        Apply
-      </button>
     </div>
   </div>
 
