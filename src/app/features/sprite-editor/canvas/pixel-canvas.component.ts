@@ -18,6 +18,10 @@ import {
  * `paletteIndices` input (any width/height), with an adaptive cell scale that
  * keeps the canvas around 256px. Supports brush, eraser, and flood-fill
  * tools. Emits updated palette indices on change.
+ *
+ * Zoom is controlled via mouse wheel and applied natively through the canvas
+ * 2D context's `scale()` transform. The zoom factor multiplies the adaptive
+ * cell scale so the canvas bitmap resizes proportionally.
  */
 @Component({
   selector: 'rk-pixel-canvas',
@@ -45,22 +49,32 @@ export class PixelCanvasComponent implements AfterViewInit {
   /** Emits updated palette indices whenever the canvas is modified. */
   indicesChange = output<number[][]>();
 
+  /** Emits the current zoom factor whenever it changes. */
+  zoomChange = output<number>();
+
   /** Number of pixel rows in the current sprite grid (derived from input). */
   readonly gridRows = signal(1);
 
   /** Number of pixel columns in the current sprite grid (derived from input). */
   readonly gridCols = signal(1);
 
+  /** Current zoom factor (1 = 100%). Controlled via mouse wheel. */
+  readonly zoom = signal(1);
+
   /** Device pixels per grid cell; adapts to keep the canvas near 256px. */
   readonly cellScale = computed(() =>
     Math.max(4, Math.floor(256 / Math.max(this.gridRows(), this.gridCols(), 1))),
   );
 
-  /** Canvas bitmap width in device pixels. */
-  readonly canvasWidth = computed(() => this.gridCols() * this.cellScale());
+  /** Canvas bitmap width in device pixels, accounting for zoom. */
+  readonly canvasWidth = computed(() =>
+    Math.round(this.gridCols() * this.cellScale() * this.zoom()),
+  );
 
-  /** Canvas bitmap height in device pixels. */
-  readonly canvasHeight = computed(() => this.gridRows() * this.cellScale());
+  /** Canvas bitmap height in device pixels, accounting for zoom. */
+  readonly canvasHeight = computed(() =>
+    Math.round(this.gridRows() * this.cellScale() * this.zoom()),
+  );
 
   private isDrawing = false;
   private localPaletteIndices: number[][] = [];
@@ -103,10 +117,14 @@ export class PixelCanvasComponent implements AfterViewInit {
     const rows = this.gridRows();
     const cols = this.gridCols();
     const scale = this.cellScale();
+    const zoom = this.zoom();
 
     // Dark checkerboard background
     ctx.fillStyle = '#2a2a2a';
     ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.scale(zoom, zoom);
 
     // Draw pixels
     const indices = this.localPaletteIndices;
@@ -125,25 +143,32 @@ export class PixelCanvasComponent implements AfterViewInit {
       }
     }
 
-    // Draw grid LAST so it stays visible over painted pixels
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1;
-    for (let x = 0; x <= cols; x++) {
-      ctx.beginPath();
-      ctx.moveTo(x * scale, 0);
-      ctx.lineTo(x * scale, height);
-      ctx.stroke();
+    // Draw grid LAST so it stays visible over painted pixels.
+    // Skip when zoomed out far enough that lines would create moiré
+    // (threshold: rendered cell < 8 screen pixels).
+    if (zoom * scale >= 8) {
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= cols; x++) {
+        ctx.beginPath();
+        ctx.moveTo(x * scale, 0);
+        ctx.lineTo(x * scale, height / zoom);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= rows; y++) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * scale);
+        ctx.lineTo(width / zoom, y * scale);
+        ctx.stroke();
+      }
     }
-    for (let y = 0; y <= rows; y++) {
-      ctx.beginPath();
-      ctx.moveTo(0, y * scale);
-      ctx.lineTo(width, y * scale);
-      ctx.stroke();
-    }
+
+    ctx.restore();
   }
 
   /**
    * Converts a mouse event into pixel grid coordinates.
+   * Accounts for the current zoom factor when mapping screen pixels to grid cells.
    * @param event - The mouse event to convert.
    * @returns Grid coordinates { x, y } clamped to the sprite bounds.
    */
@@ -151,9 +176,9 @@ export class PixelCanvasComponent implements AfterViewInit {
     if (!this.rectCache) {
       return { x: -1, y: -1 };
     }
-    const scale = this.cellScale();
-    const x = Math.floor((event.clientX - this.rectCache.left) / scale);
-    const y = Math.floor((event.clientY - this.rectCache.top) / scale);
+    const effectiveScale = this.cellScale() * this.zoom();
+    const x = Math.floor((event.clientX - this.rectCache.left) / effectiveScale);
+    const y = Math.floor((event.clientY - this.rectCache.top) / effectiveScale);
     return { x, y };
   }
 
@@ -188,6 +213,19 @@ export class PixelCanvasComponent implements AfterViewInit {
   onMouseLeave() {
     this.isDrawing = false;
     this.rectCache = null;
+  }
+
+  /**
+   * Handles mouse wheel to zoom in/out. Zoom is clamped to [0.25, 8].
+   * @param event - The wheel event.
+   */
+  onWheel(event: WheelEvent) {
+    event.preventDefault();
+    const factor = event.deltaY > 0 ? 0.9 : 1.1;
+    this.zoom.update((z) => Math.max(0.25, Math.min(8, z * factor)));
+    this.zoomChange.emit(this.zoom());
+    this.syncCanvasSize();
+    this.render();
   }
 
   private applyTool(event: MouseEvent) {

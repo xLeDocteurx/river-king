@@ -127,6 +127,9 @@ export class SpriteEditorComponent implements OnInit {
   /** Reactive signal holding the selected drawing tool. */
   selectedTool = signal<DrawingTool>('brush');
 
+  /** Reactive signal holding the current canvas zoom level. */
+  zoomLevel = signal<number>(1);
+
   /** Reactive signal holding the decoded palette indices for the canvas. */
   paletteIndices = signal<number[][] | null>(null);
 
@@ -149,8 +152,10 @@ export class SpriteEditorComponent implements OnInit {
     }
     const tool = TOOL_LABELS[this.selectedTool()];
     const colorNumber = this.selectedPaletteIndex() + 1;
+    const zoom = this.zoomLevel();
+    const zoomPercent = `${Math.round(zoom * 100)}%`;
     this.statusBar.setContext(
-      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool} | Color #${colorNumber}`,
+      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool} | Color #${colorNumber} | Zoom ${zoomPercent}`,
     );
   });
 

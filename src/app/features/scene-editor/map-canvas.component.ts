@@ -205,8 +205,6 @@ export class MapCanvasComponent implements AfterViewInit {
     ctx.translate(this.cameraX(), this.cameraY());
     ctx.scale(this.zoom(), this.zoom());
 
-    this.drawGrid(ctx, scene.width, scene.height, cell);
-
     const tileImages = this.loadedImages();
     const anchors: { x: number; y: number; tileId: number }[] = [];
     for (let y = 0; y < scene.height; y++) {
@@ -229,6 +227,14 @@ export class MapCanvasComponent implements AfterViewInit {
       }
     }
 
+    // Grid drawn AFTER tiles so cell boundaries stay visible over filled cells.
+    // Skipped when zoomed out enough that lines would create moiré noise
+    // (threshold: rendered cell < 8 screen pixels).
+    const effectiveZoom = this.zoom();
+    if (effectiveZoom * cell >= 8) {
+      this.drawGrid(ctx, scene.width, scene.height, cell);
+    }
+
     const hover = this.hoverCell();
     if (hover) {
       const stroke = cssTokenColor(this.canvasRef().nativeElement, '--accent', '#ffffff');
@@ -244,7 +250,7 @@ export class MapCanvasComponent implements AfterViewInit {
     ctx.restore();
   }
 
-  /** @internal Draws the grid behind the tiles. */
+  /** @internal Draws the grid overlay after tiles so cell lines remain visible. */
   private drawGrid(
     ctx: CanvasRenderingContext2D,
     width: number,

@@ -54,6 +54,20 @@ ng e2e
 
 Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 
+## Agent skills and config
+
+Agent coding instructions live in `AGENTS.md` (the canonical file). Tools that use a different filename (e.g. Claude Code expects `CLAUDE.md`) are symlinked to it.
+
+Agent skills are installed under `.agents/skills/` (the canonical location). Tools that don't recognize it (e.g. Claude Code expects `.claude/skills/`) are symlinked automatically.
+
+### Angular-developer
+
+Official angular skill is installed using the following command. In order to automatically symlink it (if needed), you can simply run the command again.
+
+```sh
+npx skills add https://github.com/angular/skills --skill angular-developer
+```
+
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

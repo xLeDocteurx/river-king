@@ -161,4 +161,84 @@ describe('PixelCanvasComponent', () => {
     expect(emitted[7][7]).toBe(1); // was already 1 before fill (target=0, so this stays 1)
     expect(emitted[6][7]).toBe(1); // filled
   });
+
+  it('should default zoom to 1', () => {
+    setupInputs(Array.from({ length: 16 }, () => Array(16).fill(0)));
+    expect(fixture.componentInstance.zoom()).toBe(1);
+  });
+
+  it('should zoom in on wheel up and emit zoomChange', () => {
+    setupInputs(Array.from({ length: 16 }, () => Array(16).fill(0)));
+    const zoomSpy = vi.fn();
+    fixture.componentInstance.zoomChange.subscribe(zoomSpy);
+
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, bubbles: true }));
+
+    expect(fixture.componentInstance.zoom()).toBeCloseTo(1.1, 5);
+    expect(zoomSpy).toHaveBeenCalledWith(1.1);
+  });
+
+  it('should zoom out on wheel down', () => {
+    setupInputs(Array.from({ length: 16 }, () => Array(16).fill(0)));
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, bubbles: true }));
+
+    expect(fixture.componentInstance.zoom()).toBeCloseTo(0.9, 5);
+  });
+
+  it('should clamp zoom to a maximum of 8', () => {
+    setupInputs(Array.from({ length: 16 }, () => Array(16).fill(0)));
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    for (let i = 0; i < 100; i++) {
+      canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, bubbles: true }));
+    }
+    expect(fixture.componentInstance.zoom()).toBe(8);
+  });
+
+  it('should clamp zoom to a minimum of 0.25', () => {
+    setupInputs(Array.from({ length: 16 }, () => Array(16).fill(0)));
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    for (let i = 0; i < 100; i++) {
+      canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, bubbles: true }));
+    }
+    expect(fixture.componentInstance.zoom()).toBe(0.25);
+  });
+
+  it('should resize canvas bitmap when zoom changes', () => {
+    setupInputs(Array.from({ length: 16 }, () => Array(16).fill(0)));
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    expect(canvas.width).toBe(256); // 16 * 16 * 1
+
+    canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, bubbles: true }));
+    fixture.detectChanges();
+    expect(canvas.width).toBe(Math.round(256 * 1.1));
+  });
+
+  it('should still draw at zoomed levels', () => {
+    const indices = Array.from({ length: 16 }, () => Array(16).fill(0));
+    setupInputs(indices);
+
+    // Zoom in
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, bubbles: true }));
+    fixture.detectChanges();
+
+    const spy = vi.fn();
+    fixture.componentInstance.indicesChange.subscribe(spy);
+
+    const rect = { left: 0, top: 0, width: 256 * 1.1, height: 256 * 1.1 };
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(rect as DOMRect);
+
+    // Click at position that maps to grid cell (2, 3) at zoom 1.1
+    // effectiveScale = 16 * 1.1 = 17.6, so clientX = 2 * 17.6 + 8 = 43.2
+    canvas.dispatchEvent(
+      new MouseEvent('mousedown', { clientX: 43, clientY: 60, bubbles: true }),
+    );
+    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+
+    expect(spy).toHaveBeenCalled();
+    const emitted = spy.mock.calls[0][0] as number[][];
+    expect(emitted[3][2]).toBe(1);
+  });
 });

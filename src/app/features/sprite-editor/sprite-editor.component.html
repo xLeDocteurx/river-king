@@ -46,7 +46,7 @@
 
   <!-- Center: Canvas -->
   <div
-    class="tw-flex-1 tw-flex tw-flex-col tw-items-center tw-justify-center tw-bg-background tw-p-4 tw-gap-4"
+    class="tw-flex-1 tw-flex tw-flex-col tw-items-center tw-justify-center tw-bg-background tw-p-4 tw-gap-4 tw-overflow-hidden"
   >
     @if (selectedSprite() && paletteIndices(); as indices) {
       <rk-pixel-canvas
@@ -55,6 +55,7 @@
         [selectedColorIndex]="selectedColorIndex()"
         [tool]="selectedTool()"
         (indicesChange)="onCanvasChange($event)"
+        (zoomChange)="zoomLevel.set($event)"
       />
     } @else {
       <div class="tw-flex tw-flex-col tw-items-center tw-text-muted-foreground">
