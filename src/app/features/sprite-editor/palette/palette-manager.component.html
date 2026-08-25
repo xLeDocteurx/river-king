@@ -1,12 +1,16 @@
 <div class="tw-flex tw-flex-col tw-gap-2">
-  <h3 class="tw-text-sm tw-font-semibold">Palette</h3>
+  <h3
+    class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+  >
+    Palette
+  </h3>
   <div class="tw-grid tw-grid-cols-4 tw-gap-1 tw-w-fit" data-testid="palette-grid">
     @for (color of palette(); track $index) {
       <button
         type="button"
         (click)="selectColor($index)"
         [class.tw-ring-2]="selectedIndex() === $index"
-        class="tw-w-8 tw-h-8 tw-rounded-sm tw-border tw-border-border"
+        class="tw-w-7 tw-h-7 tw-rounded-sm tw-border tw-border-border"
         [style.background-color]="color"
       >
         <span class="tw-sr-only">Color {{ $index + 1 }}</span>

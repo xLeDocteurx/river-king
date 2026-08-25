@@ -19,6 +19,7 @@ import { SpriteEditorComponent } from './sprite-editor.component';
 import { DatabaseService } from '../../core/services/database.service';
 import { SessionService } from '../../core/services/session.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { StatusBarService } from '../../core/services/status-bar.service';
 import { SpriteService } from './services/sprite.service';
 import type { Sprite } from '../../shared/models/sprite.model';
 import type { Tile } from '../../shared/models/tile.model';
@@ -102,7 +103,8 @@ describe('SpriteEditorComponent', () => {
     await setupWithProject();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Select a sprite to edit');
+    expect(compiled.textContent).toContain('No sprite selected');
+    expect(compiled.textContent).toContain('Select a sprite from the list to start editing');
   });
 
   it('should list sprites after creating one', async () => {
@@ -170,15 +172,37 @@ describe('SpriteEditorComponent', () => {
     expect(compiled.textContent).toContain('Sprites');
   });
 
-  it('shows the selected sprite name above the canvas', async () => {
+  it('swaps the empty state for the canvas when a sprite is selected', async () => {
     await createProjectWithPalette();
     await setupWithProject();
-    const service = TestBed.inject(SpriteService);
+    const service = fixture.debugElement.injector.get(SpriteService);
     const sprite = await service.createSprite('test-proj', 'frame 1', 1);
     await fixture.componentInstance.selectSprite(sprite.id);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('frame 1');
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('rk-pixel-canvas')).toBeTruthy();
+    expect(compiled.textContent).not.toContain('No sprite selected');
+  });
+
+  it('sets the status bar context when a sprite is selected', async () => {
+    await createProjectWithPalette();
+    await setupWithProject();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const statusBar = TestBed.inject(StatusBarService);
+    const spy = vi.spyOn(statusBar, 'setContext');
+    const service = fixture.debugElement.injector.get(SpriteService);
+    const sprite = await service.createSprite('test-proj', 'frame 1', 1);
+    await fixture.componentInstance.loadSprites();
+    await fixture.componentInstance.selectSprite(sprite.id);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
+    expect(lastCall?.[0]).toContain('frame 1');
+    expect(lastCall?.[0]).toContain('px');
   });
 
   it('shows an error and does not navigate for an unknown spriteId param', async () => {

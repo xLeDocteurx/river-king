@@ -1,6 +1,7 @@
 import {
   Component,
   DestroyRef,
+  effect,
   inject,
   signal,
   OnInit,
@@ -17,8 +18,16 @@ import { ProjectService } from '../dashboard/services/project.service';
 import { TileService } from '../tile-manager/services/tile.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
+import { StatusBarService } from '../../core/services/status-bar.service';
 import type { Sprite } from '../../shared/models/sprite.model';
 import type { Tile } from '../../shared/models/tile.model';
+
+/** Human-readable labels for the drawing tools, keyed by tool id. */
+const TOOL_LABELS: Record<DrawingTool, string> = {
+  brush: 'Brush',
+  eraser: 'Eraser',
+  fill: 'Fill',
+};
 
 /**
  * Main page component for the sprite editor feature.
@@ -43,6 +52,7 @@ export class SpriteEditorComponent implements OnInit {
   private readonly tileService = inject(TileService);
   private readonly notification = inject(NotificationService);
   private readonly sessions = inject(SessionService);
+  private readonly statusBar = inject(StatusBarService);
   private readonly destroyRef = inject(DestroyRef);
 
   /** Reactive signal holding the current project ID. */
@@ -128,6 +138,21 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Computed signal deriving the selected color index (palette index + 1). */
   readonly selectedColorIndex = computed(() => this.selectedPaletteIndex() + 1);
+
+  /** Effect pushing the current editor state into the app-wide status bar context. */
+  readonly statusBarEffect = effect(() => {
+    const sprite = this.selectedSprite();
+    if (!sprite) {
+      const count = this.sprites().length;
+      this.statusBar.setContext(`${count} sprite${count === 1 ? '' : 's'}`);
+      return;
+    }
+    const tool = TOOL_LABELS[this.selectedTool()];
+    const colorNumber = this.selectedPaletteIndex() + 1;
+    this.statusBar.setContext(
+      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool} | Color #${colorNumber}`,
+    );
+  });
 
   /** Initializes component, subscribing to route params to load project data and honor an optional sprite deep link. */
   ngOnInit() {

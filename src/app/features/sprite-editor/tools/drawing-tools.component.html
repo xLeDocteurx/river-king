@@ -1,12 +1,17 @@
 <div class="tw-flex tw-flex-col tw-gap-2">
-  <h3 class="tw-text-sm tw-font-semibold">Tools</h3>
+  <h3
+    class="tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+  >
+    Tools
+  </h3>
   <div class="tw-flex tw-gap-1">
     <button
       type="button"
       data-testid="tool-brush"
       (click)="selectTool('brush')"
       [class.tw-bg-primary/10]="tool() === 'brush'"
-      class="tw-p-2 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
+      [class.tw-border-primary]="tool() === 'brush'"
+      class="tw-p-1.5 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
       title="Brush"
     >
       <span class="material-symbols" aria-hidden="true">brush</span>
@@ -16,7 +21,8 @@
       data-testid="tool-eraser"
       (click)="selectTool('eraser')"
       [class.tw-bg-primary/10]="tool() === 'eraser'"
-      class="tw-p-2 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
+      [class.tw-border-primary]="tool() === 'eraser'"
+      class="tw-p-1.5 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
       title="Eraser"
     >
       <span class="material-symbols" aria-hidden="true">ink_eraser</span>
@@ -26,7 +32,8 @@
       data-testid="tool-fill"
       (click)="selectTool('fill')"
       [class.tw-bg-primary/10]="tool() === 'fill'"
-      class="tw-p-2 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
+      [class.tw-border-primary]="tool() === 'fill'"
+      class="tw-p-1.5 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
       title="Fill"
     >
       <span class="material-symbols" aria-hidden="true">format_color_fill</span>
