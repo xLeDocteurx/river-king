@@ -1,0 +1,62 @@
+<div class="tw-flex tw-items-center tw-gap-1 tw-w-full">
+  <button
+    type="button"
+    class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+    [title]="playing() ? 'Stop preview' : 'Play preview'"
+    (click)="togglePlayback.emit()"
+  >
+    <span class="material-symbols tw-text-sm" aria-hidden="true">
+      {{ playing() ? 'stop' : 'play_arrow' }}
+    </span>
+  </button>
+
+  <div class="tw-flex tw-items-center tw-gap-1 tw-flex-1 tw-overflow-x-auto tw-py-1">
+    @for (frame of frames(); track frame.id; let i = $index) {
+      <button
+        type="button"
+        class="tw-relative tw-flex tw-flex-col tw-items-center tw-gap-0.5 tw-p-0.5 tw-rounded-sm tw-border tw-cursor-pointer hover:tw-bg-accent"
+        [class.tw-border-accent]="selectedFrameId() === frame.id"
+        [class.tw-border-border]="selectedFrameId() !== frame.id"
+        (click)="frameSelect.emit(frame.id)"
+        [title]="frame.name"
+      >
+        <div
+          class="tw-w-8 tw-h-8 tw-bg-[length:100%_100%] tw-bg-center tw-bg-no-repeat"
+          [style.background-image]="'url(' + frame.pixelData + ')'"
+        ></div>
+        <span class="tw-text-[10px] tw-text-muted-foreground">{{ i + 1 }}</span>
+      </button>
+    }
+  </div>
+
+  <div class="tw-flex tw-items-center tw-gap-0.5">
+    <button
+      type="button"
+      class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+      title="Add frame"
+      (click)="addFrame.emit()"
+    >
+      <span class="material-symbols tw-text-sm" aria-hidden="true">add</span>
+    </button>
+    @if (selectedFrameId(); as fid) {
+      <button
+        type="button"
+        class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+        title="Duplicate frame"
+        (click)="duplicateFrame.emit(fid)"
+      >
+        <span class="material-symbols tw-text-sm" aria-hidden="true">content_copy</span>
+      </button>
+      @if (frames().length > 1) {
+        <button
+          type="button"
+          class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-destructive tw-text-destructive tw-cursor-pointer hover:tw-bg-destructive/10"
+          title="Delete frame"
+          (click)="deleteFrame.emit(fid)"
+        >
+          <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
+        </button>
+      }
+    }
+  </div>
+</div>

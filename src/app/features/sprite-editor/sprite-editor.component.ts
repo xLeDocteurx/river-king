@@ -14,11 +14,13 @@ import { SpriteService } from './services/sprite.service';
 import { PixelCanvasComponent } from './canvas/pixel-canvas.component';
 import { PaletteManagerComponent } from './palette/palette-manager.component';
 import { DrawingToolsComponent, type DrawingTool } from './tools/drawing-tools.component';
+import { FrameStripComponent } from './frame-strip/frame-strip.component';
 import { ProjectService } from '../dashboard/services/project.service';
 import { TileService } from '../tile-manager/services/tile.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
+import { UndoService } from '../../core/services/undo.service';
 import type { Sprite } from '../../shared/models/sprite.model';
 import type { Tile } from '../../shared/models/tile.model';
 
@@ -39,7 +41,7 @@ const TOOL_LABELS: Record<DrawingTool, string> = {
   selector: 'rk-sprite-editor',
   standalone: true,
   providers: [SpriteService, TileService],
-  imports: [PixelCanvasComponent, PaletteManagerComponent, DrawingToolsComponent],
+  imports: [PixelCanvasComponent, PaletteManagerComponent, DrawingToolsComponent, FrameStripComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sprite-editor.component.html',
   styleUrl: './sprite-editor.component.scss',
@@ -53,6 +55,7 @@ export class SpriteEditorComponent implements OnInit {
   private readonly notification = inject(NotificationService);
   private readonly sessions = inject(SessionService);
   private readonly statusBar = inject(StatusBarService);
+  private readonly undo = inject(UndoService);
   private readonly destroyRef = inject(DestroyRef);
 
   /** Reactive signal holding the current project ID. */
@@ -132,6 +135,8 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Reactive signal holding the decoded palette indices for the canvas. */
   paletteIndices = signal<number[][] | null>(null);
+  /** Palette indices snapshot before the current stroke, used for undo. */
+  private previousIndices: number[][] | null = null;
 
   /** @internal Handle of the scheduled trailing save timer (null when idle). */
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -141,6 +146,26 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Computed signal deriving the selected color index (palette index + 1). */
   readonly selectedColorIndex = computed(() => this.selectedPaletteIndex() + 1);
+
+  /** The tile that owns the currently selected sprite. */
+  readonly currentTile = computed(() => {
+    const sprite = this.selectedSprite();
+    if (!sprite) return null;
+    return this.tiles().find((t) => t.id === sprite.tileId) ?? null;
+  });
+
+  /** Ordered frames (sprites) belonging to the current tile. */
+  readonly currentFrames = computed(() => {
+    const tile = this.currentTile();
+    if (!tile) return [];
+    const spritesById = new Map(this.sprites().map((s) => [s.id, s]));
+    return tile.spriteIds.map((id) => spritesById.get(id)).filter((s): s is Sprite => !!s);
+  });
+
+  /** Whether the animation preview is playing. */
+  readonly previewPlaying = signal(false);
+  private previewTimer: ReturnType<typeof setInterval> | null = null;
+  private previewFrameIndex = 0;
 
   /** Effect pushing the current editor state into the app-wide status bar context. */
   readonly statusBarEffect = effect(() => {
@@ -283,6 +308,48 @@ export class SpriteEditorComponent implements OnInit {
     }
   }
 
+  /** Captures the pixel state before a stroke begins, for undo. */
+  onStrokeStart(): void {
+    const current = this.paletteIndices();
+    if (current) {
+      this.previousIndices = current.map((row) => [...row]);
+    }
+  }
+
+  /** Pushes an undo action when a stroke ends. */
+  onStrokeEnd(finalIndices: number[][]): void {
+    if (!this.previousIndices) return;
+    const sprite = this.selectedSprite();
+    if (!sprite) return;
+
+    const previous = this.previousIndices;
+    this.previousIndices = null;
+    const svc = this.spriteService;
+    const palette = this.projectPalette();
+    const selIndices = this.paletteIndices;
+    const selSprite = this.selectedSprite;
+    const notif = this.notification;
+    const spriteId = sprite.id;
+
+    this.undo.push({
+      label: 'Draw pixels',
+      execute() {
+        const pd = svc.encodePixelData(finalIndices, palette);
+        selIndices.set(finalIndices.map((r) => [...r]));
+        selSprite.update((s) =>
+          s ? { ...s, paletteIndices: finalIndices.map((r) => [...r]), pixelData: pd } : null,
+        );
+      },
+      undo() {
+        const pd = svc.encodePixelData(previous, palette);
+        selIndices.set(previous.map((r) => [...r]));
+        selSprite.update((s) =>
+          s ? { ...s, paletteIndices: previous.map((r) => [...r]), pixelData: pd } : null,
+        );
+      },
+    });
+  }
+
   /**
    * @internal Stores the payload and (re)starts the 250 ms trailing timer.
    * @param spriteId - Sprite being edited.
@@ -318,6 +385,109 @@ export class SpriteEditorComponent implements OnInit {
     } catch (e) {
       this.notification.error('Failed to save sprite');
       console.error(e);
+    }
+  }
+
+  /** Adds a new blank frame to the current tile. */
+  async onAddFrame(): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile) return;
+    try {
+      const frameNum = tile.spriteIds.length + 1;
+      const newSprite = await this.spriteService.createSprite(
+        this.projectId(),
+        `${tile.name} ${frameNum}`,
+        tile.id,
+      );
+      const newSpriteIds = [...tile.spriteIds, newSprite.id];
+      const newType = newSpriteIds.length > 1 ? 'animated' : tile.type;
+      await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds, type: newType });
+      await this.loadSprites();
+      await this.loadTiles();
+      await this.selectSprite(newSprite.id);
+    } catch (e) {
+      this.notification.error('Failed to add frame');
+      console.error(e);
+    }
+  }
+
+  /** Deletes a frame from the current tile and selects an adjacent frame. */
+  async onDeleteFrame(frameId: number): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile || tile.spriteIds.length <= 1) return;
+    try {
+      const idx = tile.spriteIds.indexOf(frameId);
+      const newSpriteIds = tile.spriteIds.filter((id) => id !== frameId);
+      const newType = newSpriteIds.length > 1 ? 'animated' : 'static';
+      await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds, type: newType });
+      await this.spriteService.deleteSprite(frameId);
+      await this.loadSprites();
+      await this.loadTiles();
+      const adjacentIdx = Math.min(idx, newSpriteIds.length - 1);
+      if (adjacentIdx >= 0) {
+        await this.selectSprite(newSpriteIds[adjacentIdx]);
+      }
+    } catch (e) {
+      this.notification.error('Failed to delete frame');
+      console.error(e);
+    }
+  }
+
+  /** Duplicates a frame and appends it after the original. */
+  async onDuplicateFrame(frameId: number): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile) return;
+    try {
+      const original = await this.spriteService.getSprite(frameId);
+      if (!original) return;
+      const newSprite = await this.spriteService.createSprite(
+        this.projectId(),
+        `${original.name} copy`,
+        tile.id,
+      );
+      await this.spriteService.updateSprite(newSprite.id, {
+        paletteIndices: original.paletteIndices ? original.paletteIndices.map((r) => [...r]) : undefined,
+        pixelData: original.pixelData,
+      });
+      const idx = tile.spriteIds.indexOf(frameId);
+      const newSpriteIds = [...tile.spriteIds];
+      newSpriteIds.splice(idx + 1, 0, newSprite.id);
+      await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds });
+      await this.loadSprites();
+      await this.selectSprite(newSprite.id);
+    } catch (e) {
+      this.notification.error('Failed to duplicate frame');
+      console.error(e);
+    }
+  }
+
+  /** Toggles animation preview playback for the current tile's frames. */
+  togglePlayback(): void {
+    if (this.previewPlaying()) {
+      this.stopPlayback();
+    } else {
+      this.startPlayback();
+    }
+  }
+
+  private startPlayback(): void {
+    const frames = this.currentFrames();
+    const tile = this.currentTile();
+    if (frames.length < 2 || !tile) return;
+    this.previewPlaying.set(true);
+    this.previewFrameIndex = 0;
+    const interval = 1000 / tile.animationSpeed;
+    this.previewTimer = setInterval(() => {
+      this.previewFrameIndex = (this.previewFrameIndex + 1) % frames.length;
+      this.selectSprite(frames[this.previewFrameIndex].id);
+    }, interval);
+  }
+
+  private stopPlayback(): void {
+    this.previewPlaying.set(false);
+    if (this.previewTimer) {
+      clearInterval(this.previewTimer);
+      this.previewTimer = null;
     }
   }
 }

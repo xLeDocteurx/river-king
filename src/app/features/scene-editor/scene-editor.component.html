@@ -21,6 +21,13 @@
       [tileAnimations]="tileAnimations()"
       (tilePlaced)="onTilePlaced($event)"
     />
+    <button
+      class="tw-absolute tw-top-1 tw-right-1 tw-z-10 tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+      [title]="mapCanvasRef()?.showGrid() ? 'Hide grid' : 'Show grid'"
+      (click)="mapCanvasRef()?.showGrid.set(!mapCanvasRef()?.showGrid())"
+    >
+      <span class="material-symbols" aria-hidden="true">grid_on</span>
+    </button>
   </div>
   <div class="tw-w-52 tw-shrink-0 tw-bg-card-bg tw-border-l tw-border-border tw-flex tw-flex-col">
     @if (selectedScene(); as scene) {

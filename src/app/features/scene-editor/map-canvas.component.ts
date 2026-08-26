@@ -54,6 +54,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   cameraY = signal(0);
   /** Current zoom level (1 = 100%). */
   zoom = signal(1);
+  /** Whether the grid overlay is visible. */
+  showGrid = signal(true);
   /** Current canvas viewport width in CSS pixels. */
   viewportWidth = signal(0);
   /** Current canvas viewport height in CSS pixels. */
@@ -88,6 +90,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
    * Drives the placement preview rectangle.
    */
   readonly hoverCell = signal<{ x: number; y: number; w: number; h: number } | null>(null);
+  /** Grid cell currently under the cursor (null when outside the scene). */
+  readonly cursorCell = signal<{ x: number; y: number } | null>(null);
 
   /** @internal Whether the camera has been centered on the initial grid. */
   private gridCentered = false;
@@ -250,7 +254,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     // Skipped when zoomed out enough that lines would create moiré noise
     // (threshold: rendered cell < 8 screen pixels).
     const effectiveZoom = this.zoom();
-    if (effectiveZoom * cell >= 8) {
+    if (this.showGrid() && effectiveZoom * cell >= 8) {
       this.drawGrid(ctx, scene.width, scene.height, cell);
     }
 
@@ -385,6 +389,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
    * @param event The native mouse event.
    */
   onMouseMove(event: MouseEvent): void {
+    this.updateCursorCell(event);
     this.updateHoverPreview(event);
     if (!this.isDragging) return;
     const dx = event.clientX - this.lastMouseX;
@@ -409,6 +414,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
    */
   onMouseLeave(): void {
     this.isDragging = false;
+    this.cursorCell.set(null);
     if (this.hoverCell() !== null) {
       this.hoverCell.set(null);
       this.render();
@@ -493,6 +499,22 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     }
     this.hoverCell.set(next);
     this.render();
+  }
+
+  /** @internal Updates the cursor cell signal with the grid position under the pointer. */
+  private updateCursorCell(event: MouseEvent): void {
+    const scene = this.scene();
+    if (!scene) { this.cursorCell.set(null); return; }
+    const canvas = this.canvasRef().nativeElement;
+    const rect = canvas.getBoundingClientRect();
+    const cell = this.tileSize();
+    const x = Math.floor((event.clientX - rect.left - this.cameraX()) / (cell * this.zoom()));
+    const y = Math.floor((event.clientY - rect.top - this.cameraY()) / (cell * this.zoom()));
+    if (x < 0 || y < 0 || x >= scene.width || y >= scene.height) {
+      this.cursorCell.set(null);
+    } else {
+      this.cursorCell.set({ x, y });
+    }
   }
 
   /**

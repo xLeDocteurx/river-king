@@ -13,6 +13,7 @@ import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
+import { UndoService } from '../../core/services/undo.service';
 import { SceneService } from './services/scene.service';
 import { MapTilesService } from './services/map-tiles.service';
 import type { TileAnimationMeta } from './services/map-tiles.service';
@@ -56,6 +57,7 @@ export class SceneEditorComponent implements OnInit {
   private readonly mapTilesService = inject(MapTilesService);
   private readonly sessions = inject(SessionService);
   private readonly statusBar = inject(StatusBarService);
+  private readonly undo = inject(UndoService);
   private readonly deleteConfirmDialog = viewChild.required(ConfirmDialogComponent);
   mapCanvasRef = viewChild(MapCanvasComponent);
 
@@ -99,9 +101,16 @@ export class SceneEditorComponent implements OnInit {
     const x = Math.round(canvas.cameraX());
     const y = Math.round(canvas.cameraY());
     const zoom = Math.round(canvas.zoom() * 100);
-    this.statusBar.setContext(
-      `${scene.name} | ${scene.width}×${scene.height} | Cam: ${x},${y} | Zoom: ${zoom}%`,
-    );
+    const cursor = canvas.cursorCell();
+    const cursorStr = cursor ? `Cursor: ${cursor.x},${cursor.y}` : '';
+    const parts = [
+      scene.name,
+      `${scene.width}×${scene.height}`,
+      `Cam: ${x},${y}`,
+      `Zoom: ${zoom}%`,
+    ];
+    if (cursorStr) parts.push(cursorStr);
+    this.statusBar.setContext(parts.join(' | '));
   });
 
   /** Data for the scene deletion confirmation dialog. */
@@ -332,6 +341,7 @@ export class SceneEditorComponent implements OnInit {
     if (!scene) return;
 
     try {
+      const previousTileData = scene.tileData.map((row) => [...row]);
       const { w, h } = getFootprint(event.tileId, this.tileFootprints());
       const newTileData = clearOverlappedAnchors(
         scene.tileData,
@@ -345,6 +355,24 @@ export class SceneEditorComponent implements OnInit {
 
       await this.sceneService.updateScene(scene.id, { tileData: newTileData });
       this.selectedScene.update((s) => (s ? { ...s, tileData: newTileData } : null));
+
+      const sceneId = scene.id;
+      const svc = this.sceneService;
+      const sel = this.selectedScene;
+      const notif = this.notification;
+      this.undo.push({
+        label: 'Place tile',
+        execute() {
+          svc.updateScene(sceneId, { tileData: newTileData }).then(() => {
+            sel.update((s) => (s ? { ...s, tileData: newTileData } : null));
+          }).catch(() => notif.error('Failed to redo tile placement.'));
+        },
+        undo() {
+          svc.updateScene(sceneId, { tileData: previousTileData }).then(() => {
+            sel.update((s) => (s ? { ...s, tileData: previousTileData } : null));
+          }).catch(() => notif.error('Failed to undo tile placement.'));
+        },
+      });
     } catch (e) {
       console.error('Failed to place tile:', e);
       this.notification.error('Failed to place the tile.');

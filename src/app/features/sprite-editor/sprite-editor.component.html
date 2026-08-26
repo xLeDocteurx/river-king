@@ -56,8 +56,23 @@
         [selectedColorIndex]="selectedColorIndex()"
         [tool]="selectedTool()"
         (indicesChange)="onCanvasChange($event)"
+        (strokeStart)="onStrokeStart()"
+        (strokeEnd)="onStrokeEnd($event)"
         (zoomChange)="zoomLevel.set($event)"
       />
+      @if (currentTile(); as tile) {
+        <rk-frame-strip
+          [tile]="tile"
+          [frames]="currentFrames()"
+          [selectedFrameId]="selectedSpriteId()"
+          [playing]="previewPlaying()"
+          (frameSelect)="selectSprite($event)"
+          (addFrame)="onAddFrame()"
+          (deleteFrame)="onDeleteFrame($event)"
+          (duplicateFrame)="onDuplicateFrame($event)"
+          (togglePlayback)="togglePlayback()"
+        />
+      }
     } @else {
       <div class="tw-flex tw-flex-col tw-items-center tw-text-muted-foreground">
         <span class="material-symbols tw-text-5xl tw-mb-3" aria-hidden="true">image</span>

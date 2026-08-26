@@ -52,6 +52,12 @@ export class PixelCanvasComponent implements AfterViewInit, OnDestroy {
   /** Emits updated palette indices whenever the canvas is modified. */
   indicesChange = output<number[][]>();
 
+  /** Emits when a new stroke begins (mousedown). */
+  strokeStart = output<void>();
+
+  /** Emits when a stroke ends (mouseup/leave) with the final indices. */
+  strokeEnd = output<number[][]>();
+
   /** Emits the current zoom factor whenever it changes. */
   zoomChange = output<number>();
 
@@ -233,6 +239,7 @@ export class PixelCanvasComponent implements AfterViewInit, OnDestroy {
    */
   onMouseDown(event: MouseEvent) {
     this.isDrawing = true;
+    this.strokeStart.emit();
     const ref = this.canvasRef();
     if (ref) {
       this.rectCache = ref.nativeElement.getBoundingClientRect();
@@ -252,11 +259,13 @@ export class PixelCanvasComponent implements AfterViewInit, OnDestroy {
   /** Handles mouse up to stop drawing. */
   onMouseUp() {
     this.isDrawing = false;
+    this.strokeEnd.emit(this.localPaletteIndices.map((row) => [...row]));
   }
 
   /** Handles mouse leaving the canvas to stop drawing. */
   onMouseLeave() {
     this.isDrawing = false;
+    this.strokeEnd.emit(this.localPaletteIndices.map((row) => [...row]));
     this.rectCache = null;
   }
 
