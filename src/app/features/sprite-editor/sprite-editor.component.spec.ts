@@ -116,7 +116,7 @@ describe('SpriteEditorComponent', () => {
       name: 'Base Tile',
       type: 'static',
       spriteIds: [],
-      animationSpeed: 8,
+      animationSpeed: 4,
       properties: { blocking: false, interactable: false },
     } as Tile);
     await setupWithProject();
@@ -319,7 +319,7 @@ describe('SpriteEditorComponent', () => {
       name: 'Base Tile',
       type: 'static',
       spriteIds: [],
-      animationSpeed: 8,
+      animationSpeed: 4,
       properties: { blocking: false, interactable: false },
     } as Tile);
     await setupWithProject();
@@ -375,7 +375,7 @@ describe('SpriteEditorComponent', () => {
       name: 'Base Tile',
       type: 'static',
       spriteIds: [],
-      animationSpeed: 8,
+      animationSpeed: 4,
       properties: { blocking: false, interactable: false },
     } as Tile);
     await setupWithProject();

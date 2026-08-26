@@ -183,7 +183,7 @@ describe('SceneEditorComponent', () => {
     });
     paramSceneId = fromUrl.id;
 
-    await component.restoreSession();
+    await component.restoreLastScene();
 
     expect(component.selectedSceneId()).toBe(fromUrl.id);
   });
@@ -224,9 +224,7 @@ describe('SceneEditorComponent', () => {
     expect(spy).toHaveBeenCalledWith('p1', { lastScreen: 'scenes', lastSceneId: scene.id });
   });
 
-  it('restores the stored scene and camera state', async () => {
-    // Isolated from the shared fake IndexedDB: concurrent spec files in the
-    // same worker race on it, so both session and scenes are mocked.
+  it('restores the stored scene without camera state', async () => {
     const storedScene = {
       id: 'scene-rest',
       projectId: 'p1',
@@ -243,25 +241,20 @@ describe('SceneEditorComponent', () => {
     vi.spyOn(sessions, 'getSession').mockResolvedValue({
       ...createEmptySession('p1'),
       lastSceneId: 'scene-rest',
-      cameraX: 30,
-      cameraY: 40,
-      cameraZoom: 2,
     });
     await component.loadScenes();
-    await component.restoreSession();
+    await component.restoreLastScene();
 
     expect(component.selectedSceneId()).toBe('scene-rest');
-    expect(component.restoreCamera()).toEqual({ x: 30, y: 40, zoom: 2 });
   });
 
   it('keeps defaults when no session exists', async () => {
     const sessions = TestBed.inject(SessionService);
     vi.spyOn(sessions, 'getSession').mockResolvedValue(undefined);
 
-    await component.restoreSession();
+    await component.restoreLastScene();
 
     expect(component.selectedSceneId()).toBeNull();
-    expect(component.restoreCamera()).toBeNull();
   });
 
   it('sets the status bar context when a scene is selected', async () => {
@@ -279,76 +272,5 @@ describe('SceneEditorComponent', () => {
     const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
     expect(lastCall?.[0]).toContain('Forest');
     expect(lastCall?.[0]).toContain('10×10');
-  });
-
-  it('restores camera position from session and saves back after panning', async () => {
-    const storedScene = {
-      id: 'scene-cam',
-      projectId: 'p1',
-      name: 'CamScene',
-      folderPath: '',
-      width: 8,
-      height: 8,
-      tileData: [],
-    } as Scene;
-    const svc = fixture.debugElement.injector.get(SceneService);
-    vi.spyOn(svc, 'getScenes').mockResolvedValue([storedScene]);
-    vi.spyOn(svc, 'getScene').mockResolvedValue(storedScene);
-
-    vi.useFakeTimers();
-    try {
-      const sessions = TestBed.inject(SessionService);
-      vi.spyOn(sessions, 'getSession').mockResolvedValue({
-        ...createEmptySession('p1'),
-        lastSceneId: 'scene-cam',
-        cameraX: 0,
-        cameraY: 0,
-        cameraZoom: 1,
-      });
-      const updateSpy = vi
-        .spyOn(sessions, 'updateSession')
-        .mockImplementation(() => Promise.resolve());
-
-      await component.loadScenes();
-      await component.restoreSession();
-      fixture.detectChanges();
-      await fixture.whenStable();
-
-      // Verify the canvas received initial camera signals from the session
-      expect(component.initialCameraX()).toBe(0);
-      expect(component.initialCameraY()).toBe(0);
-
-      // Simulate panning via mouse events on the canvas (no tile selected → pan mode)
-      const canvas = component.mapCanvasRef();
-      expect(canvas)!.toBeTruthy();
-      fixture.detectChanges();
-
-      canvas!.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 10 }));
-      canvas!.onMouseMove(new MouseEvent('mousemove', { clientX: 160, clientY: 100 }));
-
-      // Flush the 400ms debounce plus margin
-      vi.advanceTimersByTime(500);
-      await fixture.whenStable();
-
-      // Session should now contain the panned camera position
-      expect(updateSpy).toHaveBeenCalledWith('p1', { cameraX: 150, cameraY: 90, cameraZoom: 1 });
-
-      // Re-select the same scene: initial camera signals should reflect stored values
-      vi.spyOn(sessions, 'getSession').mockResolvedValue({
-        ...createEmptySession('p1'),
-        lastSceneId: 'scene-cam',
-        cameraX: 150,
-        cameraY: 90,
-        cameraZoom: 1,
-      });
-      await component.selectScene('scene-cam');
-      fixture.detectChanges();
-      await fixture.whenStable();
-
-      expect(component.initialCameraX()).toBe(150);
-      expect(component.initialCameraY()).toBe(90);
-    } finally {
-      vi.useRealTimers();
-    }
   });
 });

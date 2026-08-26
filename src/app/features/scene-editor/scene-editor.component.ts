@@ -87,18 +87,6 @@ export class SceneEditorComponent implements OnInit {
   projectTileSize = signal<number>(16);
   /** Id of the scene pending deletion confirmation. */
   pendingDeleteSceneId = signal<string | null>(null);
-  /** Camera state to restore on the map canvas (consumed once, then null). */
-  restoreCamera = signal<{ x: number; y: number; zoom: number } | null>(null);
-  /**
-   * Horizontal camera offset bound to the map canvas. Updated whenever a
-   * scene is selected so the canvas snaps to the last stored position.
-   */
-  initialCameraX = signal(0);
-  /**
-   * Vertical camera offset bound to the map canvas. Updated whenever a
-   * scene is selected so the canvas snaps to the last stored position.
-   */
-  initialCameraY = signal(0);
 
   /** Effect that updates the global status bar with scene and camera info. */
   statusBarEffect = effect(() => {
@@ -135,7 +123,7 @@ export class SceneEditorComponent implements OnInit {
         this.projectId.set(id);
         this.loadProjectData();
         this.loadScenes()
-          .then(() => this.restoreSession())
+          .then(() => this.restoreLastScene())
           .catch(() => undefined);
         this.loadFolders();
       }
@@ -143,22 +131,16 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Restores the persisted session for the scenes screen: re-selects the last
-   * active scene (or the scene from the URL when deep-linked) and prepares
-   * the camera state for the map canvas.
+   * Restores the last selected scene from the persisted session (without
+   * camera restore — camera now centers on grid by default).
    */
-  async restoreSession(): Promise<void> {
+  async restoreLastScene(): Promise<void> {
     const stored = await this.sessions.getSession(this.projectId()).catch(() => undefined);
-
     const urlSceneId = this.route.snapshot.paramMap.get('sceneId');
     let target = urlSceneId ?? undefined;
     if (!target && stored?.lastSceneId) target = stored.lastSceneId;
     if (target && !this.scenes().some((s) => s.id === target)) target = undefined;
-
     if (target) await this.selectScene(target);
-    if (stored && (stored.cameraX !== 0 || stored.cameraY !== 0 || stored.cameraZoom !== 1)) {
-      this.restoreCamera.set({ x: stored.cameraX, y: stored.cameraY, zoom: stored.cameraZoom });
-    }
   }
 
   /**
@@ -243,9 +225,6 @@ export class SceneEditorComponent implements OnInit {
         lastScreen: 'scenes',
         lastSceneId: sceneId,
       });
-      const stored = await this.sessions.getSession(this.projectId()).catch(() => undefined);
-      this.initialCameraX.set(stored?.cameraX ?? 0);
-      this.initialCameraY.set(stored?.cameraY ?? 0);
       if (this.route.snapshot.paramMap.get('sceneId') !== String(sceneId)) {
         void this.router.navigate(['/project', this.projectId(), 'scenes', sceneId]);
       }

@@ -10,7 +10,7 @@ function makeTile(id: number, name: string): Tile {
     name,
     type: 'static',
     spriteIds: [],
-    animationSpeed: 8,
+    animationSpeed: 4,
     properties: { blocking: false, interactable: false },
   };
 }

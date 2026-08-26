@@ -84,7 +84,7 @@ export class TilePropertiesComponent {
   form = this.fb.group({
     name: [''],
     type: ['static' as 'static' | 'animated'],
-    animationSpeed: [8],
+    animationSpeed: [4],
     properties: this.fb.group({
       blocking: [false],
     }),
@@ -368,7 +368,7 @@ export class TilePropertiesComponent {
       ...base,
       name: value.name ?? '',
       type: value.type ?? 'static',
-      animationSpeed: value.animationSpeed != null ? Number(value.animationSpeed) : 8,
+      animationSpeed: value.animationSpeed != null ? Number(value.animationSpeed) : 4,
       properties: {
         blocking: value.properties?.blocking ?? false,
         interactable: this.interactableChecked(),

@@ -35,7 +35,7 @@ describe('TilePropertiesComponent', () => {
       name: 'Tile A',
       type: 'static',
       spriteIds: [],
-      animationSpeed: 8,
+      animationSpeed: 4,
       properties: { blocking: false, interactable: false },
       ...overrides,
     };

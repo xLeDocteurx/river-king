@@ -9,7 +9,7 @@ function createMockTile(overrides: Partial<Tile> = {}): Tile {
     name: 'Test Tile',
     type: 'static',
     spriteIds: [],
-    animationSpeed: 8,
+    animationSpeed: 4,
     properties: {
       blocking: false,
       interactable: false,

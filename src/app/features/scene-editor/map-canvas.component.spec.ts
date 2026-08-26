@@ -1,7 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import 'fake-indexeddb/auto';
 import { MapCanvasComponent } from './map-canvas.component';
-import { SessionService } from '../../core/services/session.service';
 import type { Scene } from '../../shared/models/scene.model';
 
 // jsdom does not implement ResizeObserver (used by MapCanvasComponent)
@@ -97,45 +95,16 @@ describe('MapCanvasComponent', () => {
     }
   });
 
-  it('applies the restoreCamera input once at startup', () => {
-    TestBed.configureTestingModule({ imports: [MapCanvasComponent] });
-    fixture = TestBed.createComponent(MapCanvasComponent);
-    placed = [];
-    fixture.componentInstance.tilePlaced.subscribe((e) => placed.push(e));
-    fixture.componentRef.setInput('scene', makeScene());
-    fixture.componentRef.setInput('selectedTileId', 1);
-    fixture.componentRef.setInput('restoreCamera', { x: 50, y: 25, zoom: 2 });
-    fixture.detectChanges();
-
-    const component = fixture.componentInstance;
-    expect(component.cameraX()).toBe(50);
-    expect(component.cameraY()).toBe(25);
-    expect(component.zoom()).toBe(2);
+  it('does not shift the camera in jsdom (zero-size canvas)', () => {
+    setup(makeScene(10, 8));
+    const instance = fixture.componentInstance;
+    // jsdom canvas is 0x0, so centerOnGrid skips — camera stays at origin
+    expect(instance.cameraX()).toBe(0);
+    expect(instance.cameraY()).toBe(0);
+    expect(instance.zoom()).toBe(1);
   });
 
-  it('persists the debounced camera state while panning', async () => {
-    vi.useFakeTimers();
-    try {
-      setup(makeScene());
-      // Clear the palette selection so left-drag pans instead of placing.
-      fixture.componentRef.setInput('selectedTileId', null);
-      const sessions = TestBed.inject(SessionService);
-      const spy = vi.spyOn(sessions, 'updateSession').mockImplementation(() => Promise.resolve());
-      const instance = fixture.componentInstance;
-
-      instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 10 }));
-      instance.onMouseMove(new MouseEvent('mousemove', { clientX: 60, clientY: 35 }));
-      expect(spy).not.toHaveBeenCalled();
-
-      vi.advanceTimersByTime(400);
-
-      expect(spy).toHaveBeenCalledWith('proj-1', { cameraX: 50, cameraY: 25, cameraZoom: 1 });
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('shows the footprint preview under the cursor when a tile is selected', () => {
+  it('clears the preview when the pointer leaves the canvas', () => {
     setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
     const instance = fixture.componentInstance;
 
@@ -162,21 +131,6 @@ describe('MapCanvasComponent', () => {
     instance.onMouseMove(new MouseEvent('mousemove', { clientX: 50, clientY: 5 }));
 
     expect(instance.hoverCell()).toBeNull();
-  });
-
-  it('snaps camera to initialCameraX/Y inputs when they change', () => {
-    setup(makeScene());
-    const instance = fixture.componentInstance;
-
-    expect(instance.cameraX()).toBe(0);
-    expect(instance.cameraY()).toBe(0);
-
-    fixture.componentRef.setInput('initialCameraX', 120);
-    fixture.componentRef.setInput('initialCameraY', 80);
-    fixture.detectChanges();
-
-    expect(instance.cameraX()).toBe(120);
-    expect(instance.cameraY()).toBe(80);
   });
 
   it('clears the preview when the pointer leaves the canvas', () => {

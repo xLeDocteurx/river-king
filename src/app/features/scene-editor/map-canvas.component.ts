@@ -1,6 +1,5 @@
 import {
   Component,
-  inject,
   input,
   output,
   viewChild,
@@ -15,7 +14,6 @@ import type { Scene } from '../../shared/models/scene.model';
 import { getFootprint } from './map-footprint';
 import type { TileFootprintMap } from './map-footprint';
 import { cssTokenColor, gridStrokeColor } from './grid-color';
-import { SessionService } from '../../core/services/session.service';
 import type { TileAnimationMeta } from './services/map-tiles.service';
 
 /**
@@ -47,20 +45,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   tileFootprints = input<TileFootprintMap>({});
   /** Animation metadata per tile id (absent for static tiles). */
   tileAnimations = input<Record<number, TileAnimationMeta>>({});
-  /** Camera state to restore once at startup (from the persisted session). */
-  restoreCamera = input<{ x: number; y: number; zoom: number } | null>(null);
-  /**
-   * Horizontal camera offset to restore when the parent signals a scene
-   * switch or initial load. Reactively snaps the internal cameraX whenever
-   * the parent writes a new value.
-   */
-  initialCameraX = input(0);
-  /**
-   * Vertical camera offset to restore when the parent signals a scene
-   * switch or initial load. Reactively snaps the internal cameraY whenever
-   * the parent writes a new value.
-   */
-  initialCameraY = input(0);
   /** Emitted when a tile is placed on the canvas. */
   tilePlaced = output<{ x: number; y: number; tileId: number }>();
 
@@ -95,10 +79,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   private lastMouseX = 0;
   /** @internal Last mouse Y position for pan delta calculation. */
   private lastMouseY = 0;
-  /** @internal Timer id of the pending debounced camera persist. */
-  private cameraPersistTimer: ReturnType<typeof setTimeout> | null = null;
-  /** @internal Whether restoreCamera input has already been consumed. */
-  private cameraRestored = false;
+
 
   /**
    * Grid area under the cursor that the selected tile would occupy:
@@ -108,12 +89,13 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
    */
   readonly hoverCell = signal<{ x: number; y: number; w: number; h: number } | null>(null);
 
-  /** Persists camera state so a project reopens where the user left it. */
-  private readonly sessions = inject(SessionService);
+  /** @internal Whether the camera has been centered on the initial grid. */
+  private gridCentered = false;
 
   constructor() {
     /** Re-render whenever rendering inputs change. Image loading is async
-     *  so the first sync render may show fallback colors until images decode. */
+     *  so the first sync render may show fallback colors until images decode.
+     *  Also starts/stops the animation loop when tileAnimations changes. */
     effect(() => {
       this.palette();
       this.tileSize();
@@ -121,40 +103,20 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       const sources = this.tileImages();
       void this.rebuildImageCache(sources);
       this.render();
-    });
-
-    /** Start or stop the animation loop when animation metadata changes. */
-    effect(() => {
       const animations = this.tileAnimations();
-      if (Object.keys(animations).length > 0) {
+      if (Object.keys(animations).length > 0 && !this.animating) {
         this.startAnimationLoop();
-      } else {
+      } else if (Object.keys(animations).length === 0 && this.animating) {
         this.stopAnimationLoop();
       }
     });
 
-    /** Snap camera position when the parent signals a scene switch.
-     *  Does NOT touch zoom — the caller may set `restoreCamera` separately. */
+    /** Center the camera on the grid once when the scene first loads. */
     effect(() => {
-      const x = this.initialCameraX();
-      const y = this.initialCameraY();
-      this.cameraX.set(x);
-      this.cameraY.set(y);
-      this.render();
-    });
-
-    /** Restore the full camera state (position + zoom) from the persisted
-     *  session once. Must run AFTER the initialCamera effect so it can
-     *  override the x/y values with the persisted zoom-aware state. */
-    effect(() => {
-      const rc = this.restoreCamera();
-      if (rc && !this.cameraRestored) {
-        this.cameraX.set(rc.x);
-        this.cameraY.set(rc.y);
-        this.zoom.set(rc.zoom);
-        this.cameraRestored = true;
-        this.render();
-      }
+      const scene = this.scene();
+      if (!scene || this.gridCentered) return;
+      this.gridCentered = true;
+      this.centerOnGrid();
     });
   }
 
@@ -171,7 +133,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       this.loadedImages.set({});
       return;
     }
-
     // Flatten all frames into (tileId, frameIndex, src) triples for parallel loading.
     const jobs: { tileId: number; frameIndex: number; src: string }[] = [];
     for (const tileId of tileIds) {
@@ -270,6 +231,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       }
     }
 
+    const animations = this.tileAnimations();
     for (const { x, y, tileId } of anchors) {
       const { w, h } = getFootprint(tileId, this.tileFootprints());
       const frames = tileImages[tileId];
@@ -281,6 +243,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         ctx.fillStyle = this.getTileColor(tileId);
         ctx.fillRect(x * cell, y * cell, w * cell, h * cell);
       }
+
     }
 
     // Grid drawn AFTER tiles so cell boundaries stay visible over filled cells.
@@ -314,7 +277,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     if (this.animating) return;
     this.animating = true;
     this.lastFrameTimes.clear();
-    this.tickAnimation(performance.now());
+    const now = performance.now();
+    for (const id of Object.keys(this.tileAnimations()).map(Number)) {
+      this.lastFrameTimes.set(id, now);
+    }
+    this.tickAnimation(now);
   }
 
   /**
@@ -349,7 +316,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
 
       if (elapsed >= interval) {
         const current = this.frameIndices.get(tileId) ?? 0;
-        this.frameIndices.set(tileId, (current + 1) % meta.frameCount);
+        const next = (current + 1) % meta.frameCount;
+        this.frameIndices.set(tileId, next);
         this.lastFrameTimes.set(tileId, now);
         needsRedraw = true;
       }
@@ -425,7 +393,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     this.cameraY.update((v) => v + dy);
     this.lastMouseX = event.clientX;
     this.lastMouseY = event.clientY;
-    this.scheduleCameraPersist();
     this.render();
   }
 
@@ -475,7 +442,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     this.cameraY.set(mouseY - worldY * newZoom);
     this.zoom.set(newZoom);
 
-    this.scheduleCameraPersist();
     this.render();
   }
 
@@ -490,28 +456,28 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const z = this.zoom();
     this.cameraX.set(-(worldX * z) + canvas.width / 2);
     this.cameraY.set(-(worldY * z) + canvas.height / 2);
-    this.scheduleCameraPersist();
     this.render();
   }
 
   /**
-   * @internal Debounces the session write of the current camera state (400 ms
-   * trailing edge) so panning and zooming do not hammer IndexedDB.
+   * Centers the camera so the grid is fully visible in the viewport.
+   * Called once on scene load.
    */
-  private scheduleCameraPersist(): void {
-    if (this.cameraPersistTimer !== null) {
-      clearTimeout(this.cameraPersistTimer);
-    }
-    this.cameraPersistTimer = setTimeout(() => {
-      this.cameraPersistTimer = null;
-      const projectId = this.scene()?.projectId;
-      if (!projectId) return;
-      void this.sessions.updateSession(projectId, {
-        cameraX: this.cameraX(),
-        cameraY: this.cameraY(),
-        cameraZoom: this.zoom(),
-      });
-    }, 400);
+  private centerOnGrid(): void {
+    const scene = this.scene();
+    const canvas = this.canvasRef()?.nativeElement;
+    if (!scene || !canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const ts = this.tileSize();
+    const gridW = scene.width * ts;
+    const gridH = scene.height * ts;
+    const vpW = rect.width;
+    const vpH = rect.height;
+    this.cameraX.set((vpW - gridW) / 2);
+    this.cameraY.set((vpH - gridH) / 2);
+    this.zoom.set(1);
+    this.render();
   }
 
   /**

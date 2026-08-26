@@ -70,7 +70,7 @@ describe('TileManagerComponent', () => {
       name: 'T',
       type: 'static',
       spriteIds: [],
-      animationSpeed: 8,
+      animationSpeed: 4,
       properties: { blocking: false, interactable: false },
     } as unknown as import('../../shared/models/tile.model').Tile);
   }
@@ -150,7 +150,7 @@ describe('TileManagerComponent', () => {
       name: 'T',
       type: 'static',
       spriteIds: [],
-      animationSpeed: 8,
+      animationSpeed: 4,
       properties: { blocking: false, interactable: false },
     } as unknown as import('../../shared/models/tile.model').Tile);
     await db.sprites.add({

@@ -124,7 +124,7 @@ describe('MapTilesService', () => {
       name: 'static',
       type: 'static',
       spriteIds: [],
-      animationSpeed: 8,
+      animationSpeed: 4,
       properties: { blocking: false, interactable: false },
     } as unknown as import('../../../shared/models/tile.model').Tile);
     await seedSprite({ tileId, pixelData: 'data:image/png;base64,X' });
