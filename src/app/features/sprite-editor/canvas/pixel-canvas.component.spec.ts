@@ -37,6 +37,25 @@ describe('PixelCanvasComponent', () => {
       return null;
     });
 
+    // jsdom does not fire onload for Image elements; resolve immediately.
+    vi.stubGlobal(
+      'Image',
+      class MockImage {
+        onload: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+        set src(value: string) {
+          this._src = value;
+          if (this.onload) {
+            queueMicrotask(() => this.onload!());
+          }
+        }
+        get src() {
+          return this._src;
+        }
+        private _src = '';
+      },
+    );
+
     await TestBed.configureTestingModule({
       imports: [PixelCanvasComponent],
     }).compileComponents();
@@ -45,6 +64,24 @@ describe('PixelCanvasComponent', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  function setupOnionSkinInputs(paletteIndices: number[][]) {
+    fixture.componentRef.setInput('paletteIndices', paletteIndices);
+    fixture.componentRef.setInput('palette', ['#000000', '#ffffff']);
+    fixture.componentRef.setInput('selectedColorIndex', 1);
+    fixture.componentRef.setInput('tool', 'brush');
+    fixture.componentRef.setInput('onionSkinPrev', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==');
+    fixture.componentRef.setInput('onionSkinPrevOpacity', 0.5);
+    fixture.detectChanges();
+  }
+
+  it('should render previous onion skin when provided', async () => {
+    const drawImageSpy = vi.spyOn(mockCtx, 'drawImage');
+    setupOnionSkinInputs([[0, 0], [1, 1]]);
+    await new Promise((r) => setTimeout(r, 100));
+    expect(drawImageSpy).toHaveBeenCalled();
   });
 
   function setupInputs(paletteIndices: number[][]) {

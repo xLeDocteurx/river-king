@@ -59,6 +59,18 @@ export class PixelCanvasComponent implements AfterViewInit {
   /** Emits the current zoom factor whenever it changes. */
   zoomChange = output<number>();
 
+  /** Pixel data URI of the previous frame for onion-skin reference, or null. */
+  onionSkinPrev = input<string | null>(null);
+
+  /** Pixel data URI of the next frame for onion-skin reference, or null. */
+  onionSkinNext = input<string | null>(null);
+
+  /** Opacity of the previous-frame onion skin (0–1). */
+  onionSkinPrevOpacity = input<number>(0.35);
+
+  /** Opacity of the next-frame onion skin (0–1). */
+  onionSkinNextOpacity = input<number>(0.35);
+
   /** Number of pixel rows in the current sprite grid (derived from input). */
   readonly gridRows = signal(1);
 
@@ -87,6 +99,8 @@ export class PixelCanvasComponent implements AfterViewInit {
   private localPaletteIndices: number[][] = [];
   private rectCache: DOMRect | null = null;
 
+  private readonly onionSkinImages = signal<{ prev: HTMLImageElement | null; next: HTMLImageElement | null }>({ prev: null, next: null });
+
   constructor() {
     effect(() => {
       const indices = this.paletteIndices();
@@ -94,6 +108,14 @@ export class PixelCanvasComponent implements AfterViewInit {
       this.gridRows.set(Math.max(1, indices.length));
       this.gridCols.set(Math.max(1, ...indices.map((row) => row.length)));
       this.syncCanvasSize();
+
+      // Track onion-skin inputs so load + re-render happens when they change.
+      this.onionSkinPrev();
+      this.onionSkinNext();
+      this.onionSkinPrevOpacity();
+      this.onionSkinNextOpacity();
+      void this.loadOnionSkinImages();
+
       this.render();
     });
   }
@@ -110,6 +132,28 @@ export class PixelCanvasComponent implements AfterViewInit {
     if (!ref) return;
     ref.nativeElement.width = this.canvasWidth();
     ref.nativeElement.height = this.canvasHeight();
+  }
+
+  /** Loads an image from a data URI and returns it as an HTMLImageElement. */
+  private loadImage(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  /** Loads previous/next onion-skin images asynchronously and triggers a re-render once decoded. */
+  private async loadOnionSkinImages(): Promise<void> {
+    const prevUri = this.onionSkinPrev();
+    const nextUri = this.onionSkinNext();
+    const [prevImg, nextImg] = await Promise.all([
+      prevUri ? this.loadImage(prevUri) : Promise.resolve(null),
+      nextUri ? this.loadImage(nextUri) : Promise.resolve(null),
+    ]);
+    this.onionSkinImages.set({ prev: prevImg, next: nextImg });
+    this.render();
   }
 
   /** @internal Renders the background, pixel data, then the grid on top so cell boundaries stay visible. */
@@ -133,7 +177,16 @@ export class PixelCanvasComponent implements AfterViewInit {
     ctx.save();
     ctx.scale(zoom, zoom);
 
-    // Draw pixels
+    // 1. Previous onion skin (behind current)
+    const prevImg = this.onionSkinImages().prev;
+    if (prevImg) {
+      ctx.save();
+      ctx.globalAlpha = this.onionSkinPrevOpacity();
+      ctx.drawImage(prevImg, 0, 0, cols * scale, rows * scale);
+      ctx.restore();
+    }
+
+    // 2. Draw pixels
     const indices = this.localPaletteIndices;
     if (indices.length > 0) {
       for (let y = 0; y < rows; y++) {
@@ -148,6 +201,15 @@ export class PixelCanvasComponent implements AfterViewInit {
           }
         }
       }
+    }
+
+    // 3. Next onion skin (in front of current, before grid)
+    const nextImg = this.onionSkinImages().next;
+    if (nextImg) {
+      ctx.save();
+      ctx.globalAlpha = this.onionSkinNextOpacity();
+      ctx.drawImage(nextImg, 0, 0, cols * scale, rows * scale);
+      ctx.restore();
     }
 
     // Draw grid LAST so it stays visible over painted pixels.
