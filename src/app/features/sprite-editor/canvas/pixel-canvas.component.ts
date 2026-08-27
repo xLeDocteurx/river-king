@@ -22,9 +22,8 @@ import {
  *
  * Zoom is controlled via mouse wheel and applied natively through the canvas
  * 2D context's `scale()` transform. The zoom factor multiplies the adaptive
- * cell scale so the canvas bitmap resizes proportionally. Zoom is
- * automatically clamped so the canvas never exceeds the available container
- * space, preventing image cropping.
+ * cell scale so the canvas bitmap resizes proportionally. Zoom is clamped
+ * between 0.25× and 8×.
  */
 @Component({
   selector: 'rk-pixel-canvas',
@@ -33,7 +32,7 @@ import {
   templateUrl: './pixel-canvas.component.html',
   styleUrl: './pixel-canvas.component.scss',
 })
-export class PixelCanvasComponent implements AfterViewInit, OnDestroy {
+export class PixelCanvasComponent implements AfterViewInit {
   /** Reference to the underlying HTML canvas element. */
   canvasRef = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
 
@@ -85,30 +84,9 @@ export class PixelCanvasComponent implements AfterViewInit, OnDestroy {
     Math.round(this.gridRows() * this.cellScale() * this.zoom()),
   );
 
-  /** Available container width in pixels (tracked via ResizeObserver). */
-  private readonly containerWidth = signal(0);
-
-  /** Available container height in pixels (tracked via ResizeObserver). */
-  private readonly containerHeight = signal(0);
-
-  /**
-   * Maximum zoom factor that keeps the canvas within the available container
-   * space. Computed from the base (unzoomed) canvas dimensions and the
-   * container size. Falls back to 8 when the container is not yet measured.
-   */
-  readonly maxZoom = computed(() => {
-    const baseW = this.gridCols() * this.cellScale();
-    const baseH = this.gridRows() * this.cellScale();
-    const cw = this.containerWidth();
-    const ch = this.containerHeight();
-    if (cw <= 0 || ch <= 0 || baseW <= 0 || baseH <= 0) return 8;
-    return Math.max(0.25, Math.min(8, Math.floor(cw / baseW), Math.floor(ch / baseH)));
-  });
-
   private isDrawing = false;
   private localPaletteIndices: number[][] = [];
   private rectCache: DOMRect | null = null;
-  private resizeObserver: ResizeObserver | null = null;
 
   constructor() {
     effect(() => {
@@ -121,31 +99,10 @@ export class PixelCanvasComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  /** Lifecycle hook called after view initialization. Sets up canvas dimensions and container resize tracking. */
+  /** Lifecycle hook called after view initialization. */
   ngAfterViewInit() {
     this.syncCanvasSize();
     this.render();
-
-    const ref = this.canvasRef();
-    if (ref) {
-      const parent = ref.nativeElement.parentElement;
-      if (parent) {
-        this.containerWidth.set(parent.clientWidth);
-        this.containerHeight.set(parent.clientHeight);
-        this.resizeObserver = new ResizeObserver((entries) => {
-          for (const entry of entries) {
-            this.containerWidth.set(entry.contentRect.width);
-            this.containerHeight.set(entry.contentRect.height);
-          }
-        });
-        this.resizeObserver.observe(parent);
-      }
-    }
-  }
-
-  /** Cleans up the ResizeObserver on component destruction. */
-  ngOnDestroy() {
-    this.resizeObserver?.disconnect();
   }
 
   /** @internal Sizes the canvas bitmap to the current grid dimensions and cell scale. */
@@ -270,15 +227,13 @@ export class PixelCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
-   * Handles mouse wheel to zoom in/out. Zoom is clamped between 0.25 and
-   * the computed maximum zoom that fits the canvas within the container.
+   * Handles mouse wheel to zoom in/out. Zoom is clamped between 0.25 and 8.
    * @param event - The wheel event.
    */
   onWheel(event: WheelEvent) {
     event.preventDefault();
     const factor = event.deltaY > 0 ? 0.9 : 1.1;
-    const max = this.maxZoom();
-    this.zoom.update((z) => Math.max(0.25, Math.min(max, z * factor)));
+    this.zoom.update((z) => Math.max(0.25, Math.min(8, z * factor)));
     this.zoomChange.emit(this.zoom());
     this.syncCanvasSize();
     this.render();
