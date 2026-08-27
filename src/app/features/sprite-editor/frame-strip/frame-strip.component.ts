@@ -1,14 +1,24 @@
-import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import { CdkDropList, CdkDrag, CdkDragPreview, CdkDragPlaceholder } from '@angular/cdk/drag-drop';
+import type { CdkDragDrop } from '@angular/cdk/drag-drop';
 import type { Tile } from '../../../shared/models/tile.model';
 import type { Sprite } from '../../../shared/models/sprite.model';
 
 /**
  * Horizontal frame strip showing all frames of the current tile.
  * Allows selecting, adding, deleting, duplicating, and drag-reordering frames.
+ * Reordering uses Angular CDK drag & drop so the drop position is visible
+ * while dragging (an animated placeholder slot moves between frames).
  */
 @Component({
   selector: 'rk-frame-strip',
   standalone: true,
+  imports: [CdkDropList, CdkDrag, CdkDragPreview, CdkDragPlaceholder],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './frame-strip.component.html',
   styleUrl: './frame-strip.component.scss',
@@ -36,45 +46,14 @@ export class FrameStripComponent {
   /** Whether animation preview is currently playing. */
   playing = input(false);
 
-  /** Index of the frame currently being dragged, or null. */
-  private dragIndex: number | null = null;
-
   /**
-   * Handles drag start: records the source index.
-   * @param index - Index of the dragged frame.
-   * @param event - The native drag event.
+   * Handles a CDK drop event: emits the reorder event when the frame was
+   * dropped on a different index.
+   * @param event - The CDK drag-drop event carrying source and target indices.
    */
-  onDragStart(index: number, event: DragEvent): void {
-    this.dragIndex = index;
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
+  onDropped(event: CdkDragDrop<Sprite[]>): void {
+    if (event.previousIndex !== event.currentIndex) {
+      this.frameReorder.emit([event.previousIndex, event.currentIndex]);
     }
-  }
-
-  /**
-   * Handles drag over: allows drop.
-   * @param event - The native drag event.
-   */
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'move';
-    }
-  }
-
-  /**
-   * Handles drop: emits the reorder event if the target differs from the source.
-   * @param toIndex - Index where the frame was dropped.
-   */
-  onDrop(toIndex: number): void {
-    if (this.dragIndex !== null && this.dragIndex !== toIndex) {
-      this.frameReorder.emit([this.dragIndex, toIndex]);
-    }
-    this.dragIndex = null;
-  }
-
-  /** Clears drag state on drag end. */
-  onDragEnd(): void {
-    this.dragIndex = null;
   }
 }

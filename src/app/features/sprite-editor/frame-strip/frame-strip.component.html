@@ -10,18 +10,19 @@
     </span>
   </button>
 
-  <div class="tw-flex tw-items-center tw-gap-1 tw-flex-1 tw-overflow-x-auto tw-py-1">
+  <div
+    class="tw-flex tw-items-center tw-gap-1 tw-flex-1 tw-overflow-x-auto tw-py-1"
+    cdkDropList
+    cdkDropListOrientation="horizontal"
+    (cdkDropListDropped)="onDropped($event)"
+  >
     @for (frame of frames(); track frame.id; let i = $index) {
       <div
         class="tw-relative tw-flex tw-flex-col tw-items-center tw-gap-0.5 tw-p-0.5 tw-rounded-sm tw-border tw-cursor-pointer hover:tw-bg-muted"
         [class.tw-border-accent]="selectedFrameId() === frame.id"
         [class.tw-border-border]="selectedFrameId() !== frame.id"
-        draggable="true"
+        cdkDrag
         tabindex="0"
-        (dragstart)="onDragStart(i, $event)"
-        (dragover)="onDragOver($event)"
-        (drop)="onDrop(i)"
-        (dragend)="onDragEnd()"
         (click)="frameSelect.emit(frame.id)"
         (keydown.enter)="frameSelect.emit(frame.id)"
         (keydown.space)="frameSelect.emit(frame.id); $event.preventDefault()"
@@ -32,6 +33,15 @@
           [style.background-image]="'url(' + frame.pixelData + ')'"
         ></div>
         <span class="tw-text-[10px] tw-text-muted-foreground">{{ i + 1 }}</span>
+        <ng-container *cdkDragPreview>
+          <div
+            class="tw-w-8 tw-h-8 tw-bg-[length:100%_100%] tw-bg-center tw-bg-no-repeat"
+            [style.background-image]="'url(' + frame.pixelData + ')'"
+          ></div>
+        </ng-container>
+        <ng-container *cdkDragPlaceholder>
+          <div class="tw-w-8 tw-h-8"></div>
+        </ng-container>
       </div>
     }
   </div>
