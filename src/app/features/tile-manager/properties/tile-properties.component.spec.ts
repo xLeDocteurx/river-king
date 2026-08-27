@@ -246,10 +246,9 @@ describe('TilePropertiesComponent', () => {
       }),
     );
     expect(fixture.debugElement.query(By.css('rk-searchable-select'))).toBeTruthy();
-    const cb = fixture.debugElement.query(By.css('input[name="interactable"]'))
-      .nativeElement as HTMLInputElement;
-    cb.checked = false;
-    cb.dispatchEvent(new Event('change'));
+    const btn = fixture.debugElement.query(By.css('button[name="interactable"]'))
+      .nativeElement as HTMLButtonElement;
+    btn.click();
     fixture.detectChanges();
     component.flushAutosave();
     fixture.detectChanges();
@@ -259,10 +258,9 @@ describe('TilePropertiesComponent', () => {
 
   it('interactable checked shows dropdown; choosing test saves actionId test', async () => {
     await setup(makeTile({ type: 'static' }));
-    const cb = fixture.debugElement.query(By.css('input[name="interactable"]'))
-      .nativeElement as HTMLInputElement;
-    cb.checked = true;
-    cb.dispatchEvent(new Event('change'));
+    const btn = fixture.debugElement.query(By.css('button[name="interactable"]'))
+      .nativeElement as HTMLButtonElement;
+    btn.click();
     fixture.detectChanges();
     expect(fixture.debugElement.query(By.css('rk-searchable-select'))).toBeTruthy();
     const input = fixture.debugElement.query(By.css('rk-searchable-select input'));
@@ -314,10 +312,9 @@ describe('TilePropertiesComponent', () => {
       .nativeElement as HTMLInputElement;
     nameInput.value = 'Renamed';
     nameInput.dispatchEvent(new Event('input'));
-    const blockingCb = fixture.debugElement.query(By.css('input[name="blocking"]'))
-      .nativeElement as HTMLInputElement;
-    blockingCb.checked = true;
-    blockingCb.dispatchEvent(new Event('change'));
+    const blockingBtn = fixture.debugElement.query(By.css('button[name="blocking"]'))
+      .nativeElement as HTMLButtonElement;
+    blockingBtn.click();
     fixture.detectChanges();
     component.flushAutosave();
     fixture.detectChanges();

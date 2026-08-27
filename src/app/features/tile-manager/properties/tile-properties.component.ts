@@ -343,6 +343,25 @@ export class TilePropertiesComponent {
   }
 
   /**
+   * Toggles the Blocking flag via the reactive form.
+   */
+  toggleBlocking(): void {
+    const current = this.form.get('properties')?.get('blocking')?.value ?? false;
+    this.form.get('properties')?.get('blocking')?.setValue(!current);
+  }
+
+  /**
+   * Toggles the Interactable flag and clears actionId when turning off.
+   */
+  toggleInteractable(): void {
+    const next = !this.interactableChecked();
+    this.interactableChecked.set(next);
+    if (!next) {
+      this.actionId.set(null);
+    }
+  }
+
+  /**
    * Navigates to the sprite editor in focus mode for the clicked thumbnail.
    * @param spriteId - Id of the sprite behind the thumbnail.
    */

@@ -8,7 +8,6 @@ import {
   ElementRef,
   ChangeDetectionStrategy,
   AfterViewInit,
-  OnDestroy,
   effect,
 } from '@angular/core';
 
