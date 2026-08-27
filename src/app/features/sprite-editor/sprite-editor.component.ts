@@ -41,7 +41,12 @@ const TOOL_LABELS: Record<DrawingTool, string> = {
   selector: 'rk-sprite-editor',
   standalone: true,
   providers: [SpriteService, TileService],
-  imports: [PixelCanvasComponent, PaletteManagerComponent, DrawingToolsComponent, FrameStripComponent],
+  imports: [
+    PixelCanvasComponent,
+    PaletteManagerComponent,
+    DrawingToolsComponent,
+    FrameStripComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sprite-editor.component.html',
   styleUrl: './sprite-editor.component.scss',
@@ -477,7 +482,9 @@ export class SpriteEditorComponent implements OnInit {
         original.height,
       );
       await this.spriteService.updateSprite(newSprite.id, {
-        paletteIndices: original.paletteIndices ? original.paletteIndices.map((r) => [...r]) : undefined,
+        paletteIndices: original.paletteIndices
+          ? original.paletteIndices.map((r) => [...r])
+          : undefined,
         pixelData: original.pixelData,
       });
       const idx = tile.spriteIds.indexOf(frameId);

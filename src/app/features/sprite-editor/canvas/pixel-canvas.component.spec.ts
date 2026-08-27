@@ -72,14 +72,20 @@ describe('PixelCanvasComponent', () => {
     fixture.componentRef.setInput('palette', ['#000000', '#ffffff']);
     fixture.componentRef.setInput('selectedColorIndex', 1);
     fixture.componentRef.setInput('tool', 'brush');
-    fixture.componentRef.setInput('onionSkinPrev', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==');
+    fixture.componentRef.setInput(
+      'onionSkinPrev',
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==',
+    );
     fixture.componentRef.setInput('onionSkinPrevOpacity', 0.5);
     fixture.detectChanges();
   }
 
   it('should render previous onion skin when provided', async () => {
     const drawImageSpy = vi.spyOn(mockCtx, 'drawImage');
-    setupOnionSkinInputs([[0, 0], [1, 1]]);
+    setupOnionSkinInputs([
+      [0, 0],
+      [1, 1],
+    ]);
     await new Promise((r) => setTimeout(r, 100));
     expect(drawImageSpy).toHaveBeenCalled();
   });

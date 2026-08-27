@@ -99,7 +99,10 @@ export class PixelCanvasComponent implements AfterViewInit {
   private localPaletteIndices: number[][] = [];
   private rectCache: DOMRect | null = null;
 
-  private readonly onionSkinImages = signal<{ prev: HTMLImageElement | null; next: HTMLImageElement | null }>({ prev: null, next: null });
+  private readonly onionSkinImages = signal<{
+    prev: HTMLImageElement | null;
+    next: HTMLImageElement | null;
+  }>({ prev: null, next: null });
 
   constructor() {
     effect(() => {
