@@ -17,6 +17,9 @@ Every item applies to both themes.
       highlight/hover/focus, `destructive` only for danger.
 - [ ] **Destructive flows** — confirm-dialog in front of every data-destroying action.
 - [ ] **Async errors surfaced** — failures reported via NotificationService, never swallowed.
+- [ ] **README updated** — when adding or changing major features or architecture,
+      update the README `Features` and `Architecture Overview` sections to keep the
+      project pitch accurate and current.
 - [ ] **Status bar present** — screen renders the status bar with meaningful contextual info
       on the left.
 - [ ] **Test hooks** — `data-testid` attributes on elements tests will target.
