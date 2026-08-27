@@ -126,6 +126,50 @@ export class SpriteEditorComponent implements OnInit {
     return tile.spriteIds.map((id) => spritesById.get(id)).filter((s): s is Sprite => !!s);
   });
 
+  /** Whether previous-frame onion skin is enabled. */
+  readonly onionSkinPrevEnabled = signal(false);
+
+  /** Whether next-frame onion skin is enabled. */
+  readonly onionSkinNextEnabled = signal(false);
+
+  /** Opacity of the previous-frame onion skin (0–1). */
+  readonly onionSkinPrevOpacity = signal(0.35);
+
+  /** Opacity of the next-frame onion skin (0–1). */
+  readonly onionSkinNextOpacity = signal(0.35);
+
+  /** Computed pixel data for the previous frame onion skin, or null. */
+  readonly onionSkinPrevData = computed(() => {
+    const frames = this.currentFrames();
+    const selectedId = this.selectedSpriteId();
+    const idx = frames.findIndex((f) => f.id === selectedId);
+    return frames[idx - 1]?.pixelData ?? null;
+  });
+
+  /** Computed pixel data for the next frame onion skin, or null. */
+  readonly onionSkinNextData = computed(() => {
+    const frames = this.currentFrames();
+    const selectedId = this.selectedSpriteId();
+    const idx = frames.findIndex((f) => f.id === selectedId);
+    return frames[idx + 1]?.pixelData ?? null;
+  });
+
+  /** Whether the current tile has a frame before the selected sprite. */
+  hasPrevFrame(): boolean {
+    const frames = this.currentFrames();
+    const selectedId = this.selectedSpriteId();
+    const idx = frames.findIndex((f) => f.id === selectedId);
+    return idx > 0;
+  }
+
+  /** Whether the current tile has a frame after the selected sprite. */
+  hasNextFrame(): boolean {
+    const frames = this.currentFrames();
+    const selectedId = this.selectedSpriteId();
+    const idx = frames.findIndex((f) => f.id === selectedId);
+    return idx >= 0 && idx < frames.length - 1;
+  }
+
   /** Whether the animation preview is playing. */
   readonly previewPlaying = signal(false);
   private previewTimer: ReturnType<typeof setInterval> | null = null;

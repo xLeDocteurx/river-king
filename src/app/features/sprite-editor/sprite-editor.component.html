@@ -37,11 +37,53 @@
     class="tw-flex-1 tw-flex tw-flex-col tw-items-center tw-justify-center tw-bg-background tw-p-4 tw-gap-2 tw-overflow-auto"
   >
     @if (selectedSprite() && paletteIndices(); as indices) {
+      @if (currentTile()?.type === 'animated' && currentFrames().length > 1) {
+        <div class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-1.5 tw-border-b tw-border-border tw-bg-card-bg">
+          <span class="tw-text-[10px] tw-text-muted-foreground tw-uppercase tw-tracking-wider tw-font-semibold">Onion</span>
+          <button
+            type="button"
+            (click)="onionSkinPrevEnabled.update(v => !v)"
+            [disabled]="!hasPrevFrame()"
+            [class.tw-text-accent]="onionSkinPrevEnabled()"
+            [class.tw-text-muted-foreground]="!onionSkinPrevEnabled()"
+            class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition-colors disabled:tw-opacity-30"
+            title="Previous frame"
+          >
+            <span class="material-symbols" aria-hidden="true">skip_previous</span>
+          </button>
+          @if (onionSkinPrevEnabled()) {
+            <input type="range" min="0" max="100" [value]="onionSkinPrevOpacity() * 100"
+                   (input)="onionSkinPrevOpacity.set($any($event.target).valueAsNumber / 100)"
+                   class="tw-w-16 tw-h-1 tw-appearance-none tw-bg-muted tw-rounded-full" />
+          }
+
+          <button
+            type="button"
+            (click)="onionSkinNextEnabled.update(v => !v)"
+            [disabled]="!hasNextFrame()"
+            [class.tw-text-accent]="onionSkinNextEnabled()"
+            [class.tw-text-muted-foreground]="!onionSkinNextEnabled()"
+            class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition-colors disabled:tw-opacity-30"
+            title="Next frame"
+          >
+            <span class="material-symbols" aria-hidden="true">skip_next</span>
+          </button>
+          @if (onionSkinNextEnabled()) {
+            <input type="range" min="0" max="100" [value]="onionSkinNextOpacity() * 100"
+                   (input)="onionSkinNextOpacity.set($any($event.target).valueAsNumber / 100)"
+                   class="tw-w-16 tw-h-1 tw-appearance-none tw-bg-muted tw-rounded-full" />
+          }
+        </div>
+      }
       <rk-pixel-canvas
         [paletteIndices]="indices"
         [palette]="projectPalette()"
         [selectedColorIndex]="selectedColorIndex()"
         [tool]="selectedTool()"
+        [onionSkinPrev]="onionSkinPrevEnabled() ? onionSkinPrevData() : null"
+        [onionSkinNext]="onionSkinNextEnabled() ? onionSkinNextData() : null"
+        [onionSkinPrevOpacity]="onionSkinPrevOpacity()"
+        [onionSkinNextOpacity]="onionSkinNextOpacity()"
         (indicesChange)="onCanvasChange($event)"
         (strokeStart)="onStrokeStart()"
         (strokeEnd)="onStrokeEnd($event)"

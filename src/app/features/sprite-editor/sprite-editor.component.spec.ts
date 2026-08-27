@@ -378,4 +378,20 @@ describe('SpriteEditorComponent', () => {
 
     expect(spy).toHaveBeenCalledWith('test-proj', { lastSpriteId: spriteId });
   });
+
+  it('should compute previous onion skin data as the frame before current', async () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    fixture.componentInstance.sprites.set([
+      { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
+      { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
+    ]);
+    fixture.componentInstance.tiles.set([
+      { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
+    ]);
+    fixture.componentInstance.selectedTileId.set(10);
+    fixture.componentInstance.selectedSpriteId.set(2);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.onionSkinPrevData()).toBe('A');
+  });
 });
