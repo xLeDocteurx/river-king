@@ -48,6 +48,29 @@
         (zoomChange)="zoomLevel.set($event)"
       />
       @if (currentTile(); as tile) {
+        <div class="tw-flex tw-items-center tw-gap-2 tw-text-xs tw-px-2">
+          <span class="tw-text-muted-foreground">Type</span>
+          <select
+            class="tw-bg-card-bg tw-border tw-border-border tw-rounded-sm tw-text-foreground tw-text-xs tw-px-1 tw-py-0.5"
+            [value]="tile.type"
+            (change)="onUpdateTileType($any($event.target).value)"
+          >
+            <option value="static">Static</option>
+            <option value="animated">Animated</option>
+          </select>
+          @if (tile.type === 'animated') {
+            <span class="tw-text-muted-foreground">Speed</span>
+            <input
+              type="number"
+              class="tw-w-12 tw-bg-card-bg tw-border tw-border-border tw-rounded-sm tw-text-foreground tw-text-xs tw-px-1 tw-py-0.5"
+              min="1"
+              max="60"
+              [value]="tile.animationSpeed"
+              (change)="onUpdateAnimationSpeed($any($event.target).valueAsNumber)"
+            />
+            <span class="tw-text-muted-foreground">fps</span>
+          }
+        </div>
         <rk-frame-strip
           [tile]="tile"
           [frames]="currentFrames()"

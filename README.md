@@ -1,73 +1,140 @@
-# RiverKing
+# River King Engine
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.5.
+> A lightweight, browser-based tile engine for crafting 2D worlds — built with Angular 22 and saved entirely in your browser via IndexedDB.
 
-## Development server
+[River King](https://github.com/your-org/river-king) is a **pixel-perfect tile editor and scene composer** that runs without a backend. Every sprite, tile, scene, and layer is stored locally in your browser using IndexedDB, so your work travels with you and never hits a server.
 
-To start a local development server, run:
+Whether you're sketching mock-ups, building a retro RPG overworld, or prototyping a platformer, River King gives you the tools to draw sprites, assemble tiles, compose layered scenes, and iterate fast — all in one tab.
+
+---
+
+## Features
+
+### 🎨 Sprite Editor
+- Draw pixel-art sprites with a custom palette per project
+- Pen, eraser, and flood-fill tools
+- Frame-by-frame animation strip with drag-to-reorder
+- Live animated preview with configurable FPS
+- Undo/redo support
+
+### 🧱 Tile Builder
+- Link multiple sprite frames to a single tile
+- Define tile size in tile-units (e.g., 2×3)
+- Toggle between **static** and **animated** tile types
+- Frame lifecycle management: create, duplicate, delete, resize
+- Auto-resize frames when tile dimensions change
+
+### 🗺️ Scene Composer
+- Multi-layered scene editing with per-layer visibility and opacity
+- Paint tiles onto scenes with footprint-aware placement
+- Pan and zoom the canvas with mouse-wheel zoom-to-pointer
+- Animated tiles play in real time on the canvas
+- Scene grouping into folders
+- Minimap for quick navigation
+
+### 🏗️ Project Management
+- Browser-local storage via IndexedDB — no backend required
+- Projects, scenes, tiles, and sprites are all persisted
+- Session restoration: reopen the last edited screen on reload
+- Devbox-ready environment for reproducible development
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Angular 22 (standalone components, no NgModule) |
+| Language | TypeScript ~6.0 |
+| Styling | Tailwind CSS v3 with `tw-` prefix |
+| State | Angular Signals (`signal`, `computed`, `effect`) |
+| Storage | IndexedDB via Dexie |
+| Testing | Vitest + jsdom via `@angular/build:unit-test` |
+| Linting | ESLint 9 + `@angular-eslint` + `typescript-eslint` |
+| Formatting | Prettier 3 with Angular HTML parser |
+| Environment | Devbox (Nix-based, Node 22.x) |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+This repo uses [Devbox](https://www.jetify.com/devbox) to provide a reproducible Node.js environment. No manual Node.js installation is required.
 
 ```bash
-ng serve
+# Enter the Devbox shell
+devbox shell
+
+# Or run commands directly through Devbox
+devbox run npm install
+devbox run npm run start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+### Development Commands
 
-## Code scaffolding
+| Command | Purpose |
+|---------|---------|
+| `npm run start` | Start the dev server (`ng serve`) |
+| `npm run build` | Production build |
+| `npm run test` | Run all tests headlessly (Vitest) |
+| `npm run lint` | Run ESLint on TS and HTML |
+| `npm run format` | Format everything with Prettier |
+| `npm run format:check` | Dry-run formatting check (CI) |
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+> **Note:** On WSL or environments where bare `npm` resolves to Windows binaries over UNC paths, always use `devbox run ...`.
+
+---
+
+## Architecture Overview
+
+```
+src/app/
+├── core/          # Singleton services: DatabaseService, ThemeService, SessionService, UndoService
+├── shared/        # Reusable UI components: dialog, toast, searchable-select, confirm dialogs
+└── features/      # Lazy-loaded business features
+    ├── dashboard/       # Project list and creation
+    ├── scene-editor/    # Scene painter, minimap, layers, tile palette
+    ├── sprite-editor/   # Pixel canvas, frame strip, palette manager, drawing tools
+    └── tile-manager/    # Tile properties, frame lifecycle, resize, sprite linking
+```
+
+**Key design rules:**
+- `core/` never imports from `shared/` or `features/`
+- `features/` expose lazy-loaded routes and keep internals private
+- Components follow the "services over outputs" rule: application-level actions go through injected services, not chained `@Output()` emissions
+- Standalone components only — no `NgModule`
+- Signals preferred over RxJS `Subject` for local state
+- Tailwind CSS with `tw-` prefix; theme tokens via CSS custom properties
+
+For more details, see [`AGENTS.md`](AGENTS.md).
+
+---
+
+## Contributing
+
+We welcome contributions, whether it's a bug fix, a new feature, or improved documentation.
+
+1. **Fork** this repository
+2. **Create** a feature branch: `git checkout -b feature-42-short-name`
+3. **Commit** with a prefixed message: `feature-42: add frame strip drag preview`
+4. **Open** a Pull Request against `main`
+
+Before submitting, make sure your changes pass lint and tests:
 
 ```bash
-ng generate component component-name
+npm run lint
+npm run test
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Please review our [`AGENTS.md`](AGENTS.md) for coding conventions, component architecture, and design-system rules.
 
-```bash
-ng generate --help
-```
+---
 
-## Building
+## License
 
-To build the project run:
+MIT © River King Contributors
 
-```bash
-ng build
-```
+---
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Agent skills and config
-
-Agent coding instructions live in `AGENTS.md` (the canonical file). Tools that use a different filename (e.g. Claude Code expects `CLAUDE.md`) are symlinked to it.
-
-Agent skills are installed under `.agents/skills/` (the canonical location). Tools that don't recognize it (e.g. Claude Code expects `.claude/skills/`) are symlinked automatically.
-
-### Angular-developer
-
-Official angular skill is installed using the following command. In order to automatically symlink it (if needed), you can simply run the command again.
-
-```sh
-npx skills add https://github.com/angular/skills --skill angular-developer
-```
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Built with ❤️ for pixel artists and world builders everywhere.

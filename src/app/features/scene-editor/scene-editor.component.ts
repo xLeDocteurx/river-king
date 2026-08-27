@@ -320,7 +320,6 @@ export class SceneEditorComponent implements OnInit {
         this.selectedScene.set(null);
         this.activeLayerId.set(null);
       }
-      this.notification.success('Scene deleted.');
     } catch (e) {
       console.error('Failed to delete scene:', e);
       this.notification.error('Failed to delete the scene.');

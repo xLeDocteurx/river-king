@@ -1,14 +1,16 @@
 <div class="tw-flex tw-items-center tw-gap-1 tw-w-full">
-  <button
-    type="button"
-    class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-muted"
-    [title]="playing() ? 'Stop preview' : 'Play preview'"
-    (click)="togglePlayback.emit()"
-  >
-    <span class="material-symbols tw-text-sm" aria-hidden="true">
-      {{ playing() ? 'stop' : 'play_arrow' }}
-    </span>
-  </button>
+  @if (tile().type === 'animated') {
+    <button
+      type="button"
+      class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-muted"
+      [title]="playing() ? 'Stop preview' : 'Play preview'"
+      (click)="togglePlayback.emit()"
+    >
+      <span class="material-symbols tw-text-sm" aria-hidden="true">
+        {{ playing() ? 'stop' : 'play_arrow' }}
+      </span>
+    </button>
+  }
 
   <div
     class="tw-flex tw-items-center tw-gap-1 tw-flex-1 tw-overflow-x-auto tw-py-1"

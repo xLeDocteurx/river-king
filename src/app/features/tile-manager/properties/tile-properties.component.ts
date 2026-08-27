@@ -228,7 +228,6 @@ export class TilePropertiesComponent {
         try {
           await this.createFramesFrom(0, 1);
           await this.spriteService.markMutated();
-          this.notification.success('Frame created');
         } catch {
           this.notification.error('Failed to create frame');
         }
@@ -254,7 +253,6 @@ export class TilePropertiesComponent {
     try {
       await this.createFramesFrom(current, clamped);
       await this.spriteService.markMutated();
-      this.notification.success('Frames created');
     } catch {
       this.notification.error('Failed to create frames');
     }
@@ -290,7 +288,6 @@ export class TilePropertiesComponent {
         spriteIds: keep.map((s) => s.id),
       });
       await this.spriteService.markMutated();
-      this.notification.success('Frames deleted');
     } catch {
       this.notification.error('Failed to delete frames');
     } finally {
@@ -333,7 +330,6 @@ export class TilePropertiesComponent {
     try {
       await this.spriteService.resizeSprites(this.tileSprites(), w * ts, h * ts, palette);
       await this.spriteService.markMutated();
-      this.notification.success('Frames resized');
     } catch {
       this.notification.error('Failed to resize frames');
     } finally {

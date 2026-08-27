@@ -467,6 +467,40 @@ export class SpriteEditorComponent implements OnInit {
     }
   }
 
+  /**
+   * Updates the current tile's type and refreshes local state.
+   * @param type The new tile type.
+   */
+  async onUpdateTileType(type: 'static' | 'animated'): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile || tile.type === type) return;
+    try {
+      await this.tileService.updateTile(tile.id, { type });
+      await this.loadTiles();
+    } catch (e) {
+      this.notification.error('Failed to update tile type');
+      console.error(e);
+    }
+  }
+
+  /**
+   * Updates the current tile's animation speed and refreshes local state.
+   * @param speed Target speed in frames per second.
+   */
+  async onUpdateAnimationSpeed(speed: number): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile) return;
+    const clamped = Math.max(1, Math.min(60, speed));
+    if (tile.animationSpeed === clamped) return;
+    try {
+      await this.tileService.updateTile(tile.id, { animationSpeed: clamped });
+      await this.loadTiles();
+    } catch (e) {
+      this.notification.error('Failed to update animation speed');
+      console.error(e);
+    }
+  }
+
   /** Toggles animation preview playback for the current tile's frames. */
   togglePlayback(): void {
     if (this.previewPlaying()) {
