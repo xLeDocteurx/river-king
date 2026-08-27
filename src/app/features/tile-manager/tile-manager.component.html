@@ -1,12 +1,36 @@
 <div class="tw-flex tw-h-full">
-  <rk-tile-list
-    class="tw-w-56 tw-shrink-0 tw-bg-card-bg tw-border-r tw-border-border"
-    [tiles]="tiles()"
-    [selectedTileId]="selectedTileId()"
-    (tileSelect)="selectTile($event)"
-    (tileCreate)="createTile()"
-    (tileDelete)="requestDelete($event)"
-  />
+  <div class="tw-w-56 tw-shrink-0 tw-bg-card-bg tw-border-r tw-border-border">
+    @if (newFolderInputVisible()) {
+      <div class="tw-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1 tw-border-b tw-border-border">
+        <input
+          type="text"
+          [value]="newFolderPath()"
+          (input)="newFolderPath.set($any($event.target).value)"
+          placeholder="Folder path (e.g. UI/Buttons)"
+          class="tw-flex-1 tw-px-2 tw-py-1 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-xs tw-text-foreground"
+          (keydown.enter)="confirmNewFolder()"
+          (keydown.escape)="cancelNewFolder()"
+        />
+        <button type="button" (click)="confirmNewFolder()" class="tw-p-1 tw-rounded-sm hover:tw-bg-muted">
+          <span class="material-symbols" aria-hidden="true">check</span>
+        </button>
+        <button type="button" (click)="cancelNewFolder()" class="tw-p-1 tw-rounded-sm hover:tw-bg-muted">
+          <span class="material-symbols" aria-hidden="true">close</span>
+        </button>
+      </div>
+    }
+    <rk-tile-list-tree
+      [tiles]="tiles()"
+      [selectedTileId]="selectedTileId()"
+      [collapsedFolders]="collapsedFolders()"
+      (tileSelect)="selectTile($event)"
+      (tileCreate)="createTile()"
+      (tileDelete)="requestDelete($event)"
+      (createFolder)="showNewFolderInput()"
+      (folderChange)="onTileFolderChange($event)"
+      (toggleFolder)="toggleFolder($event)"
+    />
+  </div>
   <div class="tw-flex-1 tw-p-4 tw-overflow-auto">
     @if (selectedTile()) {
       <rk-tile-properties

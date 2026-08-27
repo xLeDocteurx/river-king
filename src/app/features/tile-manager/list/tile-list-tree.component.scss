@@ -1,0 +1,11 @@
+@import '../../../../styles/theme.scss';
+
+.cdk-drag-preview {
+  opacity: 0.9;
+  outline: 1px solid var(--border);
+  border-radius: 0.125rem;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}

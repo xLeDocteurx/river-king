@@ -13,7 +13,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TileService } from './services/tile.service';
 import { TileSpritesService } from './services/tile-sprites.service';
 import { ProjectService } from '../../features/dashboard/services/project.service';
-import { TileListComponent } from './list/tile-list.component';
+import { TileListTreeComponent } from './list/tile-list-tree.component';
 import { TilePropertiesComponent } from './properties/tile-properties.component';
 import {
   ConfirmDialogComponent,
@@ -35,7 +35,7 @@ import type { Tile } from '../../shared/models/tile.model';
   selector: 'rk-tile-manager',
   standalone: true,
   providers: [TileService, TileSpritesService],
-  imports: [TileListComponent, TilePropertiesComponent, ConfirmDialogComponent],
+  imports: [TileListTreeComponent, TilePropertiesComponent, ConfirmDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tile-manager.component.html',
   styleUrl: './tile-manager.component.scss',
@@ -74,6 +74,18 @@ export class TileManagerComponent implements OnInit {
 
   /** ID of the tile pending deletion (null when no deletion requested). */
   tileToDelete = signal<number | null>(null);
+
+  /** Distinct folder paths for the current project. */
+  folders = signal<string[]>([]);
+
+  /** Collapsed folder paths in the tree view. */
+  collapsedFolders = signal<string[]>([]);
+
+  /** Visibility of inline folder creation input. */
+  newFolderInputVisible = signal(false);
+
+  /** Current value of the new folder path input. */
+  newFolderPath = signal('');
 
   /** Static configuration data passed to the confirmation dialog. */
   readonly deleteDialogData: ConfirmDialogData = {
@@ -120,7 +132,10 @@ export class TileManagerComponent implements OnInit {
       const id = params['id'];
       if (id) {
         this.projectId.set(id);
-        this.loadProject().then(() => this.loadTiles());
+        this.loadProject().then(() => {
+          void this.loadTiles();
+          void this.loadFolders();
+        });
       }
     });
 
@@ -163,6 +178,72 @@ export class TileManagerComponent implements OnInit {
       this.notification.error('Failed to load tiles');
       console.error(e);
     }
+  }
+
+  /**
+   * Loads distinct folder paths for the current project.
+   * @returns Promise that resolves when folders are loaded.
+   */
+  async loadFolders(): Promise<void> {
+    try {
+      const folders = await this.tileService.getFolders(this.projectId());
+      this.folders.set(folders);
+    } catch (e) {
+      this.notification.error('Failed to load folders');
+      console.error(e);
+    }
+  }
+
+  /**
+   * Handles tile drag-and-drop folder changes.
+   * @param event - Contains tileId and the new folderPath.
+   */
+  async onTileFolderChange(event: { tileId: number; folderPath: string }): Promise<void> {
+    try {
+      await this.tileService.updateTileFolder(event.tileId, event.folderPath);
+      await this.loadTiles();
+      await this.loadFolders();
+    } catch (e) {
+      console.error('Failed to move tile:', e);
+      this.notification.error('Failed to move tile');
+    }
+  }
+
+  /**
+   * Toggles a folder's collapsed state in the tree view.
+   * @param path - The folder path to toggle.
+   */
+  toggleFolder(path: string): void {
+    this.collapsedFolders.update((list) => (list.includes(path) ? list.filter((p) => p !== path) : [...list, path]));
+  }
+
+  /**
+   * Shows the inline folder creation input.
+   */
+  showNewFolderInput(): void {
+    this.newFolderInputVisible.set(true);
+  }
+
+  /**
+   * Confirms and creates the new folder path locally.
+   */
+  async confirmNewFolder(): Promise<void> {
+    const path = this.newFolderPath().trim();
+    if (!path) {
+      this.newFolderInputVisible.set(false);
+      return;
+    }
+    this.folders.update((list) => [...list, path].sort((a, b) => a.localeCompare(b)));
+    this.newFolderPath.set('');
+    this.newFolderInputVisible.set(false);
+  }
+
+  /**
+   * Cancels folder creation and clears the input.
+   */
+  cancelNewFolder(): void {
+    this.newFolderInputVisible.set(false);
+    this.newFolderPath.set('');
   }
 
   /**
