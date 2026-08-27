@@ -56,6 +56,25 @@ export class TileService {
   }
 
   /**
+   * Updates a tile's folder path.
+   * @param tileId - The tile to move.
+   * @param folderPath - The new folder path (empty string = root).
+   */
+  async updateTileFolder(tileId: number, folderPath: string): Promise<void> {
+    await this.db.tiles.update(tileId, { folderPath });
+  }
+
+  /**
+   * Returns distinct, sorted folder paths for a project.
+   * @param projectId - The project to query.
+   */
+  async getFolders(projectId: string): Promise<string[]> {
+    const tiles = await this.db.tiles.where('projectId').equals(projectId).toArray();
+    const paths = new Set(tiles.map((t) => t.folderPath ?? ''));
+    return Array.from(paths).sort((a, b) => a.localeCompare(b));
+  }
+
+  /**
    * Deletes a tile and cascade-deletes every sprite linked to it.
    * Both operations run atomically in a single readwrite transaction.
    * @param id - The id of the tile to delete.

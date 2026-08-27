@@ -73,4 +73,21 @@ describe('TileService', () => {
     const remaining = await db.sprites.toArray();
     expect(remaining.map((s) => s.name)).toEqual(['Unrelated']);
   });
+
+  it('updateTileFolder sets folderPath', async () => {
+    const tile = await service.createTile('p1', 'Test');
+    await service.updateTileFolder(tile.id, 'Terrain/Grass');
+    const updated = await service.getTile(tile.id);
+    expect(updated?.folderPath).toBe('Terrain/Grass');
+  });
+
+  it('getFolders returns distinct sorted folder paths', async () => {
+    await service.createTile('p1', 'A');
+    const t2 = await service.createTile('p1', 'B');
+    await service.updateTileFolder(t2.id, 'UI/Buttons');
+    const t3 = await service.createTile('p1', 'C');
+    await service.updateTileFolder(t3.id, 'UI/Buttons');
+    const folders = await service.getFolders('p1');
+    expect(folders).toEqual(['', 'UI/Buttons']);
+  });
 });
