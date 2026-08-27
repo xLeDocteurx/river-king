@@ -16,7 +16,7 @@
   </div>
   @if (!collapsed()) {
     <div class="tw-flex-1 tw-overflow-y-auto">
-      @for (layer of layers(); track layer.id; let i = $index; let last = $last) {
+      @for (layer of displayLayers(); track layer.id; let i = $index; let last = $last) {
         <div
           class="tw-group tw-flex tw-flex-col tw-gap-1 tw-px-2 tw-py-1.5 tw-cursor-pointer hover:tw-bg-accent/50"
           [class.tw-bg-accent]="layer.id === activeLayerId()"

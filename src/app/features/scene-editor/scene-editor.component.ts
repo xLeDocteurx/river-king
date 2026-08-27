@@ -517,7 +517,7 @@ export class SceneEditorComponent implements OnInit {
     if (!scene) return;
     const idx = scene.layers.findIndex((l) => l.id === event.layerId);
     if (idx < 0) return;
-    const targetIdx = event.direction === 'up' ? idx - 1 : idx + 1;
+    const targetIdx = event.direction === 'up' ? idx + 1 : idx - 1;
     if (targetIdx < 0 || targetIdx >= scene.layers.length) return;
     try {
       const newLayers = [...scene.layers];

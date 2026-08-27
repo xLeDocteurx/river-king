@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   input,
   output,
   signal,
@@ -45,6 +46,9 @@ export class LayerPanelComponent {
   reorder = output<{ layerId: string; direction: 'up' | 'down' }>();
   /** Emits to toggle collapsed state. */
   toggleCollapsed = output<void>();
+
+  /** Layers in display order: topmost layer first. */
+  readonly displayLayers = computed(() => [...this.layers()].reverse());
 
   /** Signal tracking which layer is being renamed (null when not renaming). */
   renamingLayerId = signal<string | null>(null);
