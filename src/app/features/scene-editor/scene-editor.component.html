@@ -33,18 +33,6 @@
   </div>
   <div class="tw-w-52 tw-shrink-0 tw-bg-card-bg tw-border-l tw-border-border tw-flex tw-flex-col">
     @if (selectedScene(); as scene) {
-      <rk-layer-panel
-        class="tw-h-40 tw-shrink-0 tw-border-b tw-border-border"
-        [layers]="sceneLayers()"
-        [activeLayerId]="activeLayerId()"
-        (layerSelect)="selectLayer($event)"
-        (addLayer)="onAddLayer($event)"
-        (deleteLayer)="onDeleteLayer($event)"
-        (toggleVisibility)="onToggleLayerVisibility($event)"
-        (opacityChange)="onLayerOpacityChange($event)"
-        (rename)="onLayerRename($event)"
-        (reorder)="onLayerReorder($event)"
-      />
       <rk-scene-minimap
         [scene]="scene"
         [layers]="sceneLayers()"
@@ -57,6 +45,18 @@
         [cameraY]="mapCanvasRef()?.cameraY() ?? 0"
         [zoom]="mapCanvasRef()?.zoom() ?? 1"
         (cameraJump)="onMinimapJump($event)"
+      />
+      <rk-layer-panel
+        class="tw-h-40 tw-shrink-0 tw-border-b tw-border-border"
+        [layers]="sceneLayers()"
+        [activeLayerId]="activeLayerId()"
+        (layerSelect)="selectLayer($event)"
+        (addLayer)="onAddLayer($event)"
+        (deleteLayer)="onDeleteLayer($event)"
+        (toggleVisibility)="onToggleLayerVisibility($event)"
+        (opacityChange)="onLayerOpacityChange($event)"
+        (rename)="onLayerRename($event)"
+        (reorder)="onLayerReorder($event)"
       />
     }
     <rk-tile-palette
