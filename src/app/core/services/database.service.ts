@@ -96,5 +96,17 @@ export class DatabaseService extends Dexie {
             }
           });
       });
+    this.version(5)
+      .stores({
+        tiles: '++id, projectId, folderPath',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('tiles')
+          .toCollection()
+          .modify((tile: { folderPath?: string }) => {
+            tile.folderPath = '';
+          });
+      });
   }
 }

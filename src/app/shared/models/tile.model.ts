@@ -19,6 +19,8 @@ export interface Tile {
   animationSpeed: number;
   /** Runtime behaviour properties consumed by the scene engine. */
   properties: TileProperties;
+  /** Optional folder path for hierarchical organisation (empty string = root). */
+  folderPath?: string;
 }
 
 /**

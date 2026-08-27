@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import 'fake-indexeddb/auto';
 import { DatabaseService, migrateTileProperties } from './database.service';
+import type { Tile } from '../../shared/models/tile.model';
 
 describe('migrateTileProperties', () => {
   it('merges collision/solid into blocking', () => {
@@ -31,11 +32,14 @@ describe('migrateTileProperties', () => {
   });
 });
 
-describe('DatabaseService v3 migration', () => {
-  it('opens at version 3', () => {
-    TestBed.configureTestingModule({});
-    const db = TestBed.inject(DatabaseService);
-    expect(db.verno).toBe(3);
+describe('DatabaseService v5 migration', () => {
+  it('opens at version 5 and tiles have folderPath default', async () => {
+    const db = new DatabaseService();
+    await db.open();
+    expect(db.verno).toBe(5);
+    const tile = await db.tiles.add({ projectId: 'p1', name: 'Grass', type: 'static', animationSpeed: 1, properties: { blocking: false, interactable: false }, spriteIds: [], folderPath: '' } as unknown as Tile);
+    const fetched = await db.tiles.get(tile);
+    expect(fetched?.folderPath).toBe('');
   });
 });
 
