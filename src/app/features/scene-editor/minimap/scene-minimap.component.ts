@@ -10,6 +10,7 @@ import {
   OnDestroy,
 } from '@angular/core';
 import type { Scene } from '../../../shared/models/scene.model';
+import type { Layer } from '../../../shared/models/scene.model';
 import type { TileFootprintMap } from '../map-footprint';
 
 /**
@@ -28,6 +29,8 @@ import type { TileFootprintMap } from '../map-footprint';
 export class SceneMinimapComponent implements AfterViewInit, OnDestroy {
   /** The scene to render as a minimap. */
   scene = input.required<Scene>();
+  /** Ordered layers for rendering. */
+  layers = input<Layer[]>([]);
   /** Tile image data URIs keyed by tileId (first frame arrays). */
   tileImages = input<Record<number, string[]>>({});
   /** Size of one grid cell in pixels. */
@@ -62,6 +65,7 @@ export class SceneMinimapComponent implements AfterViewInit, OnDestroy {
   constructor() {
     effect(() => {
       this.scene();
+      this.layers();
       this.tileImages();
       this.tileSize();
       this.tileFootprints();
@@ -171,19 +175,24 @@ export class SceneMinimapComponent implements AfterViewInit, OnDestroy {
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, displayW, displayH);
 
-    // Draw tiles.
-    for (let y = 0; y < scene.height; y++) {
-      for (let x = 0; x < scene.width; x++) {
-        const tileId = scene.tileData[y]?.[x] ?? -1;
-        if (tileId < 0) continue;
-        const img = this.imageCache.get(tileId);
-        if (img) {
-          ctx.drawImage(img, x * cell * scale, y * cell * scale, cell * scale, cell * scale);
-        } else {
-          ctx.fillStyle = '#94b0c2';
-          ctx.fillRect(x * cell * scale, y * cell * scale, cell * scale, cell * scale);
+    // Draw tiles from all visible layers.
+    for (const layer of this.layers()) {
+      if (!layer.visible) continue;
+      if (layer.opacity < 1) ctx.globalAlpha = layer.opacity;
+      for (let y = 0; y < scene.height; y++) {
+        for (let x = 0; x < scene.width; x++) {
+          const tileId = layer.tileData[y]?.[x] ?? -1;
+          if (tileId < 0) continue;
+          const img = this.imageCache.get(tileId);
+          if (img) {
+            ctx.drawImage(img, x * cell * scale, y * cell * scale, cell * scale, cell * scale);
+          } else {
+            ctx.fillStyle = '#94b0c2';
+            ctx.fillRect(x * cell * scale, y * cell * scale, cell * scale, cell * scale);
+          }
         }
       }
+      if (layer.opacity < 1) ctx.globalAlpha = 1;
     }
 
     // Draw viewport rectangle.

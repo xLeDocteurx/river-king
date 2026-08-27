@@ -11,6 +11,7 @@ import {
   ElementRef,
 } from '@angular/core';
 import type { Scene } from '../../shared/models/scene.model';
+import type { Layer } from '../../shared/models/scene.model';
 import { getFootprint } from './map-footprint';
 import type { TileFootprintMap } from './map-footprint';
 import { cssTokenColor, gridStrokeColor } from './grid-color';
@@ -33,6 +34,10 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
 
   /** The scene to render on the canvas. */
   scene = input<Scene | null>(null);
+  /** Ordered layers for rendering. Overrides scene.tileData when provided. */
+  layers = input<Layer[]>([]);
+  /** Id of the currently active layer for tile placement. */
+  activeLayerId = input<string | null>(null);
   /** Id of the tile currently selected for placement. */
   selectedTileId = input<number | null>(null);
   /** Project palette colors used for tile rendering. */
@@ -225,29 +230,38 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     ctx.scale(this.zoom(), this.zoom());
 
     const tileImages = this.loadedImages();
-    const anchors: { x: number; y: number; tileId: number }[] = [];
-    for (let y = 0; y < scene.height; y++) {
-      for (let x = 0; x < scene.width; x++) {
-        const tileId = scene.tileData[y]?.[x] ?? -1;
-        if (tileId >= 0) {
-          anchors.push({ x, y, tileId });
+    const layers = this.layers();
+
+    for (const layer of layers) {
+      if (!layer.visible) continue;
+      if (layer.opacity < 1) {
+        ctx.globalAlpha = layer.opacity;
+      }
+      const anchors: { x: number; y: number; tileId: number }[] = [];
+      for (let y = 0; y < scene.height; y++) {
+        for (let x = 0; x < scene.width; x++) {
+          const tileId = layer.tileData[y]?.[x] ?? -1;
+          if (tileId >= 0) {
+            anchors.push({ x, y, tileId });
+          }
         }
       }
-    }
 
-    const animations = this.tileAnimations();
-    for (const { x, y, tileId } of anchors) {
-      const { w, h } = getFootprint(tileId, this.tileFootprints());
-      const frames = tileImages[tileId];
-      const frameIdx = this.frameIndices.get(tileId) ?? 0;
-      const img = frames?.[frameIdx];
-      if (img) {
-        ctx.drawImage(img, x * cell, y * cell, w * cell, h * cell);
-      } else {
-        ctx.fillStyle = this.getTileColor(tileId);
-        ctx.fillRect(x * cell, y * cell, w * cell, h * cell);
+      for (const { x, y, tileId } of anchors) {
+        const { w, h } = getFootprint(tileId, this.tileFootprints());
+        const frames = tileImages[tileId];
+        const frameIdx = this.frameIndices.get(tileId) ?? 0;
+        const img = frames?.[frameIdx];
+        if (img) {
+          ctx.drawImage(img, x * cell, y * cell, w * cell, h * cell);
+        } else {
+          ctx.fillStyle = this.getTileColor(tileId);
+          ctx.fillRect(x * cell, y * cell, w * cell, h * cell);
+        }
       }
-
+      if (layer.opacity < 1) {
+        ctx.globalAlpha = 1;
+      }
     }
 
     // Grid drawn AFTER tiles so cell boundaries stay visible over filled cells.

@@ -206,9 +206,9 @@ describe('SceneEditorComponent', () => {
       [-1, -1, -1, -1],
       [-1, -1, -1, -1],
     ];
-    expect(component.selectedScene()?.tileData).toEqual(expected);
+    expect(component.selectedScene()?.layers[0].tileData).toEqual(expected);
     const stored = await db.scenes.get(scene.id);
-    expect(stored?.tileData).toEqual(expected);
+    expect(stored?.layers[0].tileData).toEqual(expected);
   });
 
   it('persists the selected scene into the session', async () => {
@@ -232,7 +232,7 @@ describe('SceneEditorComponent', () => {
       folderPath: '',
       width: 8,
       height: 8,
-      tileData: [],
+      layers: [],
     } as Scene;
     const svc = fixture.debugElement.injector.get(SceneService);
     vi.spyOn(svc, 'getScenes').mockResolvedValue([storedScene]);

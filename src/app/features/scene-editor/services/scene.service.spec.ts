@@ -24,15 +24,16 @@ describe('SceneService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should create a scene with empty tileData (all -1)', async () => {
+  it('should create a scene with a default layer containing empty tileData (all -1)', async () => {
     const scene = await service.createScene('proj-1', 'Test Scene', 10, 10);
     expect(scene.name).toBe('Test Scene');
     expect(scene.projectId).toBe('proj-1');
     expect(scene.width).toBe(10);
     expect(scene.height).toBe(10);
-    expect(scene.tileData).toHaveLength(10);
-    expect(scene.tileData[0]).toHaveLength(10);
-    expect(scene.tileData[0][0]).toBe(-1);
+    expect(scene.layers).toHaveLength(1);
+    expect(scene.layers[0].tileData).toHaveLength(10);
+    expect(scene.layers[0].tileData[0]).toHaveLength(10);
+    expect(scene.layers[0].tileData[0][0]).toBe(-1);
   });
 
   it('should list scenes by projectId', async () => {

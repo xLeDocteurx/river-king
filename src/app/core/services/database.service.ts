@@ -72,5 +72,29 @@ export class DatabaseService extends Dexie {
             ) as unknown as Record<string, unknown>;
           });
       });
+    this.version(4)
+      .stores({
+        scenes: 'id, projectId, name, folderPath',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('scenes')
+          .toCollection()
+          .modify((scene: { tileData?: number[][]; layers?: unknown[] }) => {
+            if (!scene.layers) {
+              const tileData = scene.tileData ?? [];
+              scene.layers = [
+                {
+                  id: crypto.randomUUID(),
+                  name: 'Background',
+                  visible: true,
+                  opacity: 1,
+                  tileData,
+                },
+              ];
+              delete scene.tileData;
+            }
+          });
+      });
   }
 }

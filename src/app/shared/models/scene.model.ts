@@ -1,7 +1,32 @@
 /**
+ * A single renderable layer within a scene.
+ *
+ * Layers are stacked bottom-to-top. Each layer has its own tile grid,
+ * visibility toggle, and opacity value.
+ */
+export interface Layer {
+  /** Unique identifier (UUID). */
+  id: string;
+  /** Human-readable display name. */
+  name: string;
+  /** Whether this layer is rendered on the canvas. */
+  visible: boolean;
+  /** Opacity from 0 (fully transparent) to 1 (fully opaque). */
+  opacity: number;
+  /**
+   * 2-D array of tile indices for this layer.
+   *
+   * `-1` represents an empty cell; values `>= 0` are tile IDs referencing the
+   * project's tile set.
+   */
+  tileData: number[][];
+}
+
+/**
  * A single map scene within a project.
  *
- * Scenes store a 2-D grid of tile references that the map canvas renders.
+ * Scenes contain an ordered array of layers, each holding a 2-D grid
+ * of tile references that the map canvas renders.
  */
 export interface Scene {
   /** Unique identifier (UUID). */
@@ -17,10 +42,7 @@ export interface Scene {
   /** Scene height in tiles. */
   height: number;
   /**
-   * 2-D array of tile indices.
-   *
-   * `-1` represents an empty cell; values `>= 0` are tile IDs referencing the
-   * project's tile set.
+   * Ordered layers, bottom-to-top. The first layer is rendered behind all others.
    */
-  tileData: number[][];
+  layers: Layer[];
 }

@@ -1,53 +1,40 @@
 <div class="tw-flex tw-h-full">
-  <!-- Left: Sprite List -->
+  <!-- Left: Tile List -->
   <div class="tw-w-56 tw-shrink-0 tw-border-r tw-border-border tw-bg-card-bg tw-flex tw-flex-col">
     <div class="tw-px-3 tw-py-2 tw-border-b tw-border-border">
       <h3
         class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
       >
-        Sprites
+        Tiles
       </h3>
     </div>
     <div class="tw-flex-1 tw-overflow-auto tw-p-2 tw-flex tw-flex-col tw-gap-1">
-      @for (group of spriteGroups(); track group.tile.id) {
+      @for (tile of tilesWithSprites(); track tile.id) {
         <button
           type="button"
-          (click)="toggleTileGroup(group.tile.id)"
-          class="tw-w-full tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground tw-cursor-pointer tw-text-left"
+          (click)="selectTile(tile.id)"
+          class="tw-w-full tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1.5 tw-rounded-sm tw-text-xs tw-text-foreground hover:tw-bg-muted tw-transition tw-text-left"
+          [class.tw-bg-muted]="selectedTileId() === tile.id"
+          [class.tw-font-medium]="selectedTileId() === tile.id"
         >
-          <span
-            class="material-symbols tw-text-sm tw-transition-transform"
-            [class.-tw-rotate-90]="isTileCollapsed(group.tile.id)"
-            aria-hidden="true"
-            >expand_more</span
+          <span class="material-symbols tw-text-sm tw-text-muted-foreground" aria-hidden="true"
+            >grid_view</span
           >
-          <span>{{ group.tile.name }}</span>
+          <span class="tw-flex-1">{{ tile.name }}</span>
+          <span
+            class="tw-text-[10px] tw-text-muted-foreground tw-bg-background tw-px-1 tw-rounded-sm"
+            >{{ tile.spriteIds.length }}</span
+          >
         </button>
-        @if (!isTileCollapsed(group.tile.id)) {
-          @for (sprite of group.sprites; track sprite.id) {
-            <button
-              type="button"
-              (click)="selectSprite(sprite.id)"
-              [class.tw-bg-muted]="selectedSpriteId() === sprite.id"
-              [class.tw-font-medium]="selectedSpriteId() === sprite.id"
-              class="tw-text-left tw-px-2 tw-py-1.5 tw-rounded-sm tw-text-xs tw-text-foreground hover:tw-bg-muted tw-transition tw-flex tw-items-center tw-gap-2"
-            >
-              <span class="material-symbols tw-text-sm tw-text-muted-foreground" aria-hidden="true"
-                >image</span
-              >
-              <span>{{ sprite.name }}</span>
-            </button>
-          }
-        }
       } @empty {
-        <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">No sprites yet</div>
+        <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">No tiles yet</div>
       }
     </div>
   </div>
 
-  <!-- Center: Canvas -->
+  <!-- Center: Canvas + Frame Strip -->
   <div
-    class="tw-flex-1 tw-flex tw-flex-col tw-items-center tw-justify-center tw-bg-background tw-p-4 tw-gap-4 tw-overflow-hidden"
+    class="tw-flex-1 tw-flex tw-flex-col tw-items-center tw-justify-center tw-bg-background tw-p-4 tw-gap-2 tw-overflow-hidden"
   >
     @if (selectedSprite() && paletteIndices(); as indices) {
       <rk-pixel-canvas
@@ -70,14 +57,15 @@
           (addFrame)="onAddFrame()"
           (deleteFrame)="onDeleteFrame($event)"
           (duplicateFrame)="onDuplicateFrame($event)"
+          (frameReorder)="onFrameReorder($event[0], $event[1])"
           (togglePlayback)="togglePlayback()"
         />
       }
     } @else {
       <div class="tw-flex tw-flex-col tw-items-center tw-text-muted-foreground">
-        <span class="material-symbols tw-text-5xl tw-mb-3" aria-hidden="true">image</span>
-        <div class="tw-text-sm tw-font-semibold">No sprite selected</div>
-        <div class="tw-text-xs">Select a sprite from the list to start editing</div>
+        <span class="material-symbols tw-text-5xl tw-mb-3" aria-hidden="true">grid_view</span>
+        <div class="tw-text-sm tw-font-semibold">No tile selected</div>
+        <div class="tw-text-xs">Select a tile from the list to start editing</div>
       </div>
     }
   </div>

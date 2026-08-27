@@ -96,7 +96,13 @@ describe('ProjectService', () => {
       folderPath: '',
       width: 10,
       height: 10,
-      tileData: [],
+      layers: [{
+        id: 'layer-default',
+        name: 'Background',
+        visible: true,
+        opacity: 1,
+        tileData: [],
+      }],
     });
     await service.delete(project.id);
     const deletedProject = await db.projects.get(project.id);

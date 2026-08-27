@@ -14,6 +14,24 @@
         />
       </label>
       <fieldset class="tw-flex tw-flex-col tw-gap-1">
+        <legend class="tw-text-sm tw-font-medium tw-mb-1">Tile Size</legend>
+        <div class="tw-flex tw-gap-2">
+          @for (size of tileSizes; track size) {
+            <button
+              type="button"
+              role="radio"
+              [aria-checked]="selectedTileSize() === size"
+              (click)="selectedTileSize.set(size)"
+              class="tw-flex-1 tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-border tw-text-sm tw-text-center tw-cursor-pointer hover:tw-bg-muted"
+              [class.tw-bg-muted]="selectedTileSize() === size"
+              [class.tw-border-accent]="selectedTileSize() === size"
+            >
+              {{ size }}×{{ size }}
+            </button>
+          }
+        </div>
+      </fieldset>
+      <fieldset class="tw-flex tw-flex-col tw-gap-1">
         <legend class="tw-text-sm tw-font-medium tw-mb-1">Palette</legend>
         @for (p of palettes; track p.id) {
           <button

@@ -43,6 +43,12 @@ export class ProjectCreateDialogComponent {
   /** Palettes offered by the picker. */
   readonly palettes = LOSPEC_PALETTES;
 
+  /** Tile size options offered by the picker. */
+  readonly tileSizes = [8, 16, 32];
+
+  /** Tile size selected in the picker (16 by default). */
+  readonly selectedTileSize = signal(16);
+
   /**
    * Selects a palette in the picker.
    * @param id - Palette id chosen by the user.
@@ -61,6 +67,7 @@ export class ProjectCreateDialogComponent {
    */
   open(): void {
     this.projectName.set('');
+    this.selectedTileSize.set(16);
     this.selectedPaletteId.set('sweetie-16');
     this.dialogRef().open();
   }
@@ -79,7 +86,7 @@ export class ProjectCreateDialogComponent {
       const project = await this.projectService.create({
         name,
         palette: this.selectedPalette().colors.map((c) => `#${c}`),
-        tileSize: 16,
+        tileSize: this.selectedTileSize(),
         mapWidth: 40,
         mapHeight: 30,
       });

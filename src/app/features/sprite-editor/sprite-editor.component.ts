@@ -8,7 +8,7 @@ import {
   ChangeDetectionStrategy,
   computed,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SpriteService } from './services/sprite.service';
 import { PixelCanvasComponent } from './canvas/pixel-canvas.component';
@@ -34,8 +34,8 @@ const TOOL_LABELS: Record<DrawingTool, string> = {
 /**
  * Main page component for the sprite editor feature.
  *
- * Displays a list of sprites on the left, a pixel canvas in the center,
- * and drawing tools with palette manager on the right.
+ * Displays a tile list on the left, a pixel canvas in the center
+ * with a frame strip below it, and drawing tools with palette manager on the right.
  */
 @Component({
   selector: 'rk-sprite-editor',
@@ -48,7 +48,6 @@ const TOOL_LABELS: Record<DrawingTool, string> = {
 })
 export class SpriteEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly spriteService = inject(SpriteService);
   private readonly projectService = inject(ProjectService);
   private readonly tileService = inject(TileService);
@@ -64,61 +63,19 @@ export class SpriteEditorComponent implements OnInit {
   /** Reactive signal holding the project's color palette. */
   projectPalette = signal<string[]>([]);
 
+  /** Tile size from the project settings. */
+  projectTileSize = signal<number>(16);
+
   /** Reactive signal holding the list of sprites. */
   sprites = signal<Sprite[]>([]);
 
-  /** Tiles of the current project, used as group headers for the sprite list. */
+  /** Tiles of the current project. */
   tiles = signal<Tile[]>([]);
 
-  /** Sprites grouped under their parent tile, ordered by tile then sprite name. */
-  readonly spriteGroups = computed(() => {
-    const tilesById = new Map(this.tiles().map((t) => [t.id, t]));
-    const groups = new Map<number, { tile: Tile; sprites: Sprite[] }>();
-    for (const sprite of this.sprites()) {
-      const tile = tilesById.get(sprite.tileId);
-      if (!tile) continue;
-      let group = groups.get(tile.id);
-      if (!group) {
-        group = { tile, sprites: [] };
-        groups.set(tile.id, group);
-      }
-      group.sprites.push(sprite);
-    }
-    for (const group of groups.values()) {
-      group.sprites.sort((a, b) => a.name.localeCompare(b.name));
-    }
-    return [...groups.values()].sort((a, b) => a.tile.name.localeCompare(b.tile.name));
-  });
+  /** ID of the currently selected tile in the left nav. */
+  selectedTileId = signal<number | null>(null);
 
-  /** Tile IDs whose sprite groups are currently collapsed (session-only state). */
-  readonly collapsedTiles = signal<Set<number>>(new Set());
-
-  /**
-   * Toggles the collapsed state of a tile's sprite group.
-   * @param tileId - ID of the tile whose header was clicked.
-   */
-  toggleTileGroup(tileId: number): void {
-    this.collapsedTiles.update((current) => {
-      const next = new Set(current);
-      if (next.has(tileId)) {
-        next.delete(tileId);
-      } else {
-        next.add(tileId);
-      }
-      return next;
-    });
-  }
-
-  /**
-   * Whether a tile's sprite group is currently collapsed.
-   * @param tileId - ID of the tile to check.
-   * @returns True when the group's sprites are hidden.
-   */
-  isTileCollapsed(tileId: number): boolean {
-    return this.collapsedTiles().has(tileId);
-  }
-
-  /** Reactive signal holding the ID of the currently selected sprite. */
+  /** ID of the currently selected frame (sprite). */
   selectedSpriteId = signal<number | null>(null);
 
   /** Reactive signal holding the currently selected sprite data. */
@@ -147,11 +104,18 @@ export class SpriteEditorComponent implements OnInit {
   /** Computed signal deriving the selected color index (palette index + 1). */
   readonly selectedColorIndex = computed(() => this.selectedPaletteIndex() + 1);
 
+  /** Tiles that have at least one sprite, sorted by name. */
+  readonly tilesWithSprites = computed(() =>
+    this.tiles()
+      .filter((t) => t.spriteIds.length > 0)
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  );
+
   /** The tile that owns the currently selected sprite. */
   readonly currentTile = computed(() => {
-    const sprite = this.selectedSprite();
-    if (!sprite) return null;
-    return this.tiles().find((t) => t.id === sprite.tileId) ?? null;
+    const tileId = this.selectedTileId();
+    if (tileId === null) return null;
+    return this.tiles().find((t) => t.id === tileId) ?? null;
   });
 
   /** Ordered frames (sprites) belonging to the current tile. */
@@ -184,7 +148,7 @@ export class SpriteEditorComponent implements OnInit {
     );
   });
 
-  /** Initializes component, subscribing to route params to load project data and honor an optional sprite deep link. */
+  /** Initializes component, subscribing to route params to load project data. */
   ngOnInit() {
     this.destroyRef.onDestroy(() => void this.flushPersist());
 
@@ -206,12 +170,13 @@ export class SpriteEditorComponent implements OnInit {
       if (raw === null || raw === undefined) return;
       try {
         await this.loadSprites();
-        this.loadTiles();
+        await this.loadTiles();
         const sprite = await this.spriteService.getSprite(Number(raw));
         if (!sprite) {
           this.notification.error('Sprite not found');
           return;
         }
+        this.selectedTileId.set(sprite.tileId);
         await this.selectSprite(sprite.id);
       } catch (e) {
         console.error('Failed to load sprite:', e);
@@ -225,6 +190,7 @@ export class SpriteEditorComponent implements OnInit {
     try {
       const project = await this.projectService.getById(this.projectId());
       this.projectPalette.set(project?.palette ?? []);
+      this.projectTileSize.set(project?.tileSize ?? 16);
     } catch (e) {
       this.notification.error('Failed to load project');
       console.error(e);
@@ -242,13 +208,31 @@ export class SpriteEditorComponent implements OnInit {
     }
   }
 
-  /** Loads all tiles of the project for sprite grouping headers. */
+  /** Loads all tiles of the project. */
   async loadTiles(): Promise<void> {
     try {
       this.tiles.set(await this.tileService.getTiles(this.projectId()));
     } catch (e) {
       this.notification.error('Failed to load tiles');
       console.error(e);
+    }
+  }
+
+  /**
+   * Selects a tile in the left nav and loads its first frame.
+   * @param tileId - The tile to select.
+   */
+  async selectTile(tileId: number): Promise<void> {
+    this.stopPlayback();
+    this.selectedTileId.set(tileId);
+    const tile = this.tiles().find((t) => t.id === tileId);
+    if (tile && tile.spriteIds.length > 0) {
+      await this.selectSprite(tile.spriteIds[0]);
+    } else {
+      await this.flushPersist();
+      this.selectedSpriteId.set(null);
+      this.selectedSprite.set(null);
+      this.paletteIndices.set(null);
     }
   }
 
@@ -262,6 +246,10 @@ export class SpriteEditorComponent implements OnInit {
       this.selectedSpriteId.set(spriteId);
       const sprite = await this.spriteService.getSprite(spriteId);
       this.selectedSprite.set(sprite ?? null);
+
+      if (sprite) {
+        this.selectedTileId.set(sprite.tileId);
+      }
 
       if (sprite?.paletteIndices && sprite.paletteIndices.length > 0) {
         this.paletteIndices.set(sprite.paletteIndices.map((row) => [...row]));
@@ -277,9 +265,6 @@ export class SpriteEditorComponent implements OnInit {
         this.paletteIndices.set(null);
       }
       void this.sessions.updateSession(this.projectId(), { lastSpriteId: spriteId });
-      if (this.route.snapshot.paramMap.get('spriteId') !== String(spriteId)) {
-        void this.router.navigate(['/project', this.projectId(), 'sprites', spriteId]);
-      }
     } catch (e) {
       this.notification.error('Failed to load sprite');
       console.error(e);
@@ -328,8 +313,6 @@ export class SpriteEditorComponent implements OnInit {
     const palette = this.projectPalette();
     const selIndices = this.paletteIndices;
     const selSprite = this.selectedSprite;
-    const notif = this.notification;
-    const spriteId = sprite.id;
 
     this.undo.push({
       label: 'Draw pixels',
@@ -398,6 +381,8 @@ export class SpriteEditorComponent implements OnInit {
         this.projectId(),
         `${tile.name} ${frameNum}`,
         tile.id,
+        this.projectTileSize(),
+        this.projectTileSize(),
       );
       const newSpriteIds = [...tile.spriteIds, newSprite.id];
       const newType = newSpriteIds.length > 1 ? 'animated' : tile.type;
@@ -444,6 +429,8 @@ export class SpriteEditorComponent implements OnInit {
         this.projectId(),
         `${original.name} copy`,
         tile.id,
+        original.width,
+        original.height,
       );
       await this.spriteService.updateSprite(newSprite.id, {
         paletteIndices: original.paletteIndices ? original.paletteIndices.map((r) => [...r]) : undefined,
@@ -457,6 +444,25 @@ export class SpriteEditorComponent implements OnInit {
       await this.selectSprite(newSprite.id);
     } catch (e) {
       this.notification.error('Failed to duplicate frame');
+      console.error(e);
+    }
+  }
+
+  /** Reorders a frame within the current tile's spriteIds array. */
+  async onFrameReorder(fromIndex: number, toIndex: number): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile) return;
+    if (fromIndex === toIndex) return;
+    if (fromIndex < 0 || fromIndex >= tile.spriteIds.length) return;
+    if (toIndex < 0 || toIndex >= tile.spriteIds.length) return;
+    try {
+      const newSpriteIds = [...tile.spriteIds];
+      const [moved] = newSpriteIds.splice(fromIndex, 1);
+      newSpriteIds.splice(toIndex, 0, moved);
+      await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds });
+      await this.loadTiles();
+    } catch (e) {
+      this.notification.error('Failed to reorder frame');
       console.error(e);
     }
   }

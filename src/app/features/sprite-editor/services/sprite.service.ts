@@ -6,7 +6,7 @@ import { blankIndices, decodePixelData, encodePixelData } from '../../../shared/
 /**
  * CRUD and encoding utilities for sprites within the sprite editor feature.
  *
- * New sprites are created with a blank 16×16 transparent canvas. The service
+ * New sprites are created with a blank transparent canvas at the specified dimensions. The service
  * also provides palette-index ↔ base64-PNG conversion helpers used by the
  * editor's painting pipeline.
  */
@@ -34,9 +34,6 @@ export class SpriteService {
     return this.db.sprites.where('tileId').equals(tileId).toArray();
   }
 
-  /** Base64-encoded transparent 16×16 PNG used as the default canvas. */
-  private static readonly BLANK_PIXEL_DATA =
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAADFJREFUOE9jZGBgEGHADxjZ2Nj+49fMyMj4n5E28IURuwFmYcVAumHUiFEzjFoBADkGA/wz9BzXAAAAAElFTkSuQmCC';
 
   /**
    * Create a new blank sprite and persist it to the database.
@@ -46,18 +43,27 @@ export class SpriteService {
    * @param projectId - The owning project's identifier.
    * @param name      - Display name for the sprite.
    * @param tileId    - Tile this sprite is associated with.
+   * @param width     - Sprite width in pixels (default 16).
+   * @param height    - Sprite height in pixels (default 16).
    * @returns The newly created {@link Sprite} with its generated `id`.
    * @throws Will throw if the underlying IndexedDB write fails.
    */
-  async createSprite(projectId: string, name: string, tileId: number): Promise<Sprite> {
-    const paletteIndices = blankIndices(16, 16);
+  async createSprite(
+    projectId: string,
+    name: string,
+    tileId: number,
+    width = 16,
+    height = 16,
+  ): Promise<Sprite> {
+    const paletteIndices = blankIndices(width, height);
+    const pixelData = encodePixelData(paletteIndices, []);
     const sprite: Omit<Sprite, 'id'> = {
       projectId,
       tileId,
       name,
-      width: 16,
-      height: 16,
-      pixelData: SpriteService.BLANK_PIXEL_DATA,
+      width,
+      height,
+      pixelData,
       paletteIndices,
     };
     const id = await this.db.sprites.add(sprite as Sprite);

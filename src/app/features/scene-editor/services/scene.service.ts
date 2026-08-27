@@ -46,7 +46,15 @@ export class SceneService {
       folderPath: '',
       width,
       height,
-      tileData: Array.from({ length: height }, () => Array(width).fill(-1)),
+      layers: [
+        {
+          id: crypto.randomUUID(),
+          name: 'Background',
+          visible: true,
+          opacity: 1,
+          tileData: Array.from({ length: height }, () => Array(width).fill(-1)),
+        },
+      ],
     };
     await this.db.scenes.add(scene);
     return scene;

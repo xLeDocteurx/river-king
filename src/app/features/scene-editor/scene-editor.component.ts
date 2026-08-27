@@ -19,19 +19,20 @@ import { MapTilesService } from './services/map-tiles.service';
 import type { TileAnimationMeta } from './services/map-tiles.service';
 import { MapCanvasComponent } from './map-canvas.component';
 import { SceneMinimapComponent } from './minimap/scene-minimap.component';
+import { LayerPanelComponent } from './layer-panel/layer-panel.component';
 import { clearOverlappedAnchors, getFootprint } from './map-footprint';
 import { SceneListComponent } from './scene-list.component';
 import { TilePaletteComponent } from './tile-palette.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import type { Scene } from '../../shared/models/scene.model';
+import type { Scene, Layer } from '../../shared/models/scene.model';
 import type { Tile } from '../../shared/models/tile.model';
 import type { ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import type { TileFootprintMap } from './map-footprint';
 
 /**
  * Main page component for the Scene Editor feature.
- * Orchestrates scene selection, tile placement, scene group management,
- * and scene deletion (with confirmation).
+ * Orchestrates scene selection, tile placement, layer management,
+ * scene group management, and scene deletion (with confirmation).
  */
 @Component({
   selector: 'rk-scene-editor',
@@ -40,6 +41,7 @@ import type { TileFootprintMap } from './map-footprint';
   imports: [
     MapCanvasComponent,
     SceneMinimapComponent,
+    LayerPanelComponent,
     SceneListComponent,
     TilePaletteComponent,
     ConfirmDialogComponent,
@@ -89,6 +91,19 @@ export class SceneEditorComponent implements OnInit {
   projectTileSize = signal<number>(16);
   /** Id of the scene pending deletion confirmation. */
   pendingDeleteSceneId = signal<string | null>(null);
+  /** Id of the currently active layer for tile placement. */
+  activeLayerId = signal<string | null>(null);
+
+  /** The layers of the currently selected scene. */
+  readonly sceneLayers = computed(() => this.selectedScene()?.layers ?? []);
+
+  /** The currently active layer object. */
+  readonly activeLayer = computed(() => {
+    const layers = this.sceneLayers();
+    const id = this.activeLayerId();
+    if (!id) return null;
+    return layers.find((l) => l.id === id) ?? null;
+  });
 
   /** Effect that updates the global status bar with scene and camera info. */
   statusBarEffect = effect(() => {
@@ -103,9 +118,11 @@ export class SceneEditorComponent implements OnInit {
     const zoom = Math.round(canvas.zoom() * 100);
     const cursor = canvas.cursorCell();
     const cursorStr = cursor ? `Cursor: ${cursor.x},${cursor.y}` : '';
+    const layerName = this.activeLayer()?.name ?? '';
     const parts = [
       scene.name,
       `${scene.width}×${scene.height}`,
+      layerName,
       `Cam: ${x},${y}`,
       `Zoom: ${zoom}%`,
     ];
@@ -140,8 +157,7 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Restores the last selected scene from the persisted session (without
-   * camera restore — camera now centers on grid by default).
+   * Restores the last selected scene from the persisted session.
    */
   async restoreLastScene(): Promise<void> {
     const stored = await this.sessions.getSession(this.projectId()).catch(() => undefined);
@@ -183,7 +199,6 @@ export class SceneEditorComponent implements OnInit {
       this.tileImages.set(images);
       this.tileAnimations.set(animations);
       this.tileFootprints.set(footprints);
-      // Derive first-frame map for the palette sidebar.
       const firstFrames: Record<number, string> = {};
       for (const tileId of Object.keys(images).map(Number)) {
         if (images[tileId].length > 0) firstFrames[tileId] = images[tileId][0];
@@ -222,7 +237,7 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Selects a scene by id and loads its full data.
+   * Selects a scene by id, loads its full data, and activates the first layer.
    * @param sceneId The id of the scene to select.
    */
   async selectScene(sceneId: string): Promise<void> {
@@ -230,6 +245,11 @@ export class SceneEditorComponent implements OnInit {
     try {
       const scene = await this.sceneService.getScene(sceneId);
       this.selectedScene.set(scene ?? null);
+      if (scene && scene.layers.length > 0) {
+        this.activeLayerId.set(scene.layers[0].id);
+      } else {
+        this.activeLayerId.set(null);
+      }
       void this.sessions.updateSession(this.projectId(), {
         lastScreen: 'scenes',
         lastSceneId: sceneId,
@@ -287,7 +307,6 @@ export class SceneEditorComponent implements OnInit {
 
   /**
    * Deletes the pending scene after user confirmation, then refreshes the list.
-   * Clears the selection when the deleted scene was the selected one.
    */
   async onConfirmDelete(): Promise<void> {
     const sceneId = this.pendingDeleteSceneId();
@@ -299,6 +318,7 @@ export class SceneEditorComponent implements OnInit {
       if (this.selectedSceneId() === sceneId) {
         this.selectedSceneId.set(null);
         this.selectedScene.set(null);
+        this.activeLayerId.set(null);
       }
       this.notification.success('Scene deleted.');
     } catch (e) {
@@ -322,8 +342,7 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Handles a camera jump from the minimap: centers the canvas on the
-   * clicked world-space point.
+   * Handles a camera jump from the minimap.
    * @param event Object containing the world-space x, y to center on.
    */
   onMinimapJump(event: { x: number; y: number }): void {
@@ -331,20 +350,24 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Handles a tile placement event from the map canvas: removes every anchor
-   * overlapping the incoming footprint (Replace policy), writes the new anchor,
-   * then persists the updated grid.
+   * Handles a tile placement event from the map canvas.
+   * Places the tile on the currently active layer.
    * @param event Object containing x, y coordinates and the placed tile id.
    */
   async onTilePlaced(event: { x: number; y: number; tileId: number }): Promise<void> {
     const scene = this.selectedScene();
-    if (!scene) return;
+    const activeId = this.activeLayerId();
+    if (!scene || !activeId) return;
 
     try {
-      const previousTileData = scene.tileData.map((row) => [...row]);
+      const layerIdx = scene.layers.findIndex((l) => l.id === activeId);
+      if (layerIdx < 0) return;
+      const layer = scene.layers[layerIdx];
+
+      const previousTileData = layer.tileData.map((row) => [...row]);
       const { w, h } = getFootprint(event.tileId, this.tileFootprints());
       const newTileData = clearOverlappedAnchors(
-        scene.tileData,
+        layer.tileData,
         event.x,
         event.y,
         w,
@@ -353,8 +376,12 @@ export class SceneEditorComponent implements OnInit {
       );
       newTileData[event.y][event.x] = event.tileId;
 
-      await this.sceneService.updateScene(scene.id, { tileData: newTileData });
-      this.selectedScene.update((s) => (s ? { ...s, tileData: newTileData } : null));
+      const newLayers = scene.layers.map((l, i) =>
+        i === layerIdx ? { ...l, tileData: newTileData } : l,
+      );
+
+      await this.sceneService.updateScene(scene.id, { layers: newLayers });
+      this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
 
       const sceneId = scene.id;
       const svc = this.sceneService;
@@ -363,13 +390,16 @@ export class SceneEditorComponent implements OnInit {
       this.undo.push({
         label: 'Place tile',
         execute() {
-          svc.updateScene(sceneId, { tileData: newTileData }).then(() => {
-            sel.update((s) => (s ? { ...s, tileData: newTileData } : null));
+          svc.updateScene(sceneId, { layers: newLayers }).then(() => {
+            sel.update((s) => (s ? { ...s, layers: newLayers } : null));
           }).catch(() => notif.error('Failed to redo tile placement.'));
         },
         undo() {
-          svc.updateScene(sceneId, { tileData: previousTileData }).then(() => {
-            sel.update((s) => (s ? { ...s, tileData: previousTileData } : null));
+          const restoredLayers = newLayers.map((l, i) =>
+            i === layerIdx ? { ...l, tileData: previousTileData } : l,
+          );
+          svc.updateScene(sceneId, { layers: restoredLayers }).then(() => {
+            sel.update((s) => (s ? { ...s, layers: restoredLayers } : null));
           }).catch(() => notif.error('Failed to undo tile placement.'));
         },
       });
@@ -377,5 +407,134 @@ export class SceneEditorComponent implements OnInit {
       console.error('Failed to place tile:', e);
       this.notification.error('Failed to place the tile.');
     }
+  }
+
+  /**
+   * Adds a new layer to the current scene.
+   * @param name The name for the new layer.
+   */
+  async onAddLayer(name: string): Promise<void> {
+    const scene = this.selectedScene();
+    if (!scene) return;
+    try {
+      const newLayer: Layer = {
+        id: crypto.randomUUID(),
+        name,
+        visible: true,
+        opacity: 1,
+        tileData: Array.from({ length: scene.height }, () => Array(scene.width).fill(-1)),
+      };
+      const newLayers = [...scene.layers, newLayer];
+      await this.sceneService.updateScene(scene.id, { layers: newLayers });
+      this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+      this.activeLayerId.set(newLayer.id);
+    } catch (e) {
+      console.error('Failed to add layer:', e);
+      this.notification.error('Failed to add layer.');
+    }
+  }
+
+  /**
+   * Deletes a layer from the current scene. The last remaining layer cannot be deleted.
+   * @param layerId The id of the layer to delete.
+   */
+  async onDeleteLayer(layerId: string): Promise<void> {
+    const scene = this.selectedScene();
+    if (!scene || scene.layers.length <= 1) return;
+    try {
+      const newLayers = scene.layers.filter((l) => l.id !== layerId);
+      await this.sceneService.updateScene(scene.id, { layers: newLayers });
+      this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+      if (this.activeLayerId() === layerId) {
+        this.activeLayerId.set(newLayers[0]?.id ?? null);
+      }
+    } catch (e) {
+      console.error('Failed to delete layer:', e);
+      this.notification.error('Failed to delete layer.');
+    }
+  }
+
+  /**
+   * Toggles the visibility of a layer.
+   * @param layerId The id of the layer to toggle.
+   */
+  async onToggleLayerVisibility(layerId: string): Promise<void> {
+    const scene = this.selectedScene();
+    if (!scene) return;
+    try {
+      const newLayers = scene.layers.map((l) =>
+        l.id === layerId ? { ...l, visible: !l.visible } : l,
+      );
+      await this.sceneService.updateScene(scene.id, { layers: newLayers });
+      this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+    } catch (e) {
+      console.error('Failed to toggle layer visibility:', e);
+    }
+  }
+
+  /**
+   * Updates the opacity of a layer.
+   * @param event Object containing layer id and new opacity value.
+   */
+  async onLayerOpacityChange(event: { layerId: string; opacity: number }): Promise<void> {
+    const scene = this.selectedScene();
+    if (!scene) return;
+    try {
+      const newLayers = scene.layers.map((l) =>
+        l.id === event.layerId ? { ...l, opacity: event.opacity } : l,
+      );
+      await this.sceneService.updateScene(scene.id, { layers: newLayers });
+      this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+    } catch (e) {
+      console.error('Failed to update layer opacity:', e);
+    }
+  }
+
+  /**
+   * Renames a layer.
+   * @param event Object containing layer id and new name.
+   */
+  async onLayerRename(event: { layerId: string; name: string }): Promise<void> {
+    const scene = this.selectedScene();
+    if (!scene) return;
+    try {
+      const newLayers = scene.layers.map((l) =>
+        l.id === event.layerId ? { ...l, name: event.name } : l,
+      );
+      await this.sceneService.updateScene(scene.id, { layers: newLayers });
+      this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+    } catch (e) {
+      console.error('Failed to rename layer:', e);
+    }
+  }
+
+  /**
+   * Moves a layer up or down in the stack.
+   * @param event Object containing layer id and direction ('up' or 'down').
+   */
+  async onLayerReorder(event: { layerId: string; direction: 'up' | 'down' }): Promise<void> {
+    const scene = this.selectedScene();
+    if (!scene) return;
+    const idx = scene.layers.findIndex((l) => l.id === event.layerId);
+    if (idx < 0) return;
+    const targetIdx = event.direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= scene.layers.length) return;
+    try {
+      const newLayers = [...scene.layers];
+      const [moved] = newLayers.splice(idx, 1);
+      newLayers.splice(targetIdx, 0, moved);
+      await this.sceneService.updateScene(scene.id, { layers: newLayers });
+      this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+    } catch (e) {
+      console.error('Failed to reorder layer:', e);
+    }
+  }
+
+  /**
+   * Sets the active layer for tile placement.
+   * @param layerId The layer id to activate.
+   */
+  selectLayer(layerId: string): void {
+    this.activeLayerId.set(layerId);
   }
 }

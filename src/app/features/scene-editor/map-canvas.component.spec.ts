@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MapCanvasComponent } from './map-canvas.component';
-import type { Scene } from '../../shared/models/scene.model';
+import type { Scene, Layer } from '../../shared/models/scene.model';
 
 // jsdom does not implement ResizeObserver (used by MapCanvasComponent)
 class ResizeObserverStub {
@@ -15,6 +15,16 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
   (globalThis as unknown as Record<string, unknown>)['ResizeObserver'] = ResizeObserverStub;
 }
 
+function makeDefaultLayer(width: number, height: number): Layer {
+  return {
+    id: 'layer-default',
+    name: 'Background',
+    visible: true,
+    opacity: 1,
+    tileData: Array.from({ length: height }, () => Array<number>(width).fill(-1)),
+  };
+}
+
 function makeScene(width = 4, height = 4): Scene {
   return {
     id: 'scene-1',
@@ -23,7 +33,7 @@ function makeScene(width = 4, height = 4): Scene {
     folderPath: '',
     width,
     height,
-    tileData: Array.from({ length: height }, () => Array<number>(width).fill(-1)),
+    layers: [makeDefaultLayer(width, height)],
   };
 }
 
@@ -37,6 +47,7 @@ describe('MapCanvasComponent', () => {
     placed = [];
     fixture.componentInstance.tilePlaced.subscribe((e) => placed.push(e));
     fixture.componentRef.setInput('scene', scene);
+    fixture.componentRef.setInput('layers', scene.layers);
     fixture.componentRef.setInput('selectedTileId', 1);
     fixture.componentRef.setInput('tileFootprints', footprints);
     fixture.detectChanges();

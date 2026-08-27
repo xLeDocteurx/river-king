@@ -141,20 +141,19 @@ describe('SpriteEditorComponent', () => {
     expect(compiled.querySelector('rk-pixel-canvas')).toBeTruthy();
   });
 
-  it('navigates to the sprite route when a sprite is selected', async () => {
+  it('saves the sprite id to the session when a sprite is selected', async () => {
     await createProjectWithPalette();
     await setupWithProject();
     const service = TestBed.inject(SpriteService);
     const sprite = await service.createSprite('test-proj', 'Nav Sprite', 1);
     const component = fixture.componentInstance;
     await component.loadSprites();
-    const navSpy = vi
-      .spyOn(component['router'], 'navigate')
-      .mockImplementation(() => Promise.resolve(true));
+    const sessions = TestBed.inject(SessionService);
+    const spy = vi.spyOn(sessions, 'updateSession').mockImplementation(() => Promise.resolve());
 
     await component.selectSprite(sprite.id);
 
-    expect(navSpy).toHaveBeenCalledWith(['/project', 'test-proj', 'sprites', sprite.id]);
+    expect(spy).toHaveBeenCalledWith('test-proj', { lastSpriteId: sprite.id });
   });
 
   it('keeps the sprite list visible when a spriteId param is present', async () => {
@@ -293,7 +292,7 @@ describe('SpriteEditorComponent', () => {
     expect(updateSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('groups sprites under their parent tile in tile-name order', () => {
+  it('lists tiles with sprites in alphabetical order', () => {
     fixture = TestBed.createComponent(SpriteEditorComponent);
     const component = fixture.componentInstance;
     component.sprites.set([
@@ -302,15 +301,14 @@ describe('SpriteEditorComponent', () => {
       { id: 3, name: 'frame 1', tileId: 10 } as Sprite,
     ]);
     component.tiles.set([
-      { id: 10, name: 'Beta' },
-      { id: 20, name: 'Alpha' },
+      { id: 10, name: 'Beta', spriteIds: [3] },
+      { id: 20, name: 'Alpha', spriteIds: [1, 2] },
     ] as Tile[]);
 
-    expect(component.spriteGroups().map((g) => g.tile.name)).toEqual(['Alpha', 'Beta']);
-    expect(component.spriteGroups()[0].sprites.map((s) => s.name)).toEqual(['frame 1', 'frame 2']);
+    expect(component.tilesWithSprites().map((t) => t.name)).toEqual(['Alpha', 'Beta']);
   });
 
-  it('collapses and expands a tile group when its header is clicked', async () => {
+  it('selects a tile and loads its first frame', async () => {
     await createProjectWithPalette();
     const db = TestBed.inject(DatabaseService);
     await db.tiles.add({
@@ -324,29 +322,18 @@ describe('SpriteEditorComponent', () => {
     } as Tile);
     await setupWithProject();
     const service = TestBed.inject(SpriteService);
-    await service.createSprite('test-proj', 'alpha frame', 1);
+    const frame1 = await service.createSprite('test-proj', 'alpha frame', 1);
     await service.createSprite('test-proj', 'beta frame', 1);
     const component = fixture.componentInstance;
     await component.loadSprites();
     await component.loadTiles();
     fixture.detectChanges();
 
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('alpha frame');
-
-    const header = Array.from(compiled.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Base Tile'),
-    ) as HTMLButtonElement;
-    header.click();
+    await component.selectTile(1);
     fixture.detectChanges();
-    expect(component.isTileCollapsed(1)).toBe(true);
-    expect(compiled.textContent).not.toContain('alpha frame');
-    expect(compiled.textContent).not.toContain('beta frame');
 
-    header.click();
-    fixture.detectChanges();
-    expect(component.isTileCollapsed(1)).toBe(false);
-    expect(compiled.textContent).toContain('alpha frame');
+    expect(component.selectedTileId()).toBe(1);
+    expect(component.selectedSpriteId()).toBe(frame1.id);
   });
 
   it('flushes the pending save before switching sprites', async () => {
