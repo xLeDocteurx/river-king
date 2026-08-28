@@ -23,7 +23,7 @@ export class TileListTreeComponent {
   tileSelect = output<number>();
   tileDelete = output<number>();
   tileCreate = output<void>();
-  createFolder = output<void>();
+  createFolder = output<string>();
   folderChange = output<{ tileId: number; folderPath: string }>();
   toggleFolder = output<string>();
 
@@ -39,5 +39,17 @@ export class TileListTreeComponent {
 
   onTileFolderChange(event: { itemId: string | number; groupKey: string }): void {
     this.folderChange.emit({ tileId: Number(event.itemId), folderPath: event.groupKey });
+  }
+
+  /**
+   * Prompts the user for a folder name and emits it for persistence.
+   * Emits nothing when the prompt is cancelled or the name already exists.
+   */
+  onCreateGroup(): void {
+    const name = window.prompt('Enter folder name:')?.trim();
+    if (!name) return;
+    if (this.folders().includes(name)) return;
+    if (this.tiles().some((t) => t.folderPath === name)) return;
+    this.createFolder.emit(name);
   }
 }

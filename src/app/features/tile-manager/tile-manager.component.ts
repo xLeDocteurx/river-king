@@ -81,11 +81,7 @@ export class TileManagerComponent implements OnInit {
   /** Collapsed folder paths in the tree view. */
   collapsedFolders = signal<string[]>([]);
 
-  /** Visibility of inline folder creation input. */
-  newFolderInputVisible = signal(false);
 
-  /** Current value of the new folder path input. */
-  newFolderPath = signal('');
 
   /** Static configuration data passed to the confirmation dialog. */
   readonly deleteDialogData: ConfirmDialogData = {
@@ -218,32 +214,11 @@ export class TileManagerComponent implements OnInit {
   }
 
   /**
-   * Shows the inline folder creation input.
+   * Creates a folder locally and persists it to both local state and service.
+   * @param name - The name of the new folder.
    */
-  showNewFolderInput(): void {
-    this.newFolderInputVisible.set(true);
-  }
-
-  /**
-   * Confirms and creates the new folder path locally.
-   */
-  async confirmNewFolder(): Promise<void> {
-    const path = this.newFolderPath().trim();
-    if (!path) {
-      this.newFolderInputVisible.set(false);
-      return;
-    }
-    this.folders.update((list) => [...list, path].sort((a, b) => a.localeCompare(b)));
-    this.newFolderPath.set('');
-    this.newFolderInputVisible.set(false);
-  }
-
-  /**
-   * Cancels folder creation and clears the input.
-   */
-  cancelNewFolder(): void {
-    this.newFolderInputVisible.set(false);
-    this.newFolderPath.set('');
+  onCreateFolder(name: string): void {
+    this.folders.update((list) => [...list, name].sort((a, b) => a.localeCompare(b)));
   }
 
   /**
