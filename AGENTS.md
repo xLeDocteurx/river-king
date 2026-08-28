@@ -251,6 +251,27 @@ confirmDialog().open(); // Uses native <dialog> element under the hood
 
 ---
 
+## Ticket management (idea → kanban)
+
+The project uses a 3-layer pipeline to track feature ideas and bugs:
+
+| Layer   | Where                                              | Purpose                                  |
+| ------- | -------------------------------------------------- | ---------------------------------------- |
+| INBOX   | `docs/ideas.md`                                    | Raw uncommitted ideas, captured verbatim |
+| BACKLOG | GitHub Issues + kanban Project #6                  | Committed topics with status/discussion  |
+| DETAIL  | `docs/superpowers/specs/` + `plans/`               | Precise what/how, linked to the issue    |
+
+Workflow: **oral idea → append to `docs/ideas.md` → clarify → GitHub issue → kanban card → groom → spec → plan → implement → PR with `Closes #N`**.
+
+- Kanban = GitHub Projects **#6** "@xLeDocteurx's River King Kanban". Owner: `xLeDocteurx`.
+- Status transitions: `Backlog → Ready → In progress → In review → Done`. Use `gh project item-edit 6 --owner xLeDocteurx --field "Status" --value "<option>"`.
+- Add cards with `gh project item-add 6 --owner xLeDocteurx --url <issue-url>`.
+- Run `gh` through devbox and strip its startup noise:
+  `devbox run gh … 2>&1 | grep -v "devbox\|Welcome\|Node.js version\|npm version\|^$\|Running script\|v22\|10.9"`
+- **Full workflow reference:** the `ticket-management` skill (`.opencode/skills/ticket-management/SKILL.md`).
+
+---
+
 ## Git workflow
 
 - **Main branch:** `main`

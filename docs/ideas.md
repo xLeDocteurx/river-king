@@ -16,6 +16,10 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 - [ ] **Visualisation des collisions/footprints** — Toggle pour voir les tiles bloquants sur la map (`map-footprint.ts` existe déjà).
 - [ ] **Grid visibility toggle** — Afficher/masquer la grille dans l'éditeur de scène.
 - [ ] **Sprite editor : frame management** — Éditeur multi-frame avec onion-skinning et preview d'animation.
+- [ ] **Folder : suppression** — Bouton de suppression sur l'en-tête d'un groupe vide (scènes et tuiles) pour nettoyer les dossiers inutiles.
+- [ ] **Folder : renommage** — Double-click sur le titre d'un groupe pour renommer le dossier sans tout redéplacer.
+- [ ] **Folders premium folding** — Fermer certains dossiers par défaut quand la liste est longue, pour une navigation plus rapide.
+- [ ] **UI : création de dossier** — Remplacer `window.prompt()` par un petit inline input dans `grouped-list` pour une création de dossier plus propre et cohérente.
 
 ## Lower Priority
 

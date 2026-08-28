@@ -1,0 +1,115 @@
+---
+name: ticket-management
+description: Use when capturing new feature ideas or bugs, triaging them into GitHub Issues, or updating a GitHub Project kanban (add cards, change Status/Priority/Size). Relevant whenever docs/ideas.md, gh project, or issue creation/status transitions come up during a session.
+---
+
+# Ticket Management
+
+Manage the idea → issue → kanban pipeline for the River King engine.
+
+## The 3-layer model
+
+| Layer | Where | Purpose |
+|-------|-------|---------|
+| **INBOX** | `docs/ideas.md` | Raw, uncommitted ideas. Verbatim capture, no promises. Every new idea starts here. |
+| **BACKLOG** | GitHub Issues + kanban (#6) | Committed topics with status/lifecycle and discussion. One issue per idea. |
+| **DETAIL** | `docs/superpowers/specs/` + `plans/` | The precise what/how once an idea is Groomed and Ready. Linked to the issue. |
+
+## Workflow
+
+```
+oral idea → append to docs/ideas.md → clarify → create GitHub issue
+→ add kanban card (Status: Backlog) → groom (Backlog→Ready, set Priority/Size)
+→ brainstorm + write spec (linked to issue in issue body) → plan → implement
+→ PR with "Closes #<issue>" → On merge: Status: Done
+```
+
+## Do in every capture
+
+1. **Ask** 2-3 clarifying questions about the idea (what, who, where).
+2. **Append** a bullet to `docs/ideas.md` under the matching impact section (or create one).
+3. Only after the user confirms a topic is worth committing: create the GitHub issue and kanban card.
+
+## GitHub Issue creation
+
+Use `gh` through devbox. All commands must be filtered to strip devbox noise:
+
+```bash
+devbox run gh issue create --title "<Title>" --body "<Body>" 2>&1 | grep -v "devbox\|Welcome\|Node.js version\|npm version\|^$\|Running script\|v22\|10.9"
+```
+
+**Issue body template** (from `docs/superpowers/specs/` origin or idea elaboration):
+
+```markdown
+## Context
+<!-- why this matters, what user flow it enables -->
+
+## Proposed behavior
+<!-- what should happen -->
+
+## Acceptance criteria
+- [ ]
+- [ ]
+```
+
+**Labels** (create with `devbox run gh label create <name> --color <hex>` if missing):
+`idea`, `enhancement`, `bug`, `spec`, `chore`, `docs`.
+
+Assign labels that match: `bug` for defects, `enhancement` for feature requests.
+
+## Kanban card management
+
+Project #6 = "@xLeDocteurx's River King Kanban" (owner `xLeDocteurx`).
+
+The Status field uses by-name option values (robust, no GraphQL IDs needed).
+
+**Add issue to kanban (move from issue to card):**
+
+```bash
+devbox run gh project item-add 6 --owner xLeDocteurx --url "<ISSUE_URL>" \
+  2>&1 | grep -v "devbox\|Welcome\|Node.js version\|npm version\|^$\|Running script\|v22\|10.9"
+```
+
+**Set Status (grooming / progress transitions):**
+
+```bash
+devbox run gh project item-edit 6 --owner xLeDocteurx --url "<ISSUE_URL>" \
+  --field "Status" --value "Ready" \
+  2>&1 | grep -v "devbox\|Welcome\|Node.js version\|npm version\|^$\|Running script\|v22\|10.9"
+```
+
+**Valid Status values:** `Backlog`, `Ready`, `In progress`, `In review`, `Done`.
+
+**Set Priority / Size (grooming time):**
+
+```bash
+devbox run gh project item-edit 6 --owner xLeDocteurx --url "<ISSUE_URL>" \
+  --field "Priority" --value "High" \
+  2>&1 | grep -v "devbox\|Welcome\|Node.js version\|npm version\|^$\|Running script\|v22\|10.9"
+```
+
+`Priority` and `Size` valid values: check the field options with
+`devbox run gh project field-list 6 --owner xLeDocteurx` (filtered the same way).
+
+**Constraints of `gh project item-edit`:**
+- Non-draft issues: **one field per invocation** only.
+- By-name `--field "Status" --value "Backlog"` syntax is preferred over GraphQL IDs.
+- Use `--owner xLeDocteurx` explicitly.
+
+## Grooming
+
+When moving an idea from Backlog to Ready, also set Priority and Size, and link the
+design spec once it exists: append `Spec: docs/superpowers/specs/<file>.md` to the issue body.
+
+## Common mistakes
+
+- Forgetting the `| grep -v ...` noise filter → output unreadable.
+- Using GraphQL IDs for Status → brittle, breaks when fields change.
+- Creating an issue before the user confirmed the idea is worth committing → always ask first.
+- Not linking the spec to the issue → the kanban card loses its details.
+
+## Interacting with the user
+
+- Keep status transitions visible: report when a card moves (Backlog → Ready, …).
+- When the user suggests a new idea, capture it to `docs/ideas.md` first and confirm
+  before opening an issue — the two steps are never bundled implicitly.
