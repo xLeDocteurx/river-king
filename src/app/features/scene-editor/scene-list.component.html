@@ -1,92 +1,17 @@
-<div class="tw-flex tw-flex-col tw-h-full tw-bg-card-bg tw-border-r tw-border-border">
-  <div
-    class="tw-flex tw-items-center tw-justify-between tw-px-3 tw-py-2 tw-border-b tw-border-border"
-  >
-    <h3 class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground">
-      Scenes
-    </h3>
-    <div class="tw-flex tw-gap-1">
-      <button
-        type="button"
-        (click)="onCreateGroup()"
-        class="tw-p-1 tw-rounded-sm hover:tw-bg-muted"
-        title="New Group"
-      >
-        <span class="material-symbols" aria-hidden="true">create_new_folder</span>
-      </button>
-      <button
-        type="button"
-        (click)="createScene.emit()"
-        class="tw-p-1 tw-rounded-sm hover:tw-bg-muted"
-        title="New Scene"
-      >
-        <span class="material-symbols" aria-hidden="true">add</span>
-      </button>
-    </div>
-  </div>
-  <div class="tw-flex-1 tw-overflow-auto tw-p-2">
-    <div cdkDropListGroup>
-      @for (group of groups(); track group.folderPath) {
-        <div class="tw-mb-3">
-          <button
-            type="button"
-            (click)="toggleGroup(group.folderPath)"
-            class="tw-w-full tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground tw-cursor-pointer tw-text-left"
-          >
-            <span
-              class="material-symbols tw-text-sm tw-transition-transform"
-              [class.-tw-rotate-90]="isCollapsed(group.folderPath)"
-              aria-hidden="true"
-              >expand_more</span
-            >
-            <span>{{ group.folderPath || 'Ungrouped' }}</span>
-          </button>
-          @if (!isCollapsed(group.folderPath)) {
-            <div
-              cdkDropList
-              [cdkDropListData]="group.scenes"
-              (cdkDropListDropped)="onDrop($event, group.folderPath)"
-              class="tw-flex tw-flex-col tw-gap-1 tw-min-h-[2.5rem] tw-mt-1 tw-rounded-sm"
-            >
-              @for (scene of group.scenes; track scene.id) {
-                <div
-                  cdkDrag
-                  [cdkDragData]="scene"
-                  class="tw-w-full tw-flex tw-items-center tw-gap-1"
-                >
-                  <button
-                    type="button"
-                    (click)="sceneSelect.emit(scene.id)"
-                    [class.tw-bg-primary/10]="selectedSceneId() === scene.id"
-                    class="tw-flex-1 tw-min-w-0 tw-text-left tw-px-2 tw-py-1.5 tw-rounded-sm tw-text-xs tw-text-foreground hover:tw-bg-muted tw-transition-colors tw-flex tw-items-center tw-gap-2"
-                  >
-                    <span class="material-symbols tw-text-muted-foreground" aria-hidden="true"
-                      >map</span
-                    >
-                    <span class="tw-truncate">{{ scene.name }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    (click)="sceneDelete.emit(scene.id); $event.stopPropagation()"
-                    title="Delete scene"
-                    class="tw-p-1 tw-rounded-sm tw-shrink-0 tw-text-muted-foreground hover:tw-text-destructive hover:tw-bg-muted tw-transition-colors"
-                  >
-                    <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
-                  </button>
-                </div>
-              } @empty {
-                <div
-                  class="tw-h-[2rem] tw-flex tw-items-center tw-justify-center tw-rounded-sm tw-border tw-border-dashed tw-border-border tw-text-xs tw-text-muted-foreground"
-                >
-                  Drop scenes here
-                </div>
-              }
-            </div>
-          }
-        </div>
-      } @empty {
-        <div class="tw-text-muted-foreground tw-text-sm tw-text-center tw-py-4">No scenes yet</div>
-      }
-    </div>
-  </div>
-</div>
+<rk-grouped-list
+  [items]="scenes()"
+  [groupKeyFn]="groupByFolderPath"
+  [groupKeys]="folders()"
+  [selectedItemId]="selectedSceneId()"
+  [collapsedGroups]="collapsedFolders()"
+  title="Scenes"
+  itemIcon="map"
+  createGroupLabel="New Group"
+  createItemLabel="New Scene"
+  (itemSelect)="onSceneSelect($event)"
+  (itemDelete)="onSceneDelete($event)"
+  (groupChange)="onSceneFolderChange($event)"
+  (toggleGroup)="onToggleGroup($event)"
+  (createGroup)="onCreateGroup()"
+  (createItem)="createScene.emit()"
+></rk-grouped-list>

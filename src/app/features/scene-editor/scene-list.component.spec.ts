@@ -65,7 +65,8 @@ describe('SceneListComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('mountain');
-    expect(component.groups().some((g) => g.folderPath === 'mountain')).toBe(true);
+    const dropLists = compiled.querySelectorAll('[cdkDropList]');
+    expect(dropLists.length).toBe(2); // Ungrouped + mountain
   });
 
   it('should collapse and expand a folder when its header is clicked', () => {
@@ -84,19 +85,17 @@ describe('SceneListComponent', () => {
 
     headerFor('forest')!.click();
     fixture.detectChanges();
-    expect(component.isCollapsed('forest')).toBe(true);
     expect(compiled.textContent).not.toContain('Forest 1');
     expect(compiled.textContent).toContain('Cave 1');
     expect(compiled.querySelectorAll('[cdkDropList]').length).toBe(1);
 
     headerFor('forest')!.click();
     fixture.detectChanges();
-    expect(component.isCollapsed('forest')).toBe(false);
     expect(compiled.textContent).toContain('Forest 1');
     expect(compiled.querySelectorAll('[cdkDropList]').length).toBe(2);
   });
 
-  it('should emit createFolder (not keep local state) when onCreateGroup is invoked', () => {
+  it('should emit createFolder when onCreateGroup is invoked', () => {
     fixture.componentRef.setInput('scenes', []);
     fixture.detectChanges();
 
@@ -105,8 +104,8 @@ describe('SceneListComponent', () => {
 
     component.onCreateGroup();
 
+    expect(createSpy).toHaveBeenCalledOnce();
     expect(createSpy).toHaveBeenCalledWith('mountain');
-    expect(component.groups().some((g) => g.folderPath === 'mountain')).toBe(false);
     promptSpy.mockRestore();
   });
 
@@ -194,26 +193,20 @@ describe('SceneListComponent', () => {
     const deleteSpy = vi.spyOn(component.sceneDelete, 'emit');
     const selectSpy = vi.spyOn(component.sceneSelect, 'emit');
     const deleteButton = (fixture.nativeElement as HTMLElement).querySelector(
-      'button[title="Delete scene"]',
+      'button[title^="Delete"]',
     ) as HTMLButtonElement;
     deleteButton.click();
     expect(deleteSpy).toHaveBeenCalledWith('s1');
     expect(selectSpy).not.toHaveBeenCalled();
   });
 
-  it('should emit sceneFolderChange when a scene is dropped in a different group', () => {
+  it('should emit sceneFolderChange when a scene is moved to a different group', () => {
     const scenes: Scene[] = [makeScene('s1', 'Scene A', 'old')];
     fixture.componentRef.setInput('scenes', scenes);
     fixture.detectChanges();
 
     const changeSpy = vi.spyOn(component.sceneFolderChange, 'emit');
-    const dragEvent = {
-      previousContainer: { data: scenes },
-      container: { data: [] as Scene[] },
-      item: { data: scenes[0] },
-    } as unknown as import('@angular/cdk/drag-drop').CdkDragDrop<Scene[]>;
-
-    component.onDrop(dragEvent, 'new');
+    component.onSceneFolderChange({ itemId: 's1', groupKey: 'new' });
     expect(changeSpy).toHaveBeenCalledWith({ sceneId: 's1', folderPath: 'new' });
   });
 });

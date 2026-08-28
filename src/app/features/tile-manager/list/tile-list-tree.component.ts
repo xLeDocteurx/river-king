@@ -1,20 +1,22 @@
-import { Component, input, output, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CdkDropListGroup, CdkDropList, CdkDrag, type CdkDragDrop } from '@angular/cdk/drag-drop';
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
+import { GroupedListComponent } from '../../../shared/components/grouped-list/grouped-list.component';
 import type { Tile } from '../../../shared/models/tile.model';
 
 /**
- * Grouped tree view of tiles with folder organisation and CDK drag-drop.
+ * Displays tiles grouped by folderPath with drag-and-drop support.
+ * Uses {@link GroupedListComponent} with indented groups for visual nesting.
  */
 @Component({
   selector: 'rk-tile-list-tree',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkDropListGroup, CdkDropList, CdkDrag],
+  imports: [GroupedListComponent],
   templateUrl: './tile-list-tree.component.html',
   styleUrl: './tile-list-tree.component.scss',
 })
 export class TileListTreeComponent {
   tiles = input.required<Tile[]>();
+  folders = input<string[]>([]);
   selectedTileId = input<number | null>(null);
   collapsedFolders = input<string[]>([]);
 
@@ -25,22 +27,17 @@ export class TileListTreeComponent {
   folderChange = output<{ tileId: number; folderPath: string }>();
   toggleFolder = output<string>();
 
-  readonly rootTiles = computed(() => this.tiles().filter((t) => !t.folderPath));
-  readonly folderGroups = computed(() => {
-    const groups = new Map<string, Tile[]>();
-    for (const tile of this.tiles()) {
-      if (!tile.folderPath) continue;
-      const list = groups.get(tile.folderPath) ?? [];
-      list.push(tile);
-      groups.set(tile.folderPath, list);
-    }
-    return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
-  });
+  groupByFolderPath = (tile: Tile) => tile.folderPath || '';
 
-  onDrop(event: CdkDragDrop<Tile[]>, targetFolderPath: string): void {
-    const tile = event.item.data as Tile;
-    if (tile.folderPath !== targetFolderPath) {
-      this.folderChange.emit({ tileId: tile.id, folderPath: targetFolderPath });
-    }
+  onTileSelect(id: string | number): void {
+    this.tileSelect.emit(Number(id));
+  }
+
+  onTileDelete(id: string | number): void {
+    this.tileDelete.emit(Number(id));
+  }
+
+  onTileFolderChange(event: { itemId: string | number; groupKey: string }): void {
+    this.folderChange.emit({ tileId: Number(event.itemId), folderPath: event.groupKey });
   }
 }
