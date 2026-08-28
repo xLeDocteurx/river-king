@@ -204,6 +204,33 @@ describe('SpriteEditorComponent', () => {
     expect(lastCall?.[0]).toContain('px');
   });
 
+  it('shows the selected frame index and count in the status bar', async () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    fixture.componentInstance.sprites.set([
+      { id: 1, name: 'frame A', tileId: 10, width: 16, height: 16, pixelData: 'A' } as Sprite,
+      { id: 2, name: 'frame B', tileId: 10, width: 16, height: 16, pixelData: 'B' } as Sprite,
+    ]);
+    fixture.componentInstance.tiles.set([
+      {
+        id: 10,
+        name: 'Test',
+        type: 'animated',
+        spriteIds: [1, 2],
+        animationSpeed: 4,
+        properties: { blocking: false, interactable: false },
+      } as Tile,
+    ]);
+    fixture.componentInstance.selectedTileId.set(10);
+    fixture.componentInstance.selectedSpriteId.set(2);
+    fixture.componentInstance.selectedSprite.set(fixture.componentInstance.sprites()[1]);
+    const statusBar = TestBed.inject(StatusBarService);
+    const spy = vi.spyOn(statusBar, 'setContext');
+    fixture.detectChanges();
+
+    const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
+    expect(lastCall?.[0]).toContain('Frame 2/2');
+  });
+
   it('shows an error and does not navigate for an unknown spriteId param', async () => {
     await createProjectWithPalette();
     await setupWithProject();
