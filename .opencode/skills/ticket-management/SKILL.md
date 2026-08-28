@@ -78,17 +78,20 @@ devbox run gh project item-edit 6 --owner xLeDocteurx --url "<ISSUE_URL>" \
   2>&1 | grep -v "devbox\|Welcome\|Node.js version\|npm version\|^$\|Running script\|v22\|10.9"
 ```
 
-**Valid Status values:** `Backlog`, `Ready`, `In progress`, `In review`, `Done`.
-
 **Set Priority / Size (grooming time):**
 
 ```bash
 devbox run gh project item-edit 6 --owner xLeDocteurx --url "<ISSUE_URL>" \
-  --field "Priority" --value "High" \
+  --field "Priority" --value "P1" \
   2>&1 | grep -v "devbox\|Welcome\|Node.js version\|npm version\|^$\|Running script\|v22\|10.9"
 ```
 
-`Priority` and `Size` valid values: check the field options with
+**Valid values (field-list confirmed):**
+- `Priority`: `P0`, `P1`, `P2`
+- `Size`: `XS`, `S`, `M`, `L`, `XL`
+- `Status`: `Backlog`, `Ready`, `In progress`, `In review`, `Done`
+
+Verify current options anytime with
 `devbox run gh project field-list 6 --owner xLeDocteurx` (filtered the same way).
 
 **Constraints of `gh project item-edit`:**
