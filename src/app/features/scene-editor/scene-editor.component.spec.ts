@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { SceneEditorComponent } from './scene-editor.component';
 import { SceneService } from './services/scene.service';
+import { GRID_VISIBLE_STORAGE_KEY } from './map-canvas.component';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
@@ -85,6 +86,28 @@ describe('SceneEditorComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(component).toBeTruthy();
+  });
+
+  it('toggles the grid via the toolbar button and persists it for the session', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const byTitle = (title: string) =>
+      fixture.nativeElement.querySelector(`button[title="${title}"]`) as HTMLButtonElement | null;
+    const gridButton = byTitle('Hide grid');
+    expect(gridButton).toBeTruthy();
+
+    gridButton!.click();
+    fixture.detectChanges();
+    expect(byTitle('Show grid')).toBeTruthy();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('0');
+
+    byTitle('Show grid')!.click();
+    fixture.detectChanges();
+    expect(byTitle('Hide grid')).toBeTruthy();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('1');
   });
 
   it('should persist a newly created folder and expose it to the scene list', async () => {

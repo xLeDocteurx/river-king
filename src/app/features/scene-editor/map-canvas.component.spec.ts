@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MapCanvasComponent } from './map-canvas.component';
+import { MapCanvasComponent, GRID_VISIBLE_STORAGE_KEY } from './map-canvas.component';
 import type { Scene, Layer } from '../../shared/models/scene.model';
 
 // jsdom does not implement ResizeObserver (used by MapCanvasComponent)
@@ -40,6 +40,10 @@ function makeScene(width = 4, height = 4): Scene {
 describe('MapCanvasComponent', () => {
   let fixture: ComponentFixture<MapCanvasComponent>;
   let placed: { x: number; y: number; tileId: number }[];
+
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
 
   function setup(scene: Scene, footprints: Record<number, { w: number; h: number }> = {}): void {
     TestBed.configureTestingModule({ imports: [MapCanvasComponent] });
@@ -172,5 +176,27 @@ describe('MapCanvasComponent', () => {
     instance.onMouseLeave();
 
     expect(instance.hoverCell()).toBeNull();
+  });
+
+  it('defaults to showing the grid when no session preference is stored', () => {
+    setup(makeScene(4, 4));
+    expect(fixture.componentInstance.showGrid()).toBe(true);
+  });
+
+  it('restores the grid visibility from the session when hidden', () => {
+    sessionStorage.setItem(GRID_VISIBLE_STORAGE_KEY, '0');
+    setup(makeScene(4, 4));
+    expect(fixture.componentInstance.showGrid()).toBe(false);
+  });
+
+  it('persists grid visibility changes to the session storage', async () => {
+    setup(makeScene(4, 4));
+    const instance = fixture.componentInstance;
+    instance.showGrid.set(false);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('0');
+    instance.showGrid.set(true);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('1');
   });
 });
