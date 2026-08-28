@@ -65,10 +65,18 @@ describe('MapCanvasComponent', () => {
     expect(placed).toEqual([{ x: 0, y: 1, tileId: 1 }]);
   });
 
-  it('does not emit when a large footprint would exceed the scene bounds', () => {
+  it('emits when the footprint exceeds the scene bounds within the grow reach', () => {
     setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
-    // Click lands on cell (3,0): 3 + 2 > width 4.
+    // Anchor cell (3,0): 3 + 2 > width 4, but within the auto-grow guard (1 tile).
     click(fixture.componentInstance, 55, 10);
+
+    expect(placed).toEqual([{ x: 3, y: 0, tileId: 1 }]);
+  });
+
+  it('does not emit when the placement is beyond the auto-grow guard', () => {
+    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    // Anchor cell (20,0): 20 + 2 - width 4 = 18 > MAX_EXPAND_TILES (16).
+    click(fixture.componentInstance, 330, 10);
 
     expect(placed).toEqual([]);
   });
@@ -93,6 +101,7 @@ describe('MapCanvasComponent', () => {
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
+      strokeRect: vi.fn(),
       fillRect: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
     const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
@@ -134,12 +143,22 @@ describe('MapCanvasComponent', () => {
     expect(instance.hoverCell()).toBeNull();
   });
 
-  it('shows no preview when the footprint would exceed the scene bounds', () => {
+  it('shows a preview when the footprint exceeds the scene bounds within the grow reach', () => {
     setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
     const instance = fixture.componentInstance;
 
-    // Anchor cell (3,0): 3 + 2 > width 4, same rule as placement.
+    // Anchor cell (3,0): within the auto-grow guard, so the preview stays.
     instance.onMouseMove(new MouseEvent('mousemove', { clientX: 50, clientY: 5 }));
+
+    expect(instance.hoverCell()).toEqual({ x: 3, y: 0, w: 2, h: 2 });
+  });
+
+  it('shows no preview when the placement is beyond the auto-grow guard', () => {
+    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    const instance = fixture.componentInstance;
+
+    // Anchor cell (20,0): 20 + 2 - width 4 = 18 > MAX_EXPAND_TILES (16).
+    instance.onMouseMove(new MouseEvent('mousemove', { clientX: 330, clientY: 5 }));
 
     expect(instance.hoverCell()).toBeNull();
   });

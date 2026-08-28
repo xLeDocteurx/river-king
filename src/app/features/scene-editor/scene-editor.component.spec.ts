@@ -9,6 +9,7 @@ import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
+import { UndoService } from '../../core/services/undo.service';
 import { createEmptySession } from '../../shared/models/session.model';
 import type { Scene } from '../../shared/models/scene.model';
 
@@ -209,6 +210,121 @@ describe('SceneEditorComponent', () => {
     expect(component.selectedScene()?.layers[0].tileData).toEqual(expected);
     const stored = await db.scenes.get(scene.id);
     expect(stored?.layers[0].tileData).toEqual(expected);
+  });
+
+  it('grows the scene to the right when placing at the far edge', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Grow', 4, 4);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+
+    await component.onTilePlaced({ x: 4, y: 0, tileId: 9 });
+
+    const updated = component.selectedScene();
+    expect(updated?.width).toBe(5);
+    expect(updated?.height).toBe(4);
+    expect(updated?.layers[0].tileData).toHaveLength(4);
+    expect(updated?.layers[0].tileData[0]).toHaveLength(5);
+    expect(updated?.layers[0].tileData[0][4]).toBe(9);
+    const stored = await db.scenes.get(scene.id);
+    expect(stored?.width).toBe(5);
+    expect(stored?.layers[0].tileData[0][4]).toBe(9);
+  });
+
+  it('grows the scene to the left and shifts existing content', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Grow', 4, 4);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+    component.tileFootprints.set({ 9: { w: 1, h: 1 } });
+
+    await component.onTilePlaced({ x: 0, y: 0, tileId: 2 });
+    await component.onTilePlaced({ x: -1, y: 0, tileId: 9 });
+
+    const updated = component.selectedScene();
+    expect(updated?.width).toBe(5);
+    expect(updated?.layers[0].tileData[0][0]).toBe(9);
+    expect(updated?.layers[0].tileData[0][1]).toBe(2);
+  });
+
+  it('does not place when the placement is beyond the grow guard', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const notification = TestBed.inject(NotificationService);
+    const warningSpy = vi.spyOn(notification, 'warning');
+    const scene = await sceneService.createScene('p1', 'Grow', 4, 4);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+
+    await component.onTilePlaced({ x: 20, y: 0, tileId: 9 });
+
+    expect(warningSpy).toHaveBeenCalledTimes(1);
+    expect(component.selectedScene()?.width).toBe(4);
+    expect(component.selectedScene()?.layers[0].tileData[0]).toHaveLength(4);
+  });
+
+  it('grows every layer together', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Grow', 4, 4);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+    await component.onAddLayer('Layer 2');
+
+    await component.onTilePlaced({ x: 4, y: 0, tileId: 9 });
+
+    const updated = component.selectedScene();
+    expect(updated?.width).toBe(5);
+    for (const layer of updated?.layers ?? []) {
+      expect(layer.tileData).toHaveLength(4);
+      expect(layer.tileData[0]).toHaveLength(5);
+    }
+  });
+
+  it('shifts the camera when the scene grows to the left', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Grow', 4, 4);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+    fixture.detectChanges();
+    const beforeX = component.mapCanvasRef()?.cameraX() ?? 0;
+
+    await component.onTilePlaced({ x: -1, y: 0, tileId: 9 });
+
+    const afterX = component.mapCanvasRef()?.cameraX() ?? 0;
+    const cell = component.projectTileSize();
+    expect(afterX).toBeCloseTo(beforeX + cell, 5);
+  });
+
+  it('undo restores width, height and layers after an out-of-bounds placement', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Grow', 4, 4);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+
+    await component.onTilePlaced({ x: 4, y: 0, tileId: 9 });
+    expect(component.selectedScene()?.width).toBe(5);
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(component.selectedScene()?.width).toBe(4);
+    expect(component.selectedScene()?.height).toBe(4);
+    expect(component.selectedScene()?.layers[0].tileData[0]).toHaveLength(4);
+    const stored = await db.scenes.get(scene.id);
+    expect(stored?.width).toBe(4);
+    expect(stored?.layers[0].tileData[0]).toHaveLength(4);
   });
 
   it('persists the selected scene into the session', async () => {
