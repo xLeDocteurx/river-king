@@ -52,6 +52,8 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
   groupChange = output<{ itemId: string | number; groupKey: string }>();
   /** Emitted when a group header is toggled. */
   toggleGroup = output<string>();
+  /** Emitted when a group (folder) header is dropped on another group header. */
+  groupMove = output<{ fromKey: string; toKey: string }>();
   /** Emitted when the user requests creation of a new group. */
   createGroup = output<void>();
   /** Emitted when the user requests creation of a new item. */
@@ -59,6 +61,10 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
 
   /** Internal collapsed state, seeded from input. */
   private collapsedSet = computed(() => new Set(this.collapsedGroups()));
+  /** Group key currently being dragged for a folder move, or null. */
+  private dragGroupKey: string | null = null;
+  /** Current drop target group key while dragging a folder. */
+  private dropTargetKey: string | null = null;
 
   /** Computed grouping of items, including depth for indented mode. */
   groups = computed<Group<T>[]>(() => {
@@ -76,7 +82,11 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
       map.set(key, arr);
     }
     return Array.from(map.entries())
-      .map(([key, items]) => ({ key, items, depth: key ? key.split('/').length : 0 }))
+      .map(([key, items]) => ({
+        key,
+        items: items.sort((a, b) => a.name.localeCompare(b.name)),
+        depth: key ? key.split('/').length : 0,
+      }))
       .sort((a, b) => a.key.localeCompare(b.key));
   });
 
@@ -99,5 +109,58 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
     if (itemKey !== targetKey) {
       this.groupChange.emit({ itemId: item.id, groupKey: targetKey });
     }
+  }
+
+  /**
+   * Starts dragging a group header (folder).
+   * @param key The group key being dragged.
+   * @param event The native drag event.
+   */
+  onGroupDragStart(key: string, event: DragEvent): void {
+    this.dragGroupKey = key;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', key);
+    }
+  }
+
+  /**
+   * Updates the drop target while dragging a folder over a group header.
+   * @param key The group key being hovered.
+   * @param event The native drag event.
+   */
+  onGroupDragOver(key: string, event: DragEvent): void {
+    if (!this.dragGroupKey || this.dragGroupKey === key) return;
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    this.dropTargetKey = key;
+  }
+
+  /**
+   * Handles dropping a folder onto a group header.
+   * @param key The group key that received the drop.
+   */
+  onGroupDrop(key: string): void {
+    if (this.dragGroupKey && this.dragGroupKey !== key) {
+      this.groupMove.emit({ fromKey: this.dragGroupKey, toKey: key });
+    }
+    this.dragGroupKey = null;
+    this.dropTargetKey = null;
+  }
+
+  /** Clears folder drag state. */
+  onGroupDragEnd(): void {
+    this.dragGroupKey = null;
+    this.dropTargetKey = null;
+  }
+
+  /**
+   * Whether a group header is currently the drop target for a folder drag.
+   * @param key The group key to check.
+   */
+  isGroupDropTarget(key: string): boolean {
+    return this.dropTargetKey === key;
   }
 }

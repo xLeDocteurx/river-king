@@ -25,6 +25,7 @@ export class TileListTreeComponent {
   tileCreate = output<void>();
   createFolder = output<string>();
   folderChange = output<{ tileId: number; folderPath: string }>();
+  folderMove = output<{ fromKey: string; toKey: string }>();
   toggleFolder = output<string>();
 
   groupByFolderPath = (tile: Tile) => tile.folderPath || '';
@@ -39,6 +40,10 @@ export class TileListTreeComponent {
 
   onTileFolderChange(event: { itemId: string | number; groupKey: string }): void {
     this.folderChange.emit({ tileId: Number(event.itemId), folderPath: event.groupKey });
+  }
+
+  onGroupMove(event: { fromKey: string; toKey: string }): void {
+    this.folderMove.emit(event);
   }
 
   /**

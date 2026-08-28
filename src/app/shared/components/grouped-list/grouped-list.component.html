@@ -28,11 +28,20 @@
     <div cdkDropListGroup>
       @for (group of groups(); track group.key) {
         <div class="tw-mb-3" [style.padding-left.px]="indentGroups() ? group.depth * 16 : 0">
-          <button
-            type="button"
-            (click)="toggleGroup.emit(group.key)"
-            class="tw-w-full tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground tw-cursor-pointer tw-text-left"
+          <div
+            class="tw-w-full tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-rounded-sm tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground tw-cursor-pointer"
+            [class.tw-bg-primary/10]="isGroupDropTarget(group.key)"
+            draggable="true"
+            (dragstart)="onGroupDragStart(group.key, $event)"
+            (dragover)="onGroupDragOver(group.key, $event)"
+            (drop)="onGroupDrop(group.key)"
+            (dragend)="onGroupDragEnd()"
           >
+            <button
+              type="button"
+              (click)="toggleGroup.emit(group.key)"
+              class="tw-flex tw-items-center tw-gap-2 tw-text-left tw-bg-transparent tw-border-0 tw-p-0 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground"
+            >
             <span
               class="material-symbols tw-text-sm tw-transition-transform"
               [class.-tw-rotate-90]="isCollapsed(group.key)"
@@ -41,6 +50,7 @@
             >
             <span>{{ group.key || 'Ungrouped' }}</span>
           </button>
+          </div>
           @if (!isCollapsed(group.key)) {
             <div
               cdkDropList

@@ -13,6 +13,7 @@
   (itemDelete)="onTileDelete($event)"
   (groupChange)="onTileFolderChange($event)"
   (toggleGroup)="toggleFolder.emit($event)"
+  (groupMove)="onGroupMove($event)"
   (createGroup)="onCreateGroup()"
   (createItem)="tileCreate.emit()"
 ></rk-grouped-list>

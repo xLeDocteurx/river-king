@@ -222,6 +222,34 @@ export class TileManagerComponent implements OnInit {
   }
 
   /**
+   * Moves all tiles from one folder into another (nested).
+   * Updates folderPath for direct members and all nested sub-folders.
+   * @param event Object containing fromKey and toKey folder paths.
+   */
+  async onFolderMove(event: { fromKey: string; toKey: string }): Promise<void> {
+    const from = event.fromKey;
+    const to = event.toKey;
+    if (!from || from === to) return;
+    const prefix = from + '/';
+    const newPrefix = to ? to + '/' + from : from;
+    const tilesToUpdate = this.tiles().filter(
+      (t) => (t.folderPath || '') === from || (t.folderPath || '').startsWith(prefix),
+    );
+    try {
+      for (const tile of tilesToUpdate) {
+        const oldPath = tile.folderPath || '';
+        const newPath = oldPath === from ? newPrefix : oldPath.replace(from, newPrefix);
+        await this.tileService.updateTileFolder(tile.id, newPath);
+      }
+      await this.loadTiles();
+      await this.loadFolders();
+    } catch (e) {
+      console.error('Failed to move folder:', e);
+      this.notification.error('Failed to move folder');
+    }
+  }
+
+  /**
    * Selects a tile by ID and fetches its details plus linked sprites.
    * @param tileId - The ID of the tile to select.
    * @returns Promise that resolves when the tile is loaded.
