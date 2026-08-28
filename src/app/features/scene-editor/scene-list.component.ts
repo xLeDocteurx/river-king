@@ -23,6 +23,8 @@ export class SceneListComponent {
   sceneDelete = output<string>();
   sceneFolderChange = output<{ sceneId: string; folderPath: string }>();
   createFolder = output<string>();
+  /** Emitted when the user requests deletion of an empty folder. */
+  folderDelete = output<string>();
 
   collapsedFolders = signal<string[]>([]);
 
@@ -34,6 +36,10 @@ export class SceneListComponent {
 
   onSceneDelete(id: string | number): void {
     this.sceneDelete.emit(String(id));
+  }
+
+  onFolderDelete(key: string): void {
+    this.folderDelete.emit(key);
   }
 
   onSceneFolderChange(event: { itemId: string | number; groupKey: string }): void {

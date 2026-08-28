@@ -63,6 +63,9 @@ export class SceneEditorComponent implements OnInit {
   private readonly statusBar = inject(StatusBarService);
   private readonly undo = inject(UndoService);
   private readonly deleteConfirmDialog = viewChild.required(ConfirmDialogComponent);
+  private readonly folderDeleteDialog = viewChild.required('folderDeleteDialog', {
+    read: ConfirmDialogComponent,
+  });
   mapCanvasRef = viewChild(MapCanvasComponent);
 
   /** Currently active project id derived from route params. */
@@ -93,6 +96,8 @@ export class SceneEditorComponent implements OnInit {
   projectTileSize = signal<number>(16);
   /** Id of the scene pending deletion confirmation. */
   pendingDeleteSceneId = signal<string | null>(null);
+  /** Folder path pending deletion confirmation. */
+  pendingDeleteFolderPath = signal<string | null>(null);
   /** Id of the currently active layer for tile placement. */
   activeLayerId = signal<string | null>(null);
 
@@ -140,6 +145,18 @@ export class SceneEditorComponent implements OnInit {
       message: scene
         ? `Are you sure you want to delete "${scene.name}"? This cannot be undone.`
         : 'Are you sure you want to delete this scene? This cannot be undone.',
+      confirmLabel: 'Delete',
+    };
+  });
+
+  /** Data for the folder deletion confirmation dialog. */
+  folderDeleteDialogData = computed<ConfirmDialogData>(() => {
+    const path = this.pendingDeleteFolderPath();
+    return {
+      title: 'Delete Folder',
+      message: path
+        ? `Are you sure you want to delete the folder "${path}"? This cannot be undone.`
+        : 'Are you sure you want to delete this folder? This cannot be undone.',
       confirmLabel: 'Delete',
     };
   });
@@ -295,6 +312,39 @@ export class SceneEditorComponent implements OnInit {
     } catch (e) {
       console.error('Failed to create folder:', e);
       this.notification.error('Failed to create the folder.');
+    }
+  }
+
+  /**
+   * Requests deletion of an empty folder, opening the confirmation dialog.
+   * Blocks folders whose tree still contains scenes with a notification.
+   * @param path The folder path the user wants to delete.
+   */
+  onFolderDeleteRequest(path: string): void {
+    const hasScenes = this.scenes().some(
+      (s) => s.folderPath === path || s.folderPath.startsWith(path + '/'),
+    );
+    if (hasScenes) {
+      this.notification.warning(`Folder "${path}" is not empty and cannot be deleted.`);
+      return;
+    }
+    this.pendingDeleteFolderPath.set(path);
+    this.folderDeleteDialog().open();
+  }
+
+  /**
+   * Deletes the pending folder after user confirmation, then refreshes the list.
+   */
+  async onConfirmFolderDelete(): Promise<void> {
+    const path = this.pendingDeleteFolderPath();
+    if (!path) return;
+    this.pendingDeleteFolderPath.set(null);
+    try {
+      await this.sceneService.deleteFolder(this.projectId(), path);
+      await this.loadFolders();
+    } catch (e) {
+      console.error('Failed to delete folder:', e);
+      this.notification.error('Failed to delete the folder.');
     }
   }
 
