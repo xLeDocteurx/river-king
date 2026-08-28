@@ -15,6 +15,7 @@ import type { Layer } from '../../shared/models/scene.model';
 import { getFootprint } from './map-footprint';
 import type { TileFootprintMap } from './map-footprint';
 import { cssTokenColor, gridStrokeColor } from './grid-color';
+import { GRID_EXT_ALPHA, MAX_EXPAND_TILES } from './autogrow.consts';
 import type { TileAnimationMeta } from './services/map-tiles.service';
 
 /**
@@ -265,11 +266,10 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     }
 
     // Grid drawn AFTER tiles so cell boundaries stay visible over filled cells.
-    // Skipped when zoomed out enough that lines would create moiré noise
-    // (threshold: rendered cell < 8 screen pixels).
-    const effectiveZoom = this.zoom();
-    if (this.showGrid() && effectiveZoom * cell >= 8) {
-      this.drawGrid(ctx, scene.width, scene.height, cell);
+    // Adaptive spacing (drawGrid) prevents moiré noise, so the grid stays on
+    // at any zoom instead of vanishing when zoomed out.
+    if (this.showGrid()) {
+      this.drawGrid(ctx, scene, cell, this.viewportWidth(), this.viewportHeight());
     }
 
     const hover = this.hoverCell();
@@ -350,29 +350,103 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     this.stopAnimationLoop();
   }
 
-  /** @internal Draws the grid overlay after tiles so cell lines remain visible. */
+  /**
+   * @internal Draws the grid overlay across the full viewport so extendable
+   * space beyond the in-memory scene is visible. Major-line spacing adapts to
+   * the zoom (`cell × 2^k`, smallest k with `spacing × zoom >= 8px`) so lines
+   * never collapse into moiré noise. Inside the scene rectangle the grid uses
+   * the normal stroke color; outside it, a reduced alpha (`GRID_EXT_ALPHA`).
+   * A 1px boundary line marks the scene edge.
+   */
   private drawGrid(
     ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number,
+    scene: Scene,
     cell: number,
+    viewportW: number,
+    viewportH: number,
   ): void {
-    ctx.strokeStyle = gridStrokeColor(this.canvasRef().nativeElement);
+    const zoom = this.zoom();
+    const spacing = this.adaptiveGridSpacing(cell, zoom);
+    const stroke = gridStrokeColor(this.canvasRef().nativeElement);
+
+    this.strokeGridLines(ctx, stroke, scene, cell, zoom, viewportW, viewportH, spacing);
+
+    const boundary = scene.width * cell;
+    const boundaryH = scene.height * cell;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0, 0, boundary, boundaryH);
+  }
+
+  /** @internal Computes the adaptive major-line spacing for the current zoom. */
+  private adaptiveGridSpacing(cell: number, zoom: number): number {
+    let spacing = cell;
+    while (spacing * zoom < 8) {
+      spacing *= 2;
+    }
+    return spacing;
+  }
+
+  /**
+   * @internal Strokes the grid lines across the viewport. Lines (or line
+   * segments) inside the scene rectangle use normal alpha; everything outside
+   * the rectangle (extended bands) uses `GRID_EXT_ALPHA`.
+   */
+  private strokeGridLines(
+    ctx: CanvasRenderingContext2D,
+    stroke: string,
+    scene: Scene,
+    cell: number,
+    zoom: number,
+    viewportW: number,
+    viewportH: number,
+    spacing: number,
+  ): void {
+    const sceneW = scene.width * cell;
+    const sceneH = scene.height * cell;
+    const left = -this.cameraX() / zoom;
+    const top = -this.cameraY() / zoom;
+    const right = left + viewportW / zoom;
+    const bottom = top + viewportH / zoom;
+    const viewTop = Math.max(top, 0);
+    const viewBottom = Math.min(bottom, sceneH);
+    const viewLeft = Math.max(left, 0);
+    const viewRight = Math.min(right, sceneW);
+
+    ctx.strokeStyle = stroke;
     ctx.lineWidth = 1;
 
-    for (let x = 0; x <= width; x++) {
+    const segment = (x1: number, y1: number, x2: number, y2: number, alpha: number): void => {
+      ctx.globalAlpha = alpha;
       ctx.beginPath();
-      ctx.moveTo(x * cell, 0);
-      ctx.lineTo(x * cell, height * cell);
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
       ctx.stroke();
+    };
+
+    for (let x = Math.floor(left / spacing) * spacing; x <= right; x += spacing) {
+      const inside = x >= 0 && x <= sceneW;
+      if (inside) {
+        if (viewBottom > viewTop) segment(x, viewTop, x, viewBottom, 1);
+        if (top < 0) segment(x, top, x, Math.min(0, bottom), GRID_EXT_ALPHA);
+        if (bottom > sceneH) segment(x, Math.max(sceneH, top), x, bottom, GRID_EXT_ALPHA);
+      } else {
+        segment(x, top, x, bottom, GRID_EXT_ALPHA);
+      }
     }
 
-    for (let y = 0; y <= height; y++) {
-      ctx.beginPath();
-      ctx.moveTo(0, y * cell);
-      ctx.lineTo(width * cell, y * cell);
-      ctx.stroke();
+    for (let y = Math.floor(top / spacing) * spacing; y <= bottom; y += spacing) {
+      const inside = y >= 0 && y <= sceneH;
+      if (inside) {
+        if (viewRight > viewLeft) segment(viewLeft, y, viewRight, y, 1);
+        if (left < 0) segment(left, y, Math.min(0, right), y, GRID_EXT_ALPHA);
+        if (right > sceneW) segment(Math.max(sceneW, left), y, right, y, GRID_EXT_ALPHA);
+      } else {
+        segment(left, y, right, y, GRID_EXT_ALPHA);
+      }
     }
+
+    ctx.globalAlpha = 1;
   }
 
   /** @internal Returns a color from the project palette for a given tile id. */
@@ -524,19 +598,26 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const cell = this.tileSize();
     const x = Math.floor((event.clientX - rect.left - this.cameraX()) / (cell * this.zoom()));
     const y = Math.floor((event.clientY - rect.top - this.cameraY()) / (cell * this.zoom()));
-    if (x < 0 || y < 0 || x >= scene.width || y >= scene.height) {
-      this.cursorCell.set(null);
-    } else {
-      this.cursorCell.set({ x, y });
-    }
+    const padLeft = Math.max(0, -x);
+    const padRight = Math.max(0, x - (scene.width - 1));
+    const padTop = Math.max(0, -y);
+    const padBottom = Math.max(0, y - (scene.height - 1));
+    const inReach =
+      padLeft <= MAX_EXPAND_TILES &&
+      padRight <= MAX_EXPAND_TILES &&
+      padTop <= MAX_EXPAND_TILES &&
+      padBottom <= MAX_EXPAND_TILES;
+    this.cursorCell.set(inReach ? { x, y } : null);
   }
 
   /**
    * @internal Computes the grid area the selected tile would occupy for a pointer
-   * position, applying the same bounds rule as placement.
+   * position. Placement is allowed outside the current scene rectangle as long as the
+   * required growth stays within `MAX_EXPAND_TILES` in every direction (the scene can
+   * auto-grow to include it).
    * @param event The native mouse event.
-   * @returns Anchor cell plus footprint size, or null when no tile is
-   *     selected, the pointer is outside the scene, or it would not fit.
+   * @returns Anchor cell plus footprint size, or null when no tile is selected,
+   *     the pointer is beyond the auto-grow guard, or the tile would not fit.
    */
   private footprintRectFor(
     event: MouseEvent,
@@ -551,7 +632,18 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const x = Math.floor((event.clientX - rect.left - this.cameraX()) / (cell * this.zoom()));
     const y = Math.floor((event.clientY - rect.top - this.cameraY()) / (cell * this.zoom()));
     const { w, h } = getFootprint(tileId, this.tileFootprints());
-    if (x < 0 || y < 0 || x + w > scene.width || y + h > scene.height) return null;
+    const padLeft = Math.max(0, -x);
+    const padRight = Math.max(0, x + w - scene.width);
+    const padTop = Math.max(0, -y);
+    const padBottom = Math.max(0, y + h - scene.height);
+    if (
+      padLeft > MAX_EXPAND_TILES ||
+      padRight > MAX_EXPAND_TILES ||
+      padTop > MAX_EXPAND_TILES ||
+      padBottom > MAX_EXPAND_TILES
+    ) {
+      return null;
+    }
     return { x, y, w, h };
   }
 
