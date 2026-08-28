@@ -10,6 +10,21 @@ import { StatusBarService } from '../../core/services/status-bar.service';
 import { TileService } from './services/tile.service';
 import { TileSpritesService } from './services/tile-sprites.service';
 import { ProjectService } from '../../features/dashboard/services/project.service';
+import { NotificationService } from '../../core/services/notification.service';
+
+// jsdom does not implement HTMLDialogElement methods
+const dialogProto = HTMLDialogElement.prototype as unknown as Record<string, unknown>;
+if (typeof dialogProto['showModal'] !== 'function') {
+  dialogProto['showModal'] = function () {
+    // no-op
+  };
+}
+if (typeof dialogProto['close'] !== 'function') {
+  dialogProto['close'] = function (returnValue?: string) {
+    (this as unknown as HTMLDialogElement).returnValue = returnValue ?? '';
+    (this as unknown as HTMLDialogElement).dispatchEvent(new Event('close'));
+  };
+}
 
 describe('TileManagerComponent', () => {
   let fixture: ComponentFixture<TileManagerComponent>;
@@ -104,6 +119,51 @@ describe('TileManagerComponent', () => {
     const comp = fixture.componentInstance;
     expect(comp.tileSize()).toBe(32);
     expect(comp.palette()).toEqual(['#ff0000', '#00ff00']);
+  });
+
+  it('deletes an empty folder from the folder signal after confirmation', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    comp.onCreateFolder('mountain');
+    expect(comp.folders()).toContain('mountain');
+
+    comp.onFolderDeleteRequest('mountain');
+    expect(comp.pendingDeleteFolderPath()).toBe('mountain');
+
+    comp.onConfirmFolderDelete();
+    expect(comp.folders()).not.toContain('mountain');
+  });
+
+  it('removes empty descendant folders together with the deleted folder', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    comp.onCreateFolder('forest');
+    comp.onCreateFolder('forest/caves');
+    comp.folders.update((list) => list.sort((a, b) => a.localeCompare(b)));
+
+    comp.onFolderDeleteRequest('forest');
+    comp.onConfirmFolderDelete();
+
+    expect(comp.folders()).not.toContain('forest');
+    expect(comp.folders()).not.toContain('forest/caves');
+  });
+
+  it('blocks deletion of a folder that still contains tiles', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    const db = TestBed.inject(DatabaseService);
+    const tileId = await addSeedTile();
+    await db.tiles.update(tileId, { folderPath: 'mountain' });
+    comp.folders.update((list) => [...list, 'mountain']);
+    await comp.loadTiles();
+
+    const notification = TestBed.inject(NotificationService);
+    const warnSpy = vi.spyOn(notification, 'warning');
+
+    comp.onFolderDeleteRequest('mountain');
+
+    expect(comp.pendingDeleteFolderPath()).toBeNull();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
   it('creates a first frame and selects the new tile', async () => {
