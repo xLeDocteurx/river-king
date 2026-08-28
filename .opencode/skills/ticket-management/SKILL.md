@@ -52,8 +52,8 @@ devbox run gh issue create --title "<Title>" --body "<Body>" 2>&1 | grep -v "dev
 - [ ]
 ```
 
-**Labels** (create with `devbox run gh label create <name> --color <hex>` if missing):
-`idea`, `enhancement`, `bug`, `spec`, `chore`, `docs`.
+**Labels** (all exist on the repo; create with `devbox run gh label create <name> --color <hex>` if one is missing):
+`idea`, `enhancement`, `bug`, `spec`, `chore`, `documentation`.
 
 Assign labels that match: `bug` for defects, `enhancement` for feature requests.
 
