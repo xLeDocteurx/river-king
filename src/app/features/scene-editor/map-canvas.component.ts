@@ -18,6 +18,9 @@ import { cssTokenColor, gridStrokeColor } from './grid-color';
 import { GRID_EXT_ALPHA, MAX_EXPAND_TILES } from './autogrow.consts';
 import type { TileAnimationMeta } from './services/map-tiles.service';
 
+/** sessionStorage key holding the grid visibility preference for the current session. */
+export const GRID_VISIBLE_STORAGE_KEY = 'rk-scene-editor.show-grid';
+
 /**
  * Canvas-based map renderer for a single scene.
  * Supports panning, zooming, and tile placement via mouse interaction.
@@ -60,8 +63,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   cameraY = signal(0);
   /** Current zoom level (1 = 100%). */
   zoom = signal(1);
-  /** Whether the grid overlay is visible. */
-  showGrid = signal(true);
+  /** Whether the grid overlay is visible (persisted for the current session). */
+  showGrid = signal(this.readGridVisibility());
   /** Current canvas viewport width in CSS pixels. */
   viewportWidth = signal(0);
   /** Current canvas viewport height in CSS pixels. */
@@ -128,6 +131,19 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       this.gridCentered = true;
       this.centerOnGrid();
     });
+
+    /** Persist the grid visibility choice for the current browser session. */
+    effect(() => {
+      sessionStorage.setItem(GRID_VISIBLE_STORAGE_KEY, this.showGrid() ? '1' : '0');
+    });
+  }
+
+  /**
+   * Reads the stored grid visibility for the current session.
+   * @returns True unless the session explicitly stores '0'; missing values default to visible.
+   */
+  private readGridVisibility(): boolean {
+    return sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY) !== '0';
   }
 
   /**
