@@ -1,6 +1,6 @@
 ---
 name: ticket-management
-description: Use when capturing new feature ideas or bugs, triaging them into GitHub Issues, or updating a GitHub Project kanban (add cards, change Status/Priority/Size). Relevant whenever docs/ideas.md, gh project, or issue creation/status transitions come up during a session.
+description: Use when capturing new feature ideas or bugs, triaging them into GitHub Issues, updating a GitHub Project kanban (add cards, change Status/Priority/Size), or giving corrections/feedback on a previous user story/issue. Relevant whenever docs/ideas.md, gh project, issue creation/status transitions, or revisiting a shipped/in-progress US come up during a session.
 ---
 
 # Ticket Management
@@ -104,12 +104,34 @@ Verify current options anytime with
 When moving an idea from Backlog to Ready, also set Priority and Size, and link the
 design spec once it exists: append `Spec: docs/superpowers/specs/<file>.md` to the issue body.
 
+## Corrections / feedback on an existing US
+
+All feedback lives **on the issue itself** (source of truth), not in chat — it evaporates.
+
+**1. Clarification / minor tweak (no scope change):**
+→ Comment on the issue. If the change is recurring, amend the acceptance criteria in the issue body.
+
+**2. Spec changes (US in progress, the what/how shifts):**
+→ Update the issue body **and** `docs/superpowers/specs/<file>.md` if one exists (note the change in an issue comment). If work is already in review, move the card back:
+
+```bash
+devbox run gh project item-edit 6 --owner xLeDocteurx --url "<ISSUE_URL>" \
+  --field "Status" --value "In progress" \
+  2>&1 | grep -v "devbox\|Welcome\|Node.js version\|npm version\|^$\|Running script\|v22\|10.9"
+```
+
+**3. Feedback reveals new scope:**
+→ New issue (1 US = 1 issue), cross-link both bodies with `Related to #N`. If the new subject is still an idea, capture it to `docs/ideas.md` first.
+
+Rule of thumb: **feedback = comment first, then either amend the US or split a new US depending on its weight.** The kanban is only touched when the work state must reflect the change.
+
 ## Common mistakes
 
 - Forgetting the `| grep -v ...` noise filter → output unreadable.
 - Using GraphQL IDs for Status → brittle, breaks when fields change.
 - Creating an issue before the user confirmed the idea is worth committing → always ask first.
 - Not linking the spec to the issue → the kanban card loses its details.
+- Giving feedback only in chat → it evaporates; always capture it as an issue comment.
 
 ## Interacting with the user
 
