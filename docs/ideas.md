@@ -6,6 +6,7 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 
 ## High Impact
 
+- [x] **Croissance auto de la map** — Placer des tuiles hors de la grille actuelle de la scène : la map (scène + toutes les couches) s'agrandit automatiquement quand une tuile est posée à l'extérieur de l'espace en mémoire. La grille doit être visible sur le canvas au-delà de la zone en mémoire pour que l'espace étendable soit découvrable. → [#7](https://github.com/xLeDocteurx/river-king/issues/7)
 - [x] **Undo/Redo** — Stack d'actions dans les éditeurs (scene, sprite, tile). Stub existant dans `core/actions/game-actions.ts`. → [#1](https://github.com/xLeDocteurx/river-king/issues/1)
 - [x] **Export/Import** — Exporter un projet (JSON, tilemap, atlas d'images). Importer un projet existant. → [#2](https://github.com/xLeDocteurx/river-king/issues/2)
 - [x] **Status bar utile** — Coordonnées curseur, zoom, dimensions scène, nombre de tiles, etc. → [#3](https://github.com/xLeDocteurx/river-king/issues/3)
