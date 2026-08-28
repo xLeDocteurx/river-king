@@ -21,6 +21,8 @@ import { MapCanvasComponent } from './map-canvas.component';
 import { SceneMinimapComponent } from './minimap/scene-minimap.component';
 import { LayerPanelComponent } from './layer-panel/layer-panel.component';
 import { clearOverlappedAnchors, getFootprint } from './map-footprint';
+import { growTileData } from './autogrow';
+import { MAX_EXPAND_TILES } from './autogrow.consts';
 import { SceneListComponent } from './scene-list.component';
 import { TilePaletteComponent } from './tile-palette.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -350,7 +352,9 @@ export class SceneEditorComponent implements OnInit {
 
   /**
    * Handles a tile placement event from the map canvas.
-   * Places the tile on the currently active layer.
+   * Places the tile on the currently active layer. When the placement falls
+   * outside the current scene rectangle, the scene grows (in every layer) to
+   * include it, capped at `MAX_EXPAND_TILES` per direction.
    * @param event Object containing x, y coordinates and the placed tile id.
    */
   async onTilePlaced(event: { x: number; y: number; tileId: number }): Promise<void> {
@@ -361,26 +365,79 @@ export class SceneEditorComponent implements OnInit {
     try {
       const layerIdx = scene.layers.findIndex((l) => l.id === activeId);
       if (layerIdx < 0) return;
-      const layer = scene.layers[layerIdx];
 
-      const previousTileData = layer.tileData.map((row) => [...row]);
+      const previousWidth = scene.width;
+      const previousHeight = scene.height;
+      const previousLayers = scene.layers.map((l) => ({
+        ...l,
+        tileData: l.tileData.map((row) => [...row]),
+      }));
+
       const { w, h } = getFootprint(event.tileId, this.tileFootprints());
-      const newTileData = clearOverlappedAnchors(
-        layer.tileData,
-        event.x,
-        event.y,
-        w,
-        h,
-        this.tileFootprints(),
-      );
-      newTileData[event.y][event.x] = event.tileId;
+      const padLeft = Math.max(0, -event.x);
+      const padRight = Math.max(0, event.x + w - previousWidth);
+      const padTop = Math.max(0, -event.y);
+      const padBottom = Math.max(0, event.y + h - previousHeight);
 
-      const newLayers = scene.layers.map((l, i) =>
-        i === layerIdx ? { ...l, tileData: newTileData } : l,
+      if (
+        padLeft > MAX_EXPAND_TILES ||
+        padRight > MAX_EXPAND_TILES ||
+        padTop > MAX_EXPAND_TILES ||
+        padBottom > MAX_EXPAND_TILES
+      ) {
+        this.notification.warning(
+          'Placement too far from the map — the scene can grow by at most 16 tiles per direction.',
+        );
+        return;
+      }
+
+      const newWidth = previousWidth + padLeft + padRight;
+      const newHeight = previousHeight + padTop + padBottom;
+      const anchorX = event.x + padLeft;
+      const anchorY = event.y + padTop;
+
+      const newLayers = scene.layers.map((l, i) => {
+        const grown = growTileData(
+          l.tileData,
+          padLeft,
+          padRight,
+          padTop,
+          padBottom,
+          newWidth,
+          newHeight,
+        );
+        if (i !== layerIdx) return { ...l, tileData: grown };
+        const cleared = clearOverlappedAnchors(
+          grown,
+          anchorX,
+          anchorY,
+          w,
+          h,
+          this.tileFootprints(),
+        );
+        cleared[anchorY][anchorX] = event.tileId;
+        return { ...l, tileData: cleared };
+      });
+
+      await this.sceneService.updateScene(scene.id, {
+        width: newWidth,
+        height: newHeight,
+        layers: newLayers,
+      });
+      this.selectedScene.update((s) =>
+        s ? { ...s, width: newWidth, height: newHeight, layers: newLayers } : null,
       );
 
-      await this.sceneService.updateScene(scene.id, { layers: newLayers });
-      this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+      // Shift the camera so prepended rows/columns do not make the view jump.
+      if (padLeft > 0 || padTop > 0) {
+        const canvas = this.mapCanvasRef();
+        if (canvas) {
+          const cell = this.projectTileSize();
+          const zoom = canvas.zoom();
+          if (padLeft > 0) canvas.cameraX.update((v) => v + padLeft * cell * zoom);
+          if (padTop > 0) canvas.cameraY.update((v) => v + padTop * cell * zoom);
+        }
+      }
 
       const sceneId = scene.id;
       const svc = this.sceneService;
@@ -389,17 +446,30 @@ export class SceneEditorComponent implements OnInit {
       this.undo.push({
         label: 'Place tile',
         execute() {
-          svc.updateScene(sceneId, { layers: newLayers }).then(() => {
-            sel.update((s) => (s ? { ...s, layers: newLayers } : null));
-          }).catch(() => notif.error('Failed to redo tile placement.'));
+          svc
+            .updateScene(sceneId, { width: newWidth, height: newHeight, layers: newLayers })
+            .then(() => {
+              sel.update((s) =>
+                s ? { ...s, width: newWidth, height: newHeight, layers: newLayers } : null,
+              );
+            })
+            .catch(() => notif.error('Failed to redo tile placement.'));
         },
         undo() {
-          const restoredLayers = newLayers.map((l, i) =>
-            i === layerIdx ? { ...l, tileData: previousTileData } : l,
-          );
-          svc.updateScene(sceneId, { layers: restoredLayers }).then(() => {
-            sel.update((s) => (s ? { ...s, layers: restoredLayers } : null));
-          }).catch(() => notif.error('Failed to undo tile placement.'));
+          svc
+            .updateScene(sceneId, {
+              width: previousWidth,
+              height: previousHeight,
+              layers: previousLayers,
+            })
+            .then(() => {
+              sel.update((s) =>
+                s
+                  ? { ...s, width: previousWidth, height: previousHeight, layers: previousLayers }
+                  : null,
+              );
+            })
+            .catch(() => notif.error('Failed to undo tile placement.'));
         },
       });
     } catch (e) {
