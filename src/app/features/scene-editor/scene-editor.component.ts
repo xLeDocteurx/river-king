@@ -11,6 +11,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ProjectService } from '../dashboard/services/project.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
 import { UndoService } from '../../core/services/undo.service';
@@ -58,6 +59,7 @@ export class SceneEditorComponent implements OnInit {
   private readonly sceneService = inject(SceneService);
   private readonly db = inject(DatabaseService);
   private readonly notification = inject(NotificationService);
+  private readonly projectService = inject(ProjectService);
   private readonly mapTilesService = inject(MapTilesService);
   private readonly sessions = inject(SessionService);
   private readonly statusBar = inject(StatusBarService);
@@ -175,7 +177,9 @@ export class SceneEditorComponent implements OnInit {
    */
   async loadProjectData(): Promise<void> {
     try {
-      const project = await this.db.projects.get(this.projectId());
+      const project =
+        this.projectService.currentProject() ??
+        (await this.projectService.getById(this.projectId()));
       if (project) {
         this.projectPalette.set(project.palette);
         this.projectTileSize.set(project.tileSize ?? 16);

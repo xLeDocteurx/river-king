@@ -79,6 +79,21 @@ describe('ProjectService', () => {
     expect(result?.name).toBe('Updated');
   });
 
+  it('should expose the currently-open project via a signal', async () => {
+    const project = await service.create({
+      name: 'Open',
+      palette: ['#000000'],
+      tileSize: 16,
+      mapWidth: 40,
+      mapHeight: 30,
+    });
+    expect(service.currentProject()).toBeNull();
+    service.setCurrentProject(project);
+    expect(service.currentProject()).toBe(project);
+    service.setCurrentProject(null);
+    expect(service.currentProject()).toBeNull();
+  });
+
   it('should delete a project and its related data', async () => {
     const db = TestBed.inject(DatabaseService);
     const project = await service.create({

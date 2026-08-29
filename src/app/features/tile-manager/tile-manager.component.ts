@@ -151,7 +151,9 @@ export class TileManagerComponent implements OnInit {
    */
   async loadProject(): Promise<void> {
     try {
-      const project = await this.projectService.getById(this.projectId());
+      const project =
+        this.projectService.currentProject() ??
+        (await this.projectService.getById(this.projectId()));
       if (project) {
         this.tileSize.set(project.tileSize);
         this.palette.set(project.palette);

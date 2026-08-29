@@ -237,7 +237,9 @@ export class SpriteEditorComponent implements OnInit {
   /** Loads the project's color palette from the project service. */
   async loadProjectPalette() {
     try {
-      const project = await this.projectService.getById(this.projectId());
+      const project =
+        this.projectService.currentProject() ??
+        (await this.projectService.getById(this.projectId()));
       this.projectPalette.set(project?.palette ?? []);
       this.projectTileSize.set(project?.tileSize ?? 16);
     } catch (e) {
