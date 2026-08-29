@@ -2,7 +2,7 @@
 
 > A lightweight, browser-based tile engine for crafting 2D worlds — built with Angular 22 and saved entirely in your browser via IndexedDB.
 
-[River King](https://github.com/your-org/river-king) is a **pixel-perfect tile editor and scene composer** that runs without a backend. Every sprite, tile, scene, and layer is stored locally in your browser using IndexedDB, so your work travels with you and never hits a server.
+[River King](https://github.com/xLeDocteurx/river-king) is a **pixel-perfect tile editor and scene composer** that runs without a backend. Every sprite, tile, scene, and layer is stored locally in your browser using IndexedDB, so your work travels with you and never hits a server.
 
 Whether you're sketching mock-ups, building a retro RPG overworld, or prototyping a platformer, River King gives you the tools to draw sprites, assemble tiles, compose layered scenes, and iterate fast — all in one tab.
 
@@ -98,6 +98,7 @@ src/app/
 ├── shared/        # Reusable UI components: dialog, toast, searchable-select, confirm dialogs
 └── features/      # Lazy-loaded business features
     ├── dashboard/       # Project list and creation
+    ├── project/         # Project workspace shell + sidebar (Scenes / Tiles / Sprites)
     ├── scene-editor/    # Scene painter, minimap, layers, tile palette
     ├── sprite-editor/   # Pixel canvas, frame strip, palette manager, drawing tools
     └── tile-manager/    # Tile properties, frame lifecycle, resize, sprite linking
