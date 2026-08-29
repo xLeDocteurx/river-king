@@ -297,6 +297,25 @@ export class ProjectIoService {
     if (!Array.isArray(archive.scenes) || !Array.isArray(archive.folders)) {
       throw new ProjectImportError('This file is missing required data.');
     }
+    const tileSourceIds = new Set(archive.tiles.map((t) => t.sourceId));
+    const spriteSourceIds = new Set(archive.sprites.map((s) => s.sourceId));
+    if (archive.sprites.some((s) => !tileSourceIds.has(s.tileSourceId))) {
+      throw new ProjectImportError('This file references a missing tile.');
+    }
+    if (
+      archive.tiles.some((t) => t.spriteIds.some((id) => !spriteSourceIds.has(id)))
+    ) {
+      throw new ProjectImportError('This file references a missing frame.');
+    }
+    if (
+      archive.scenes.some((scene) =>
+        scene.layers.some((layer) =>
+          layer.tileData.some((row) => row.some((tid) => tid >= 0 && !tileSourceIds.has(tid))),
+        ),
+      )
+    ) {
+      throw new ProjectImportError('This file references a missing tile.');
+    }
     return archive;
   }
 }

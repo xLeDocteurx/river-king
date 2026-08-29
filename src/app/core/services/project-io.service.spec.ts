@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { TestBed } from '@angular/core/testing';
 import { DatabaseService } from './database.service';
-import { ProjectIoService } from './project-io.service';
+import { ProjectIoService, ProjectImportError } from './project-io.service';
 import {
   PROJECT_ARCHIVE_FORMAT,
   PROJECT_ARCHIVE_VERSION,
@@ -253,5 +253,133 @@ describe('ProjectIoService', () => {
     ]);
     expect(t1).toBe(2);
     expect(t2).toBe(2);
+  });
+
+  function validTile() {
+    return {
+      sourceId: 1,
+      name: 'Ground',
+      type: 'static' as const,
+      spriteIds: [11],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: '',
+    };
+  }
+
+  function validSprite() {
+    return {
+      sourceId: 11,
+      tileSourceId: 1,
+      name: 'frame 1',
+      width: 16,
+      height: 16,
+      pixelData: 'data:image/png;base64,AAA',
+    };
+  }
+
+  function validJsonOverrides(overrides: Record<string, unknown>): string {
+    const base = {
+      format: PROJECT_ARCHIVE_FORMAT,
+      formatVersion: PROJECT_ARCHIVE_VERSION,
+      exportedAt: 0,
+      project: {
+        name: 'Heroes',
+        palette: ['#ff0000'],
+        tileSize: 16,
+        mapWidth: 40,
+        mapHeight: 30,
+      },
+      tiles: [validTile()],
+      sprites: [validSprite()],
+      scenes: [
+        {
+          name: 'Level 1',
+          folderPath: '',
+          width: 10,
+          height: 10,
+          layers: [
+            {
+              id: 'l-1',
+              name: 'Background',
+              visible: true,
+              opacity: 1,
+              tileData: [[1, -1]],
+            },
+          ],
+        },
+      ],
+      folders: [],
+    };
+    return JSON.stringify({ ...base, ...overrides });
+  }
+
+  async function expectImportRejected(json: string, message: string): Promise<void> {
+    await expect(service.importProject(json, { kind: 'new' })).rejects.toThrow(
+      new ProjectImportError(message),
+    );
+  }
+
+  it('rejects files that are not valid JSON', async () => {
+    await expectImportRejected('not-json', 'This file is not a valid project file.');
+  });
+
+  it('rejects files that are not river king exports', async () => {
+    await expectImportRejected(
+      JSON.stringify({ hello: 'world' }),
+      'This file is not a River King project export.',
+    );
+  });
+
+  it('rejects unsupported format versions', async () => {
+    const json = validJsonOverrides({ formatVersion: 99 });
+    await expectImportRejected(json, 'This project file uses an unsupported version (99).');
+  });
+
+  it('rejects archives missing required data', async () => {
+    const noName = validJsonOverrides({
+      project: { palette: [], tileSize: 16, mapWidth: 40, mapHeight: 30 },
+    });
+    await expectImportRejected(noName, 'This file is missing required data.');
+
+    const noTiles = validJsonOverrides({ tiles: undefined });
+    await expectImportRejected(noTiles, 'This file is missing required data.');
+  });
+
+  it('rejects sprites referencing a missing tile', async () => {
+    const json = validJsonOverrides({
+      sprites: [{ ...validSprite(), tileSourceId: 999 }],
+    });
+    await expectImportRejected(json, 'This file references a missing tile.');
+  });
+
+  it('rejects tiles referencing a missing frame', async () => {
+    const json = validJsonOverrides({
+      tiles: [{ ...validTile(), spriteIds: [777] }],
+    });
+    await expectImportRejected(json, 'This file references a missing frame.');
+  });
+
+  it('rejects scenes referencing a missing tile in tileData', async () => {
+    const json = validJsonOverrides({
+      scenes: [
+        {
+          name: 'Level 1',
+          folderPath: '',
+          width: 10,
+          height: 10,
+          layers: [
+            {
+              id: 'l-1',
+              name: 'Background',
+              visible: true,
+              opacity: 1,
+              tileData: [[999, -1]],
+            },
+          ],
+        },
+      ],
+    });
+    await expectImportRejected(json, 'This file references a missing tile.');
   });
 });
