@@ -9,16 +9,28 @@
 >
   <div class="tw-flex tw-items-start tw-justify-between tw-mb-1">
     <h3 class="tw-text-sm tw-font-semibold tw-text-foreground">{{ project().name }}</h3>
-    <button
-      type="button"
-      (click)="onDelete($event)"
-      (keydown)="$event.stopPropagation()"
-      title="Delete"
-      aria-label="Delete project"
-      class="tw-p-1 tw-rounded-sm tw-opacity-0 group-hover:tw-opacity-100 focus-visible:tw-opacity-100 tw-text-destructive hover:tw-bg-destructive/10 tw-transition"
-    >
-      <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
-    </button>
+    <div class="tw-flex tw-items-center tw-gap-1">
+      <button
+        type="button"
+        (click)="onExport($event)"
+        (keydown)="$event.stopPropagation()"
+        title="Export"
+        aria-label="Export project"
+        class="tw-p-1 tw-rounded-sm tw-opacity-0 group-hover:tw-opacity-100 focus-visible:tw-opacity-100 tw-text-muted-foreground hover:tw-bg-accent/10 tw-transition"
+      >
+        <span class="material-symbols tw-text-sm" aria-hidden="true">download</span>
+      </button>
+      <button
+        type="button"
+        (click)="onDelete($event)"
+        (keydown)="$event.stopPropagation()"
+        title="Delete"
+        aria-label="Delete project"
+        class="tw-p-1 tw-rounded-sm tw-opacity-0 group-hover:tw-opacity-100 focus-visible:tw-opacity-100 tw-text-destructive hover:tw-bg-destructive/10 tw-transition"
+      >
+        <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
+      </button>
+    </div>
   </div>
   <p
     data-testid="card-meta"

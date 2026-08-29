@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import 'fake-indexeddb/auto';
 import { ProjectCardComponent } from './project-card.component';
 import { DatabaseService } from '../../core/services/database.service';
+import { ProjectIoService } from '../../core/services/project-io.service';
+import { NotificationService } from '../../core/services/notification.service';
 import type { Project } from '../../shared/models/project.model';
 
 function hexToRgb(hex: string): string {
@@ -209,5 +211,64 @@ describe('ProjectCardComponent', () => {
       const div = colorDivs[i] as HTMLElement;
       expect(div.style.backgroundColor).toBe(hexToRgb(palette[i]));
     }
+  });
+
+  it('exports the project as a downloadable rkproj file', async () => {
+    const projectIo = TestBed.inject(ProjectIoService);
+    const exportSpy = vi
+      .spyOn(projectIo, 'exportProject')
+      .mockResolvedValue('{"format":"river-king-project"}');
+
+    const createObjectURL = vi.fn(() => 'blob:mock-url');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click');
+    const appendSpy = vi.spyOn(document.body, 'appendChild');
+    try {
+      const fixture = TestBed.createComponent(ProjectCardComponent);
+      fixture.componentRef.setInput(
+        'project',
+        createMockProject({ id: 'project-42', name: 'My Hero Game' }),
+      );
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const exportButton = compiled.querySelector<HTMLButtonElement>('button[title="Export"]');
+      expect(exportButton).toBeTruthy();
+      expect(exportButton!.getAttribute('aria-label')).toBe('Export project');
+
+      exportButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(exportSpy).toHaveBeenCalledWith('project-42');
+      expect(createObjectURL).toHaveBeenCalledTimes(1);
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+      const anchor = appendSpy.mock.calls
+        .map((call) => call[0])
+        .find((node) => node instanceof HTMLAnchorElement) as HTMLAnchorElement;
+      expect(anchor.getAttribute('download')).toBe('river-king-my-hero-game.rkproj');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('notifies the user when the export fails', async () => {
+    const projectIo = TestBed.inject(ProjectIoService);
+    vi.spyOn(projectIo, 'exportProject').mockRejectedValue(new Error('boom'));
+    const notification = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notification, 'error');
+
+    const fixture = TestBed.createComponent(ProjectCardComponent);
+    fixture.componentRef.setInput('project', createMockProject({ id: 'project-1' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const exportButton = compiled.querySelector<HTMLButtonElement>('button[title="Export"]');
+    exportButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(errorSpy).toHaveBeenCalledWith('Failed to export project');
   });
 });
