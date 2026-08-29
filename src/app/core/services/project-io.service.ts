@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from './database.service';
+import type { Tile } from '../../shared/models/tile.model';
+import type { Sprite } from '../../shared/models/sprite.model';
 import {
   PROJECT_ARCHIVE_FORMAT,
   PROJECT_ARCHIVE_VERSION,
@@ -141,11 +143,160 @@ export class ProjectIoService {
    * @throws ProjectImportError when the file is invalid.
    */
   async importProject(fileText: string, mode: ImportMode): Promise<ImportResult> {
-    void mode;
-    throw new ProjectImportError('Import is not implemented yet');
+    const archive = this.validate(fileText);
+    const projectId = mode.kind === 'new' ? crypto.randomUUID() : mode.targetProjectId;
+    const now = Date.now();
+    const projectRow = {
+      id: projectId,
+      name: archive.project.name,
+      createdAt: now,
+      updatedAt: now,
+      palette: [...archive.project.palette],
+      tileSize: archive.project.tileSize,
+      mapWidth: archive.project.mapWidth,
+      mapHeight: archive.project.mapHeight,
+    };
+
+    const tileIdMap = new Map<number, number>();
+    const spriteIdMap = new Map<number, number>();
+
+    await this.db.transaction(
+      'rw',
+      [
+        this.db.projects,
+        this.db.tiles,
+        this.db.sprites,
+        this.db.scenes,
+        this.db.folders,
+        this.db.sessions,
+      ],
+      async () => {
+        if (mode.kind === 'replace') {
+          await this.purgeProject(projectId);
+        }
+        for (const t of archive.tiles) {
+          const newId = await this.db.tiles.add({
+            projectId,
+            name: t.name,
+            type: t.type,
+            spriteIds: [] as number[],
+            animationSpeed: t.animationSpeed,
+            properties: { ...t.properties },
+            folderPath: t.folderPath,
+          } as Tile);
+          tileIdMap.set(t.sourceId, newId);
+        }
+        for (const s of archive.sprites) {
+          const newId = await this.db.sprites.add({
+            projectId,
+            tileId: tileIdMap.get(s.tileSourceId)!,
+            name: s.name,
+            width: s.width,
+            height: s.height,
+            pixelData: s.pixelData,
+            paletteIndices: s.paletteIndices?.map((row) => [...row]),
+          } as Sprite);
+          spriteIdMap.set(s.sourceId, newId);
+        }
+        for (const t of archive.tiles) {
+          const newId = tileIdMap.get(t.sourceId)!;
+          await this.db.tiles.update(newId, {
+            spriteIds: t.spriteIds.map((sid) => spriteIdMap.get(sid)!),
+          });
+        }
+        for (const sc of archive.scenes) {
+          await this.db.scenes.add({
+            id: crypto.randomUUID(),
+            projectId,
+            name: sc.name,
+            folderPath: sc.folderPath,
+            width: sc.width,
+            height: sc.height,
+            layers: sc.layers.map((l) => ({
+              id: l.id,
+              name: l.name,
+              visible: l.visible,
+              opacity: l.opacity,
+              tileData: l.tileData.map((row) =>
+                row.map((tid) => (tid < 0 ? tid : tileIdMap.get(tid)!)),
+              ),
+            })),
+          });
+        }
+        for (const path of archive.folders) {
+          await this.db.folders.add({
+            id: crypto.randomUUID(),
+            projectId,
+            path,
+          });
+        }
+        await this.db.projects.delete(projectId);
+        await this.db.projects.add(projectRow);
+      },
+    );
+
+    return { projectId, kind: mode.kind };
   }
 
-  private validate(_fileText: string): ProjectArchive {
-    throw new ProjectImportError('Import is not implemented yet');
+  /**
+   * Deletes every row belonging to a project (scenes, tiles, sprites, folders,
+   * sessions — project row excluded).
+   * @param projectId - The project to purge.
+   */
+  private async purgeProject(projectId: string): Promise<void> {
+    await this.db.scenes.where('projectId').equals(projectId).delete();
+    await this.db.tiles.where('projectId').equals(projectId).delete();
+    await this.db.sprites.where('projectId').equals(projectId).delete();
+    await this.db.folders.where('projectId').equals(projectId).delete();
+    await this.db.sessions.where('projectId').equals(projectId).delete();
+  }
+
+  /**
+   * Parses and structurally validates an archive file.
+   * @param fileText - Raw file content.
+   * @returns The validated archive.
+   * @throws ProjectImportError with a user-facing message.
+   */
+  private validate(fileText: string): ProjectArchive {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(fileText);
+    } catch {
+      throw new ProjectImportError('This file is not a valid project file.');
+    }
+    if (!isRecord(raw)) {
+      throw new ProjectImportError('This file is not a River King project export.');
+    }
+    const archive = raw as unknown as ProjectArchive;
+    if (archive.format !== PROJECT_ARCHIVE_FORMAT) {
+      throw new ProjectImportError('This file is not a River King project export.');
+    }
+    if (archive.formatVersion !== PROJECT_ARCHIVE_VERSION) {
+      throw new ProjectImportError(
+        `This project file uses an unsupported version (${String(archive.formatVersion)}).`,
+      );
+    }
+    if (!isRecord(archive.project)) {
+      throw new ProjectImportError('This file is missing required data.');
+    }
+    const p = archive.project;
+    if (
+      typeof p.name !== 'string' ||
+      p.name.length === 0 ||
+      !Array.isArray(p.palette) ||
+      p.palette.some((c) => typeof c !== 'string') ||
+      typeof p.tileSize !== 'number' ||
+      typeof p.mapWidth !== 'number' ||
+      typeof p.mapHeight !== 'number'
+    ) {
+      throw new ProjectImportError('This file is missing required data.');
+    }
+    if (!Array.isArray(archive.tiles) || !Array.isArray(archive.sprites)) {
+      throw new ProjectImportError('This file is missing required data.');
+    }
+    if (!Array.isArray(archive.scenes) || !Array.isArray(archive.folders)) {
+      throw new ProjectImportError('This file is missing required data.');
+    }
+    return archive;
   }
 }
