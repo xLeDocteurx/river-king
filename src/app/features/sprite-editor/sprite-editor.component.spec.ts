@@ -98,16 +98,16 @@ describe('SpriteEditorComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should show placeholder when no sprite selected', async () => {
+  it('should show placeholder when no tile is selected', async () => {
     await createProjectWithPalette();
     await setupWithProject();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('No sprite selected');
-    expect(compiled.textContent).toContain('Select a sprite from the list to start editing');
+    expect(compiled.textContent).toContain('No tile selected');
+    expect(compiled.textContent).toContain('Select a tile from the list to start editing');
   });
 
-  it('should list sprites after creating one', async () => {
+  it('should list a tile with its new sprite after creating one', async () => {
     await createProjectWithPalette();
     const db = TestBed.inject(DatabaseService);
     await db.tiles.add({
@@ -121,12 +121,16 @@ describe('SpriteEditorComponent', () => {
     } as Tile);
     await setupWithProject();
     const service = TestBed.inject(SpriteService);
-    await service.createSprite('test-proj', 'Test Sprite', 1);
-    await fixture.componentInstance.loadSprites();
-    await fixture.componentInstance.loadTiles();
+    const sprite = await service.createSprite('test-proj', 'Test Sprite', 1);
+    await db.tiles.update(1, { spriteIds: [sprite.id] });
+    const component = fixture.componentInstance;
+    await component.loadSprites();
+    await component.loadTiles();
+    await component.selectTile(1);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Test Sprite');
+    expect(compiled.textContent).toContain('Base Tile');
+    expect(component.currentFrames().map((f) => f.name)).toEqual(['Test Sprite']);
   });
 
   it('should select a sprite and show canvas', async () => {
@@ -156,10 +160,21 @@ describe('SpriteEditorComponent', () => {
     expect(spy).toHaveBeenCalledWith('test-proj', { lastSpriteId: sprite.id });
   });
 
-  it('keeps the sprite list visible when a spriteId param is present', async () => {
+  it('keeps the editor usable when a spriteId param is present', async () => {
     await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Base Tile',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+    } as Tile);
     const service = TestBed.inject(SpriteService);
     const sprite = await service.createSprite('test-proj', 'Deep Linked Sprite', 1);
+    await db.tiles.update(1, { spriteIds: [sprite.id] });
     await setupWithProject();
 
     routeParams.next({ spriteId: String(sprite.id) });
@@ -168,7 +183,8 @@ describe('SpriteEditorComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('rk-pixel-canvas')).toBeTruthy();
-    expect(compiled.textContent).toContain('Sprites');
+    expect(compiled.textContent).toContain('Base Tile');
+    expect(compiled.textContent).toContain('Tiles');
   });
 
   it('swaps the empty state for the canvas when a sprite is selected', async () => {
@@ -323,7 +339,8 @@ describe('SpriteEditorComponent', () => {
     await setupWithProject();
     const service = TestBed.inject(SpriteService);
     const frame1 = await service.createSprite('test-proj', 'alpha frame', 1);
-    await service.createSprite('test-proj', 'beta frame', 1);
+    const frame2 = await service.createSprite('test-proj', 'beta frame', 1);
+    await db.tiles.update(1, { spriteIds: [frame1.id, frame2.id], type: 'animated' });
     const component = fixture.componentInstance;
     await component.loadSprites();
     await component.loadTiles();
