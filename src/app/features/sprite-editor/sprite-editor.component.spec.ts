@@ -394,4 +394,30 @@ describe('SpriteEditorComponent', () => {
     await fixture.whenStable();
     expect(fixture.componentInstance.onionSkinPrevData()).toBe('A');
   });
+
+  it('switches the drawing tool on digit key shortcuts', async () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    const event = new KeyboardEvent('keydown', { key: '2', cancelable: true });
+    document.dispatchEvent(event);
+    expect(component.selectedTool()).toBe('eraser');
+  });
+
+  it('deletes the selected frame on Delete', async () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.selectedSpriteId.set(42);
+    const deleteSpy = vi.spyOn(component, 'onDeleteFrame').mockResolvedValue();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', cancelable: true }));
+    expect(deleteSpy).toHaveBeenCalledWith(42);
+  });
+
+  it('flushes and confirms the sprite save on Ctrl+S', async () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const notification = TestBed.inject(NotificationService);
+    const successSpy = vi.spyOn(notification, 'success');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true }));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(successSpy).toHaveBeenCalledWith('Sprite saved');
+  });
 });

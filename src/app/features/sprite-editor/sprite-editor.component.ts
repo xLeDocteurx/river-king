@@ -21,6 +21,10 @@ import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
 import { UndoService } from '../../core/services/undo.service';
+import {
+  KeyboardShortcutsService,
+  ShortcutId,
+} from '../../core/services/keyboard-shortcuts.service';
 import type { Sprite } from '../../shared/models/sprite.model';
 import type { Tile } from '../../shared/models/tile.model';
 
@@ -61,6 +65,7 @@ export class SpriteEditorComponent implements OnInit {
   private readonly statusBar = inject(StatusBarService);
   private readonly undo = inject(UndoService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly shortcuts = inject(KeyboardShortcutsService);
 
   /** Reactive signal holding the current project ID. */
   projectId = signal<string>('');
@@ -197,6 +202,12 @@ export class SpriteEditorComponent implements OnInit {
     );
   });
 
+  constructor() {
+    this.shortcuts.shortcuts
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((id) => this.onShortcut(id));
+  }
+
   /** Initializes component, subscribing to route params to load project data. */
   ngOnInit() {
     this.destroyRef.onDestroy(() => void this.flushPersist());
@@ -232,6 +243,43 @@ export class SpriteEditorComponent implements OnInit {
         this.notification.error('Failed to load sprite');
       }
     });
+  }
+
+  /**
+   * Handles a global keyboard shortcut.
+   * @param id - The shortcut that was pressed.
+   */
+  onShortcut(id: ShortcutId): void {
+    switch (id) {
+      case 'undo':
+        this.undo.undo();
+        break;
+      case 'redo':
+        this.undo.redo();
+        break;
+      case 'delete': {
+        const frameId = this.selectedSpriteId();
+        if (frameId !== null) {
+          void this.onDeleteFrame(frameId);
+        }
+        break;
+      }
+      case 'save':
+        void this.flushPersist();
+        this.notification.success('Sprite saved');
+        break;
+      case 'tool.brush':
+        this.selectedTool.set('brush');
+        break;
+      case 'tool.eraser':
+        this.selectedTool.set('eraser');
+        break;
+      case 'tool.fill':
+        this.selectedTool.set('fill');
+        break;
+      default:
+        break;
+    }
   }
 
   /** Loads the project's color palette from the project service. */
