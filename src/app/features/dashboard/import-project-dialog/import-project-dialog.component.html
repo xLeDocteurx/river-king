@@ -1,0 +1,68 @@
+<rk-dialog #dialog (closed)="onDialogClosed()">
+  <div class="tw-p-6">
+    <h2 class="tw-text-xl tw-font-bold tw-mb-4">Import Project</h2>
+
+    <p class="tw-text-sm tw-text-foreground tw-mb-4">
+      Your project “{{ archive()?.project.name }}” contains
+      <strong>{{ tileCount() }}</strong> tiles,
+      <strong>{{ frameCount() }}</strong> frames,
+      <strong>{{ sceneCount() }}</strong> scenes and a
+      <strong>{{ paletteCount() }}-color palette</strong>.
+    </p>
+
+    <div class="tw-flex tw-flex-col tw-gap-2 tw-mb-4">
+      <button
+        type="button"
+        role="radio"
+        [attr.aria-checked]="!replaceMode()"
+        (click)="chooseNew()"
+        class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-border tw-text-sm tw-text-left tw-cursor-pointer hover:tw-bg-muted"
+        [class.tw-bg-muted]="!replaceMode()"
+        [class.tw-border-accent]="!replaceMode()"
+      >
+        Create a new project
+      </button>
+      <button
+        type="button"
+        role="radio"
+        [attr.aria-checked]="replaceMode()"
+        (click)="chooseReplace()"
+        class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-border tw-text-sm tw-text-left tw-cursor-pointer hover:tw-bg-muted"
+        [class.tw-bg-muted]="replaceMode()"
+        [class.tw-border-accent]="replaceMode()"
+      >
+        Replace an existing project
+      </button>
+      <select
+        aria-label="Project to replace"
+        [disabled]="!replaceMode()"
+        [value]="selectedProjectId() ?? ''"
+        (change)="onSelectChange($event)"
+        class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground tw-text-sm"
+      >
+        <option value="">Select a project…</option>
+        @for (p of projects(); track p.id) {
+          <option [value]="p.id">{{ p.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="tw-flex tw-justify-end tw-gap-2">
+      <button
+        type="button"
+        (click)="cancel()"
+        class="tw-px-4 tw-py-2 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-foreground hover:tw-bg-muted"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        [disabled]="!canConfirm()"
+        (click)="confirm()"
+        class="tw-px-4 tw-py-2 tw-rounded-sm tw-bg-primary tw-text-primary-foreground hover:tw-opacity-90 disabled:tw-opacity-50"
+      >
+        Import
+      </button>
+    </div>
+  </div>
+</rk-dialog>
