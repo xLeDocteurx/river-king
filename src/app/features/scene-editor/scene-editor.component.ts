@@ -324,15 +324,13 @@ export class SceneEditorComponent implements OnInit {
         this.activeLayerId.set(null);
       }
       if (sceneToDelete) {
-        const svc = this.sceneService;
-        const self = this;
         this.undo.push({
           label: 'Delete scene',
-          execute() {
-            void svc.deleteScene(sceneId).then(() => self.loadScenes());
+          execute: () => {
+            void this.sceneService.deleteScene(sceneId).then(() => this.loadScenes());
           },
-          undo() {
-            void svc.restoreScene(sceneToDelete).then(() => self.loadScenes());
+          undo: () => {
+            void this.sceneService.restoreScene(sceneToDelete).then(() => this.loadScenes());
           },
         });
       }
@@ -352,17 +350,15 @@ export class SceneEditorComponent implements OnInit {
       await this.sceneService.updateSceneFolder(event.sceneId, event.folderPath);
       await this.loadScenes();
 
-      const svc = this.sceneService;
-      const self = this;
       const sceneId = event.sceneId;
       const newPath = event.folderPath;
       this.undo.push({
         label: 'Move scene',
-        execute() {
-          void svc.updateSceneFolder(sceneId, newPath).then(() => self.loadScenes());
+        execute: () => {
+          void this.sceneService.updateSceneFolder(sceneId, newPath).then(() => this.loadScenes());
         },
-        undo() {
-          void svc.updateSceneFolder(sceneId, prevPath).then(() => self.loadScenes());
+        undo: () => {
+          void this.sceneService.updateSceneFolder(sceneId, prevPath).then(() => this.loadScenes());
         },
       });
     } catch (e) {

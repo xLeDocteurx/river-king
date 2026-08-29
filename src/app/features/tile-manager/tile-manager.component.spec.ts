@@ -10,6 +10,7 @@ import { StatusBarService } from '../../core/services/status-bar.service';
 import { TileService } from './services/tile.service';
 import { TileSpritesService } from './services/tile-sprites.service';
 import { ProjectService } from '../../features/dashboard/services/project.service';
+import { UndoService } from '../../core/services/undo.service';
 
 describe('TileManagerComponent', () => {
   let fixture: ComponentFixture<TileManagerComponent>;
@@ -73,6 +74,11 @@ describe('TileManagerComponent', () => {
       animationSpeed: 4,
       properties: { blocking: false, interactable: false },
     } as unknown as import('../../shared/models/tile.model').Tile);
+  }
+
+  /** Flushes the fire-and-forget async undo/redo closures (Dexie + reload chain). */
+  async function flushUndo() {
+    await new Promise((r) => setTimeout(r, 250));
   }
 
   it('should create', async () => {
@@ -234,5 +240,143 @@ describe('TileManagerComponent', () => {
     const lastCall = spy.mock.calls[spy.mock.calls.length - 1][0] as string;
     expect(lastCall).toContain('T');
     expect(lastCall).toContain('frames');
+  });
+
+  it('undo removes a created tile and redo recreates it with its frame', async () => {
+    const db = TestBed.inject(DatabaseService);
+    await db.projects.add({
+      id: 'test-proj',
+      name: 'Test Project',
+      createdAt: 0,
+      updatedAt: 0,
+      palette: ['#ff0000'],
+      tileSize: 32,
+      mapWidth: 40,
+      mapHeight: 30,
+    });
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 100));
+    const comp = fixture.componentInstance;
+
+    expect(await db.tiles.count()).toBe(0);
+    await comp.createTile();
+    await new Promise((r) => setTimeout(r, 50));
+    const tile = await db.tiles
+      .where('projectId')
+      .equals('test-proj')
+      .first();
+    expect(tile?.name).toBe('Tile 1');
+    expect(tile?.spriteIds).toHaveLength(1);
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await flushUndo();
+    expect(await db.tiles.count()).toBe(0);
+    expect(await db.sprites.count()).toBe(0);
+
+    undo.redo();
+    await flushUndo();
+    expect(await db.tiles.count()).toBe(1);
+    expect(await db.sprites.count()).toBe(1);
+  });
+
+  it('undo restores a deleted tile with its sprites and redo deletes again', async () => {
+    const db = TestBed.inject(DatabaseService);
+    await db.projects.add({
+      id: 'test-proj',
+      name: 'Test Project',
+      createdAt: 0,
+      updatedAt: 0,
+      palette: ['#ff0000'],
+      tileSize: 32,
+      mapWidth: 40,
+      mapHeight: 30,
+    });
+    const tileId = await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'T',
+      type: 'static',
+      spriteIds: [41],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+    } as unknown as import('../../shared/models/tile.model').Tile);
+    await db.sprites.add({
+      id: 41,
+      projectId: 'test-proj',
+      tileId,
+      name: 'T frame',
+      width: 32,
+      height: 32,
+      pixelData: '',
+      paletteIndices: [],
+    } as import('../../shared/models/sprite.model').Sprite);
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 100));
+    const comp = fixture.componentInstance;
+
+    await comp.deleteTile(tileId);
+    expect(await db.tiles.count()).toBe(0);
+    expect(await db.sprites.count()).toBe(0);
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await flushUndo();
+    expect(await db.tiles.count()).toBe(1);
+    expect(await db.sprites.count()).toBe(1);
+
+    undo.redo();
+    await flushUndo();
+    expect(await db.tiles.count()).toBe(0);
+    expect(await db.sprites.count()).toBe(0);
+  });
+
+  it('undo moves a folder back and redo moves it again', async () => {
+    const db = TestBed.inject(DatabaseService);
+    await db.projects.add({
+      id: 'test-proj',
+      name: 'Test Project',
+      createdAt: 0,
+      updatedAt: 0,
+      palette: ['#ff0000'],
+      tileSize: 32,
+      mapWidth: 40,
+      mapHeight: 30,
+    });
+    await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'T1',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      folderPath: 'A',
+      properties: { blocking: false, interactable: false },
+    } as unknown as import('../../shared/models/tile.model').Tile);
+    await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'T2',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      folderPath: 'A',
+      properties: { blocking: false, interactable: false },
+    } as unknown as import('../../shared/models/tile.model').Tile);
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 100));
+    const comp = fixture.componentInstance;
+
+    await comp.onFolderMove({ fromKey: 'A', toKey: 'B' });
+    const moved = await db.tiles.where('projectId').equals('test-proj').toArray();
+    expect(moved.every((t) => t.folderPath === 'B/A')).toBe(true);
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await flushUndo();
+    const restored = await db.tiles.where('projectId').equals('test-proj').toArray();
+    expect(restored.every((t) => t.folderPath === 'A')).toBe(true);
+
+    undo.redo();
+    await flushUndo();
+    const remade = await db.tiles.where('projectId').equals('test-proj').toArray();
+    expect(remade.every((t) => t.folderPath === 'B/A')).toBe(true);
   });
 });
