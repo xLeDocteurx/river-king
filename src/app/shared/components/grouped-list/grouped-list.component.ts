@@ -1,4 +1,4 @@
-import { Component, input, output, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CdkDropListGroup, CdkDropList, CdkDrag, type CdkDragDrop } from '@angular/cdk/drag-drop';
 
 interface Group<T> {
@@ -54,13 +54,17 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
   toggleGroup = output<string>();
   /** Emitted when a group (folder) header is dropped on another group header. */
   groupMove = output<{ fromKey: string; toKey: string }>();
-  /** Emitted when the user requests creation of a new group. */
-  createGroup = output<void>();
+  /** Emitted when a new group is confirmed from the inline creation input. */
+  createGroup = output<string>();
   /** Emitted when the user requests creation of a new item. */
   createItem = output<void>();
 
   /** Internal collapsed state, seeded from input. */
   private collapsedSet = computed(() => new Set(this.collapsedGroups()));
+  /** Whether the inline new-group input is currently shown. */
+  addingGroup = signal(false);
+  /** Current value of the inline new-group input. */
+  newGroupName = signal('');
   /** Group key currently being dragged for a folder move, or null. */
   private dragGroupKey: string | null = null;
   /** Current drop target group key while dragging a folder. */
@@ -162,5 +166,34 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
    */
   isGroupDropTarget(key: string): boolean {
     return this.dropTargetKey === key;
+  }
+
+  /**
+   * Shows the inline input for creating a new group. Ignored while the input
+   * is already open.
+   */
+  startGroupCreate(): void {
+    if (this.addingGroup()) return;
+    this.addingGroup.set(true);
+    this.newGroupName.set('');
+  }
+
+  /**
+   * Commits the pending new group. Emits createGroup when the name is
+   * non-empty and does not collide with an existing group, then hides the
+   * input. Guarded so a blur fired while the input is removed cannot re-emit.
+   */
+  commitGroupCreate(): void {
+    if (!this.addingGroup()) return;
+    const name = this.newGroupName().trim();
+    this.addingGroup.set(false);
+    if (!name || this.groups().some((g) => g.key === name)) return;
+    this.createGroup.emit(name);
+  }
+
+  /** Hides the inline new-group input without emitting. */
+  cancelGroupCreate(): void {
+    if (!this.addingGroup()) return;
+    this.addingGroup.set(false);
   }
 }

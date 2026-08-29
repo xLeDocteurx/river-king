@@ -14,6 +14,6 @@
   (groupChange)="onTileFolderChange($event)"
   (toggleGroup)="toggleFolder.emit($event)"
   (groupMove)="onGroupMove($event)"
-  (createGroup)="onCreateGroup()"
+  (createGroup)="createFolder.emit($event)"
   (createItem)="tileCreate.emit()"
 ></rk-grouped-list>

@@ -45,12 +45,4 @@ export class SceneListComponent {
       current.includes(key) ? current.filter((k) => k !== key) : [...current, key],
     );
   }
-
-  onCreateGroup(): void {
-    const name = window.prompt('Enter group name:')?.trim();
-    if (!name) return;
-    if (this.folders().includes(name)) return;
-    if (this.scenes().some((s) => s.folderPath === name)) return;
-    this.createFolder.emit(name);
-  }
 }
