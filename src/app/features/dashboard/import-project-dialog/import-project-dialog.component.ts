@@ -128,6 +128,13 @@ export class ImportProjectDialogComponent {
   }
 
   /**
+   * Closes the dialog after the parent has completed the import.
+   */
+  close(): void {
+    this.dialogRef().close();
+  }
+
+  /**
    * Forwards the native dialog close to the parent.
    * @internal
    */

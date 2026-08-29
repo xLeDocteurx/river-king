@@ -6,14 +6,32 @@
     >
       My Projects
     </h1>
-    <button
-      type="button"
-      (click)="createDialog.open()"
-      class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-sm tw-bg-primary tw-text-primary-foreground tw-text-xs tw-transition hover:tw-opacity-90"
-    >
-      <span class="material-symbols tw-text-sm" aria-hidden="true">add</span>
-      New Project
-    </button>
+    <div class="tw-flex tw-items-center tw-gap-2">
+      <button
+        type="button"
+        data-testid="import-project"
+        (click)="openImportPicker()"
+        class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-xs tw-text-foreground hover:tw-bg-muted tw-transition"
+      >
+        <span class="material-symbols tw-text-sm" aria-hidden="true">upload_file</span>
+        Import
+      </button>
+      <button
+        type="button"
+        (click)="createDialog.open()"
+        class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-sm tw-bg-primary tw-text-primary-foreground tw-text-xs tw-transition hover:tw-opacity-90"
+      >
+        <span class="material-symbols tw-text-sm" aria-hidden="true">add</span>
+        New Project
+      </button>
+      <input
+        #fileInput
+        type="file"
+        accept=".rkproj,application/json"
+        class="tw-hidden"
+        (change)="onFileSelected($event)"
+      />
+    </div>
   </header>
 
   <main class="tw-px-4 tw-pb-[30px]">
@@ -61,5 +79,13 @@
     [data]="deleteDialogData"
     (confirmed)="deleteProject(projectToDelete()!)"
     (cancelled)="projectToDelete.set(null)"
+  />
+
+  <rk-import-project-dialog
+    #importDialog
+    [archive]="pendingImport()?.archive ?? null"
+    [projects]="projects()"
+    (confirmed)="importProjectFromFile($event)"
+    (cancelled)="clearPendingImport()"
   />
 </div>
