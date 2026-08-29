@@ -255,6 +255,110 @@ describe('ProjectIoService', () => {
     expect(t2).toBe(2);
   });
 
+  it('replaces an existing project, swapping its content and keeping its id', async () => {
+    const { projectId } = await seedProject();
+    const json = await service.exportProject(projectId);
+
+    const targetId = 'proj-2';
+    await db.projects.add({
+      id: targetId,
+      name: 'Target Project',
+      createdAt: 1,
+      updatedAt: 2,
+      palette: ['#000000'],
+      tileSize: 32,
+      mapWidth: 5,
+      mapHeight: 5,
+    });
+    await db.tiles.add({
+      projectId: targetId,
+      name: 'Old tile',
+      type: 'static',
+      spriteIds: [] as number[],
+      animationSpeed: 1,
+      properties: {},
+      folderPath: '',
+    } as Tile);
+
+    const result = await service.importProject(json, { kind: 'replace', targetProjectId: targetId });
+    expect(result).toEqual({ projectId: targetId, kind: 'replace' });
+
+    const project = await db.projects.get(targetId);
+    expect(project?.name).toBe('Heroes');
+    expect(project?.palette).toEqual(['#ff0000', '#00ff00', '#0000ff', '#ffffff']);
+    expect(project?.tileSize).toBe(16);
+
+    const tiles = await db.tiles.where('projectId').equals(targetId).toArray();
+    expect(tiles.map((t) => t.name).sort()).toEqual(['Ground', 'Water']);
+    expect(tiles.every((t) => t.spriteIds.length > 0)).toBe(true);
+
+    const sprites = await db.sprites.where('projectId').equals(targetId).toArray();
+    const spriteTileIds = new Set(sprites.map((s) => s.tileId));
+    tiles.forEach((t) => {
+      expect(spriteTileIds.has(t.id!)).toBe(true);
+      t.spriteIds.forEach((sid) => {
+        expect(sprites.some((s) => s.id === sid && s.tileId === t.id)).toBe(true);
+      });
+    });
+
+    const scenes = await db.scenes.where('projectId').equals(targetId).toArray();
+    const tileIds = new Set(tiles.map((t) => t.id));
+    scenes.forEach((scene) => {
+      scene.layers.forEach((layer) => {
+        layer.tileData.forEach((row) => {
+          row.forEach((tid) => {
+            if (tid >= 0) {
+              expect(tileIds.has(tid)).toBe(true);
+            }
+          });
+        });
+      });
+    });
+  });
+
+  it('rolls back all changes when an insert fails while replacing', async () => {
+    const { projectId } = await seedProject();
+    const json = await service.exportProject(projectId);
+
+    const targetId = 'proj-2';
+    await db.projects.add({
+      id: targetId,
+      name: 'Target Project',
+      createdAt: 1,
+      updatedAt: 2,
+      palette: ['#000000'],
+      tileSize: 32,
+      mapWidth: 5,
+      mapHeight: 5,
+    });
+    await db.tiles.add({
+      projectId: targetId,
+      name: 'Old tile',
+      type: 'static',
+      spriteIds: [] as number[],
+      animationSpeed: 1,
+      properties: {},
+      folderPath: '',
+    } as Tile);
+
+    const failSprites = vi.spyOn(db.sprites, 'add').mockRejectedValue(new Error('boom'));
+    await expect(
+      service.importProject(json, { kind: 'replace', targetProjectId: targetId }),
+    ).rejects.toThrow('boom');
+    failSprites.mockRestore();
+
+    const project = await db.projects.get(targetId);
+    expect(project?.name).toBe('Target Project');
+    expect(project?.tileSize).toBe(32);
+
+    const tiles = await db.tiles.where('projectId').equals(targetId).toArray();
+    expect(tiles.map((t) => t.name)).toEqual(['Old tile']);
+    const spritesCount = await db.sprites.where('projectId').equals(targetId).count();
+    expect(spritesCount).toBe(0);
+    const scenesCount = await db.scenes.where('projectId').equals(targetId).count();
+    expect(scenesCount).toBe(0);
+  });
+
   function validTile() {
     return {
       sourceId: 1,
