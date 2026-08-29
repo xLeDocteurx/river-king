@@ -390,4 +390,25 @@ describe('SceneEditorComponent', () => {
     expect(lastCall?.[0]).toContain('Forest');
     expect(lastCall?.[0]).toContain('10×10');
   });
+
+  it('shows the selected scene layer and tile counts in the status bar', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const statusBar = TestBed.inject(StatusBarService);
+    const spy = vi.spyOn(statusBar, 'setContext');
+    const scene = await sceneService.createScene('p1', 'Forest', 10, 10);
+    scene.layers[0].tileData[0][0] = 5;
+    scene.layers[0].tileData[1][1] = 5;
+    scene.layers[0].tileData[2][4] = 3;
+    await sceneService.updateScene(scene.id, { layers: scene.layers });
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
+    expect(lastCall?.[0]).toContain('1 layer');
+    expect(lastCall?.[0]).toContain('3 tiles');
+  });
 });
