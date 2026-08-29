@@ -37,7 +37,15 @@ describe('DatabaseService v5 migration', () => {
     const db = new DatabaseService();
     await db.open();
     expect(db.verno).toBe(5);
-    const tile = await db.tiles.add({ projectId: 'p1', name: 'Grass', type: 'static', animationSpeed: 1, properties: { blocking: false, interactable: false }, spriteIds: [], folderPath: '' } as unknown as Tile);
+    const tile = await db.tiles.add({
+      projectId: 'p1',
+      name: 'Grass',
+      type: 'static',
+      animationSpeed: 1,
+      properties: { blocking: false, interactable: false },
+      spriteIds: [],
+      folderPath: '',
+    } as unknown as Tile);
     const fetched = await db.tiles.get(tile);
     expect(fetched?.folderPath).toBe('');
   });
