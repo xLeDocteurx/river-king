@@ -209,4 +209,66 @@ describe('SceneListComponent', () => {
     component.onSceneFolderChange({ itemId: 's1', groupKey: 'new' });
     expect(changeSpy).toHaveBeenCalledWith({ sceneId: 's1', folderPath: 'new' });
   });
+
+  it('turns a folder header into an inline input on double-click and emits folderRename on Enter', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Scene A', 'forest')]);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const header = headerButtonFor('forest');
+
+    header.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    fixture.detectChanges();
+
+    const input = compiled.querySelector('input') as HTMLInputElement | null;
+    expect(input).toBeTruthy();
+    expect(input?.value).toBe('forest');
+
+    const renameSpy = vi.spyOn(component.folderRename, 'emit');
+    input!.value = 'woods';
+    input!.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+    input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(renameSpy).toHaveBeenCalledWith({ fromKey: 'forest', toKey: 'woods' });
+    expect(compiled.querySelector('input')).toBeNull();
+  });
+
+  it('cancels the inline rename on Escape without emitting', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Scene A', 'forest')]);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    headerButtonFor('forest').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    fixture.detectChanges();
+    const input = compiled.querySelector('input') as HTMLInputElement;
+    input.value = 'woods';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const renameSpy = vi.spyOn(component.folderRename, 'emit');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('input')).toBeNull();
+    expect(renameSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not offer inline rename for the Ungrouped (root) header', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Root Scene')]);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const ungrouped = headerButtonFor('Ungrouped');
+
+    ungrouped.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('input')).toBeNull();
+  });
+
+  function headerButtonFor(path: string): HTMLButtonElement {
+    const compiled = fixture.nativeElement as HTMLElement;
+    return Array.from(compiled.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes(path),
+    ) as HTMLButtonElement;
+  }
 });

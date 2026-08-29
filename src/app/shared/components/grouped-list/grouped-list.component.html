@@ -31,25 +31,38 @@
           <div
             class="tw-w-full tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-rounded-sm tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground tw-cursor-pointer"
             [class.tw-bg-primary/10]="isGroupDropTarget(group.key)"
-            draggable="true"
+            [attr.draggable]="renamingKey() === group.key ? 'false' : 'true'"
+            (dblclick)="group.key && startGroupRename(group.key)"
             (dragstart)="onGroupDragStart(group.key, $event)"
             (dragover)="onGroupDragOver(group.key, $event)"
             (drop)="onGroupDrop(group.key)"
             (dragend)="onGroupDragEnd()"
           >
-            <button
-              type="button"
-              (click)="toggleGroup.emit(group.key)"
-              class="tw-flex tw-items-center tw-gap-2 tw-text-left tw-bg-transparent tw-border-0 tw-p-0 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground"
-            >
-            <span
-              class="material-symbols tw-text-sm tw-transition-transform"
-              [class.-tw-rotate-90]="isCollapsed(group.key)"
-              aria-hidden="true"
-              >expand_more</span
-            >
-            <span>{{ group.key || 'Ungrouped' }}</span>
-          </button>
+            @if (renamingKey() === group.key) {
+              <input
+                class="tw-w-full tw-min-w-0 tw-px-1 tw-py-0.5 tw-text-[11px] tw-bg-background tw-text-foreground tw-border tw-border-border tw-rounded-sm tw-outline-none"
+                [value]="renameValue()"
+                (input)="renameValue.set($any($event.target).value)"
+                (keydown.enter)="commitGroupRename()"
+                (keydown.escape)="cancelGroupRename()"
+                (blur)="commitGroupRename()"
+                (click)="$event.stopPropagation()"
+              />
+            } @else {
+              <button
+                type="button"
+                (click)="toggleGroup.emit(group.key)"
+                class="tw-flex tw-items-center tw-gap-2 tw-text-left tw-bg-transparent tw-border-0 tw-p-0 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground"
+              >
+                <span
+                  class="material-symbols tw-text-sm tw-transition-transform"
+                  [class.-tw-rotate-90]="isCollapsed(group.key)"
+                  aria-hidden="true"
+                  >expand_more</span
+                >
+                <span>{{ group.key || 'Ungrouped' }}</span>
+              </button>
+            }
           </div>
           @if (!isCollapsed(group.key)) {
             <div

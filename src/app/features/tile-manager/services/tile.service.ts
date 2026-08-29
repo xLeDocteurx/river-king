@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from '../../../core/services/database.service';
+import { rewriteFolderPath } from '../../../shared/models/folder.model';
 import type { Tile } from '../../../shared/models/tile.model';
 
 /**
@@ -72,6 +73,23 @@ export class TileService {
     const tiles = await this.db.tiles.where('projectId').equals(projectId).toArray();
     const paths = new Set(tiles.map((t) => t.folderPath ?? ''));
     return Array.from(paths).sort((a, b) => a.localeCompare(b));
+  }
+
+  /**
+   * Renames a folder path for every tile that references it, including
+   * tiles in nested descendant folders.
+   * @param projectId The project that owns the tiles.
+   * @param fromPath The current folder path.
+   * @param toPath The new folder path.
+   */
+  async renameFolder(projectId: string, fromPath: string, toPath: string): Promise<void> {
+    const tiles = await this.db.tiles.where('projectId').equals(projectId).toArray();
+    for (const tile of tiles) {
+      const rewritten = rewriteFolderPath(tile.folderPath ?? '', fromPath, toPath);
+      if (rewritten !== tile.folderPath) {
+        await this.updateTileFolder(tile.id, rewritten);
+      }
+    }
   }
 
   /**

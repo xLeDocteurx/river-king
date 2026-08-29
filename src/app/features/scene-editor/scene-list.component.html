@@ -12,6 +12,7 @@
   (itemDelete)="onSceneDelete($event)"
   (groupChange)="onSceneFolderChange($event)"
   (toggleGroup)="onToggleGroup($event)"
+  (groupRename)="folderRename.emit($event)"
   (createGroup)="onCreateGroup()"
   (createItem)="createScene.emit()"
 ></rk-grouped-list>

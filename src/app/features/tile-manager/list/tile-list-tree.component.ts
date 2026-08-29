@@ -27,6 +27,7 @@ export class TileListTreeComponent {
   folderChange = output<{ tileId: number; folderPath: string }>();
   folderMove = output<{ fromKey: string; toKey: string }>();
   toggleFolder = output<string>();
+  folderRename = output<{ fromKey: string; toKey: string }>();
 
   groupByFolderPath = (tile: Tile) => tile.folderPath || '';
 

@@ -23,6 +23,7 @@ export class SceneListComponent {
   sceneDelete = output<string>();
   sceneFolderChange = output<{ sceneId: string; folderPath: string }>();
   createFolder = output<string>();
+  folderRename = output<{ fromKey: string; toKey: string }>();
 
   collapsedFolders = signal<string[]>([]);
 
