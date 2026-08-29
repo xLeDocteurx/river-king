@@ -150,13 +150,11 @@ describe('DashboardComponent', () => {
 
   it('should stage a valid file and open the import dialog', async () => {
     await mountWithProjects([makeProject('a')]);
-    const openSpy = vi
-      .spyOn(
-        fixture.debugElement.query(By.directive(ImportProjectDialogComponent))
-          .componentInstance as ImportProjectDialogComponent,
-        'open',
-      )
-      .mockImplementation(() => {});
+    const openSpy = vi.spyOn(
+      fixture.debugElement.query(By.directive(ImportProjectDialogComponent))
+        .componentInstance as ImportProjectDialogComponent,
+      'open',
+    );
 
     const compiled = fixture.nativeElement as HTMLElement;
     await selectFile(compiled, minimalArchiveJson);
@@ -169,13 +167,11 @@ describe('DashboardComponent', () => {
   it('should reject unreadable files with a notification', async () => {
     await mountWithProjects([]);
     const errorSpy = vi.spyOn(TestBed.inject(NotificationService), 'error');
-    const openSpy = vi
-      .spyOn(
-        fixture.debugElement.query(By.directive(ImportProjectDialogComponent))
-          .componentInstance as ImportProjectDialogComponent,
-        'open',
-      )
-      .mockImplementation(() => {});
+    const openSpy = vi.spyOn(
+      fixture.debugElement.query(By.directive(ImportProjectDialogComponent))
+        .componentInstance as ImportProjectDialogComponent,
+      'open',
+    );
 
     const compiled = fixture.nativeElement as HTMLElement;
     await selectFile(compiled, '{not json');
