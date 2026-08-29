@@ -88,7 +88,6 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   /** @internal Last mouse Y position for pan delta calculation. */
   private lastMouseY = 0;
 
-
   /**
    * Grid area under the cursor that the selected tile would occupy:
    * anchor cell plus footprint size, or null when no tile is selected,
@@ -592,7 +591,10 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   /** @internal Updates the cursor cell signal with the grid position under the pointer. */
   private updateCursorCell(event: MouseEvent): void {
     const scene = this.scene();
-    if (!scene) { this.cursorCell.set(null); return; }
+    if (!scene) {
+      this.cursorCell.set(null);
+      return;
+    }
     const canvas = this.canvasRef().nativeElement;
     const rect = canvas.getBoundingClientRect();
     const cell = this.tileSize();

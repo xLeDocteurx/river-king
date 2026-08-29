@@ -4,6 +4,7 @@ import { ActivatedRoute, provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { SceneEditorComponent } from './scene-editor.component';
+import { AppDummyComponent } from '../../app-dummy.component';
 import { SceneService } from './services/scene.service';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -53,7 +54,7 @@ describe('SceneEditorComponent', () => {
     await TestBed.configureTestingModule({
       imports: [SceneEditorComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([{ path: '**', component: AppDummyComponent }]),
         {
           provide: ActivatedRoute,
           useValue: {

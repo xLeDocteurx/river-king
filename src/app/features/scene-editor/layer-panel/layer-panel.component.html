@@ -1,5 +1,7 @@
 <div class="tw-flex tw-flex-col tw-h-full tw-select-none">
-  <div class="tw-flex tw-items-center tw-justify-between tw-px-2 tw-py-1 tw-bg-card-bg tw-border-b tw-border-border">
+  <div
+    class="tw-flex tw-items-center tw-justify-between tw-px-2 tw-py-1 tw-bg-card-bg tw-border-b tw-border-border"
+  >
     <button
       class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground tw-cursor-pointer hover:tw-text-foreground"
       (click)="toggleCollapsed.emit()"
@@ -47,7 +49,10 @@
                 (click)="$event.stopPropagation()"
               />
             } @else {
-              <span class="tw-flex-1 tw-min-w-0 tw-text-xs tw-truncate" [class.tw-text-muted-foreground]="!layer.visible">
+              <span
+                class="tw-flex-1 tw-min-w-0 tw-text-xs tw-truncate"
+                [class.tw-text-muted-foreground]="!layer.visible"
+              >
                 {{ layer.name }}
               </span>
             }
@@ -56,7 +61,9 @@
                 class="tw-w-4 tw-h-4 tw-flex tw-items-center tw-justify-center tw-text-muted-foreground tw-cursor-pointer hover:tw-text-foreground"
                 title="Move up"
                 [disabled]="i === 0"
-                (click)="reorder.emit({ layerId: layer.id, direction: 'up' }); $event.stopPropagation()"
+                (click)="
+                  reorder.emit({ layerId: layer.id, direction: 'up' }); $event.stopPropagation()
+                "
               >
                 <span class="material-symbols tw-text-[12px]" aria-hidden="true">arrow_upward</span>
               </button>
@@ -64,9 +71,13 @@
                 class="tw-w-4 tw-h-4 tw-flex tw-items-center tw-justify-center tw-text-muted-foreground tw-cursor-pointer hover:tw-text-foreground"
                 title="Move down"
                 [disabled]="last"
-                (click)="reorder.emit({ layerId: layer.id, direction: 'down' }); $event.stopPropagation()"
+                (click)="
+                  reorder.emit({ layerId: layer.id, direction: 'down' }); $event.stopPropagation()
+                "
               >
-                <span class="material-symbols tw-text-[12px]" aria-hidden="true">arrow_downward</span>
+                <span class="material-symbols tw-text-[12px]" aria-hidden="true"
+                  >arrow_downward</span
+                >
               </button>
               <button
                 class="tw-w-4 tw-h-4 tw-flex tw-items-center tw-justify-center tw-text-destructive tw-cursor-pointer hover:tw-text-destructive/80"
@@ -88,10 +99,14 @@
                 step="0.05"
                 class="tw-flex-1 tw-h-1 tw-accent-primary tw-cursor-pointer"
                 [value]="layer.opacity"
-                (input)="opacityChange.emit({ layerId: layer.id, opacity: +$any($event.target).value })"
+                (input)="
+                  opacityChange.emit({ layerId: layer.id, opacity: +$any($event.target).value })
+                "
                 (click)="$event.stopPropagation()"
               />
-              <span class="tw-text-[10px] tw-text-muted-foreground tw-w-7 tw-text-right">{{ (layer.opacity * 100) | number:'1.0-0' }}%</span>
+              <span class="tw-text-[10px] tw-text-muted-foreground tw-w-7 tw-text-right"
+                >{{ layer.opacity * 100 | number: '1.0-0' }}%</span
+              >
             </div>
           }
         </div>
