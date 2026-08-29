@@ -90,6 +90,14 @@ export class SpriteService {
   }
 
   /**
+   * Re-inserts a previously deleted sprite row (used to undo a frame deletion).
+   * @param sprite - The full sprite row to restore.
+   */
+  async restoreSprite(sprite: Sprite): Promise<void> {
+    await this.db.sprites.add(sprite);
+  }
+
+  /**
    * Fetch a single sprite by its primary key.
    *
    * @param id - The sprite's primary key.

@@ -1,9 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ThemeService } from './core/services/theme.service';
 import { StatusBarService } from './core/services/status-bar.service';
 import { SessionService, screenFromUrl } from './core/services/session.service';
+import { UndoService } from './core/services/undo.service';
+import { KeyboardShortcutsService } from './core/services/keyboard-shortcuts.service';
 import { ToastComponent } from './shared/components/toast/toast.component';
 
 /**
@@ -24,6 +26,8 @@ export class App {
   protected readonly status = inject(StatusBarService);
   private readonly router = inject(Router);
   private readonly sessions = inject(SessionService);
+  private readonly undo = inject(UndoService);
+  private readonly shortcuts = inject(KeyboardShortcutsService);
 
   /** Whether the current route is under /project/:id (shows workspace nav). */
   isProjectRoute = signal(false);
@@ -45,6 +49,11 @@ export class App {
         this.projectId.set(null);
         this.isProjectRoute.set(false);
       }
+    });
+
+    effect(() => {
+      this.projectId();
+      this.undo.clear();
     });
   }
 }

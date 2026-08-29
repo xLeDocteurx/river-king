@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from '../../../core/services/database.service';
 import type { Tile } from '../../../shared/models/tile.model';
+import type { Sprite } from '../../../shared/models/sprite.model';
 
 /**
  * Feature-private service providing CRUD operations for tiles.
@@ -84,6 +85,28 @@ export class TileService {
     await this.db.transaction('rw', this.db.tiles, this.db.sprites, async () => {
       await this.db.sprites.where('tileId').equals(id).delete();
       await this.db.tiles.delete(id);
+    });
+  }
+
+  /**
+   * Returns every sprite linked to a tile (used to snapshot a tile before deletion).
+   * @param tileId - The tile to query.
+   * @returns The tile's sprites.
+   */
+  async getSpritesForTile(tileId: number): Promise<Sprite[]> {
+    return this.db.sprites.where('tileId').equals(tileId).toArray();
+  }
+
+  /**
+   * Re-inserts a previously deleted tile together with its sprites (used to
+   * undo a tile deletion). Both are added in a single readwrite transaction.
+   * @param tile - The full tile row to restore.
+   * @param sprites - The full sprite rows that belonged to the tile.
+   */
+  async restoreTile(tile: Tile, sprites: Sprite[]): Promise<void> {
+    await this.db.transaction('rw', this.db.tiles, this.db.sprites, async () => {
+      if (sprites.length > 0) await this.db.sprites.bulkAdd(sprites);
+      await this.db.tiles.add(tile);
     });
   }
 
