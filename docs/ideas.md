@@ -32,3 +32,9 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 - [x] **Responsive/mobile** — Les layouts fixes cassent sur les petits écrans. Ajouter des breakpoints ou panneaux repliables. → [#23](https://github.com/xLeDocteurx/river-king/issues/23)
 - [x] **Favicon & branding** — Pas de favicon ni de manifest PWA. → [#24](https://github.com/xLeDocteurx/river-king/issues/24)
 - [x] **CI/CD** — Pipeline de lint + test (GitHub Actions ou similaire). → [#25](https://github.com/xLeDocteurx/river-king/issues/25)
+
+## Repository & Branding
+
+- [x] **About du repo + lien live** — L'About GitHub est vide (description, homepage, topics). Le site GitHub Pages est déjà déployé (https://xledocteurx.github.io/river-king/) mais le lien n'apparaît nulle part. Remplir l'About du repo (description punchy, homepage → site Pages, topics découvrables) et ajouter un badge "Live demo" cliquable dans le README. → [#33](https://github.com/xLeDocteurx/river-king/issues/33)
+- [x] **Supprimer la branche après merge** — Ne pas polluer le repo avec les branches `feature-*` une fois leur PR mergée. Activer l'option native "auto-delete head branches" + documenter. → [#34](https://github.com/xLeDocteurx/river-king/issues/34)
+- [x] **Contenu GitHub en anglais** — Tout le contenu visible sur GitHub (About, README, PR, rapports, issues, commentaires) doit être en anglais. Traduction rétroactive des sections "Design (groomed...)" en français ajoutées aux corps d'issues + commentaires FR. → [#35](https://github.com/xLeDocteurx/river-king/issues/35)

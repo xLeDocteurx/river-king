@@ -1,5 +1,7 @@
 # River King Engine
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-005fb8?style=for-the-badge&logo=github&logoColor=white)](https://xledocteurx.github.io/river-king/) [![CI](https://img.shields.io/github/actions/workflow/status/xLeDocteurx/river-king/ci.yml?style=for-the-badge&label=CI)](https://github.com/xLeDocteurx/river-king/actions)
+
 > A lightweight, browser-based tile engine for crafting 2D worlds — built with Angular 22 and saved entirely in your browser via IndexedDB.
 
 [River King](https://github.com/xLeDocteurx/river-king) is a **pixel-perfect tile editor and scene composer** that runs without a backend. Every sprite, tile, scene, and layer is stored locally in your browser using IndexedDB, so your work travels with you and never hits a server.
