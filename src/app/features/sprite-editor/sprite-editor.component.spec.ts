@@ -113,7 +113,7 @@ describe('SpriteEditorComponent', () => {
     expect(compiled.textContent).toContain('Select a tile from the list to start editing');
   });
 
-it('should list a tile with its new sprite after creating one', async () => {
+  it('should list a tile with its new sprite after creating one', async () => {
     await createProjectWithPalette();
     const db = TestBed.inject(DatabaseService);
     await db.tiles.add({
@@ -129,7 +129,7 @@ it('should list a tile with its new sprite after creating one', async () => {
     const service = TestBed.inject(SpriteService);
     const sprite = await service.createSprite('test-proj', 'Test Sprite', 1);
     await db.tiles.update(1, { spriteIds: [sprite.id] });
-const component = fixture.componentInstance;
+    const component = fixture.componentInstance;
     await component.loadSprites();
     await component.loadTiles();
     await component.selectTile(1);
@@ -137,7 +137,6 @@ const component = fixture.componentInstance;
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Base Tile');
     expect(component.currentFrames().map((f) => f.name)).toEqual(['Test Sprite']);
-  });
   });
 
   it('should select a sprite and show canvas', async () => {

@@ -262,10 +262,7 @@ describe('TileManagerComponent', () => {
     expect(await db.tiles.count()).toBe(0);
     await comp.createTile();
     await new Promise((r) => setTimeout(r, 50));
-    const tile = await db.tiles
-      .where('projectId')
-      .equals('test-proj')
-      .first();
+    const tile = await db.tiles.where('projectId').equals('test-proj').first();
     expect(tile?.name).toBe('Tile 1');
     expect(tile?.spriteIds).toHaveLength(1);
 
