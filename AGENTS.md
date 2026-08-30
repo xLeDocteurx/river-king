@@ -67,11 +67,9 @@ src/app/
 ├── core/          # Singletons, root-provided services, guards, interceptors
 │   ├── services/     # DatabaseService, ThemeService, NotificationService, SessionService
 │   └── Never import core/* into shared/ or features/*
-├── shared/        # Reusable UI, models, pipes, directives (NO services here)
+├── shared/        # Reusable UI, models (NO services here)
 │   ├── components/   # Headless/stateless UI (rk-dialog, rk-confirm-dialog, rk-toast)
 │   ├── models/       # Pure TS interfaces/types (Project, Scene, Tile, Sprite, Session)
-│   ├── directives/
-│   └── pipes/
 └── features/      # Lazy-loaded business features
     ├── dashboard/
     │   ├── *.component.{ts,html,scss,spec.ts}

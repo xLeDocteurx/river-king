@@ -45,12 +45,12 @@ scene folder and a tile folder sharing the same `path` do not collide.
 export type FolderKind = 'scene' | 'tile';
 
 export interface Folder {
-  id: string;             // UUID (existing)
-  projectId: string;      // existing
-  path: string;           // existing (e.g. "forest/caves")
-  kind: FolderKind;       // NEW — which list this folder row belongs to
-  collapsed: boolean;     // NEW — manual override; false = expanded
-  lastOpenedAt: number;   // NEW — epoch ms of last interaction, 0 if never
+  id: string; // UUID (existing)
+  projectId: string; // existing
+  path: string; // existing (e.g. "forest/caves")
+  kind: FolderKind; // NEW — which list this folder row belongs to
+  collapsed: boolean; // NEW — manual override; false = expanded
+  lastOpenedAt: number; // NEW — epoch ms of last interaction, 0 if never
 }
 ```
 
@@ -59,7 +59,7 @@ export interface Folder {
 - Tile folders are **materialized on demand**: the first time the tile list needs
   to persist state for a derived folder path, it upserts a `kind = 'tile'` row.
   Deriving and folding still relies on the real set of paths (from `distinct
-  Tile.folderPath`) plus any materialized rows (to keep empty-but-expanded /
+Tile.folderPath`) plus any materialized rows (to keep empty-but-expanded /
   collapsed folders visible via `GroupedListComponent.groupKeys`).
 - `lastOpenedAt` is bumped whenever the user selects a scene/tile inside that
   folder, or manually expands it.
@@ -72,15 +72,20 @@ export interface Folder {
 Schema v6 migration (Dexie upgrade):
 
 ```ts
-this.version(6).stores({
-  folders: 'id, projectId, path, kind',
-}).upgrade(async (tx) => {
-  await tx.table('folders').toCollection().modify((f: Folder) => {
-    f.kind = 'scene';
-    f.collapsed = false;
-    f.lastOpenedAt = 0;
+this.version(6)
+  .stores({
+    folders: 'id, projectId, path, kind',
+  })
+  .upgrade(async (tx) => {
+    await tx
+      .table('folders')
+      .toCollection()
+      .modify((f: Folder) => {
+        f.kind = 'scene';
+        f.collapsed = false;
+        f.lastOpenedAt = 0;
+      });
   });
-});
 ```
 
 `folders` becomes indexed by `projectId, path, kind`. The composite identity of a
