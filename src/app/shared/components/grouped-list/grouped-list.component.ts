@@ -54,7 +54,7 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
   toggleGroup = output<string>();
   /** Emitted when a folder is dropped on/in another folder. */
   groupMove = output<{ fromKey: string; toKey: string }>();
-/** Emitted when a group header is renamed via the inline input. */
+  /** Emitted when a group header is renamed via the inline input. */
   groupRename = output<{ fromKey: string; toKey: string }>();
   /** Emitted when a new group is confirmed from the inline creation input. */
   createGroup = output<string>();
@@ -63,7 +63,7 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
 
   /** Internal collapsed state, seeded from input. */
   private collapsedSet = computed(() => new Set(this.collapsedGroups()));
-/** Group key currently being renamed inline, or null. */
+  /** Group key currently being renamed inline, or null. */
   renamingKey = signal<string | null>(null);
   /** Current value of the inline rename input. */
   renameValue = signal('');
