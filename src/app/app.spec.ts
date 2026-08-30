@@ -4,6 +4,7 @@ import { App } from './app';
 import { AppDummyComponent } from './app-dummy.component';
 import { StatusBarService } from './core/services/status-bar.service';
 import { SessionService } from './core/services/session.service';
+import { UndoService } from './core/services/undo.service';
 import 'fake-indexeddb/auto';
 
 describe('App', () => {
@@ -80,5 +81,27 @@ describe('App', () => {
     await router.navigateByUrl('/project/p1/tiles');
 
     expect(spy).toHaveBeenCalledWith('p1', { lastScreen: 'tiles' });
+  });
+
+  it('clears the undo stack when navigating to a project', async () => {
+    const undo = TestBed.inject(UndoService);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    undo.push({
+      label: 'Fake action',
+      execute: () => undefined,
+      undo: () => undefined,
+    });
+    expect(undo.canUndo()).toBe(true);
+
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/project/p1/scenes');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    fixture.detectChanges();
+
+    expect(undo.canUndo()).toBe(false);
   });
 });

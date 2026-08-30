@@ -459,12 +459,24 @@ export class SceneEditorComponent implements OnInit {
     if (!sceneId) return;
     this.pendingDeleteSceneId.set(null);
     try {
+      const sceneToDelete = await this.sceneService.getScene(sceneId);
       await this.sceneService.deleteScene(sceneId);
       await this.loadScenes();
       if (this.selectedSceneId() === sceneId) {
         this.selectedSceneId.set(null);
         this.selectedScene.set(null);
         this.activeLayerId.set(null);
+      }
+      if (sceneToDelete) {
+        this.undo.push({
+          label: 'Delete scene',
+          execute: () => {
+            void this.sceneService.deleteScene(sceneId).then(() => this.loadScenes());
+          },
+          undo: () => {
+            void this.sceneService.restoreScene(sceneToDelete).then(() => this.loadScenes());
+          },
+        });
       }
     } catch (e) {
       console.error('Failed to delete scene:', e);
@@ -478,8 +490,21 @@ export class SceneEditorComponent implements OnInit {
    */
   async onSceneFolderChange(event: { sceneId: string; folderPath: string }): Promise<void> {
     try {
+      const prevPath = this.scenes().find((s) => s.id === event.sceneId)?.folderPath ?? '';
       await this.sceneService.updateSceneFolder(event.sceneId, event.folderPath);
       await this.loadScenes();
+
+      const sceneId = event.sceneId;
+      const newPath = event.folderPath;
+      this.undo.push({
+        label: 'Move scene',
+        execute: () => {
+          void this.sceneService.updateSceneFolder(sceneId, newPath).then(() => this.loadScenes());
+        },
+        undo: () => {
+          void this.sceneService.updateSceneFolder(sceneId, prevPath).then(() => this.loadScenes());
+        },
+      });
     } catch (e) {
       console.error('Failed to move scene:', e);
       this.notification.error('Failed to move the scene.');
@@ -623,6 +648,40 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
+   * Pushes a generic undo action that swaps a scene's layers between two snapshots.
+   * Each closure persists the swap to the DB and updates the selectedScene signal.
+   * @param label The undo action label shown in the UI.
+   * @param sceneId The id of the scene whose layers change.
+   * @param previousLayers The layers before the action (deep-copied).
+   * @param newLayers The layers after the action (deep-copied).
+   */
+  private pushLayerUndo(
+    label: string,
+    sceneId: string,
+    previousLayers: Layer[],
+    newLayers: Layer[],
+  ): void {
+    const svc = this.sceneService;
+    const sel = this.selectedScene;
+    const notif = this.notification;
+    this.undo.push({
+      label,
+      execute() {
+        svc
+          .updateScene(sceneId, { layers: newLayers })
+          .then(() => sel.update((s) => (s ? { ...s, layers: newLayers } : null)))
+          .catch(() => notif.error('Failed to apply the action.'));
+      },
+      undo() {
+        svc
+          .updateScene(sceneId, { layers: previousLayers })
+          .then(() => sel.update((s) => (s ? { ...s, layers: previousLayers } : null)))
+          .catch(() => notif.error('Failed to undo the action.'));
+      },
+    });
+  }
+
+  /**
    * Adds a new layer to the current scene.
    * @param name The name for the new layer.
    */
@@ -630,6 +689,10 @@ export class SceneEditorComponent implements OnInit {
     const scene = this.selectedScene();
     if (!scene) return;
     try {
+      const previousLayers = scene.layers.map((l) => ({
+        ...l,
+        tileData: l.tileData.map((row) => [...row]),
+      }));
       const newLayer: Layer = {
         id: crypto.randomUUID(),
         name,
@@ -641,6 +704,7 @@ export class SceneEditorComponent implements OnInit {
       await this.sceneService.updateScene(scene.id, { layers: newLayers });
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
       this.activeLayerId.set(newLayer.id);
+      this.pushLayerUndo('Add layer', scene.id, previousLayers, newLayers);
     } catch (e) {
       console.error('Failed to add layer:', e);
       this.notification.error('Failed to add layer.');
@@ -655,12 +719,17 @@ export class SceneEditorComponent implements OnInit {
     const scene = this.selectedScene();
     if (!scene || scene.layers.length <= 1) return;
     try {
+      const previousLayers = scene.layers.map((l) => ({
+        ...l,
+        tileData: l.tileData.map((row) => [...row]),
+      }));
       const newLayers = scene.layers.filter((l) => l.id !== layerId);
       await this.sceneService.updateScene(scene.id, { layers: newLayers });
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
       if (this.activeLayerId() === layerId) {
         this.activeLayerId.set(newLayers[0]?.id ?? null);
       }
+      this.pushLayerUndo('Delete layer', scene.id, previousLayers, newLayers);
     } catch (e) {
       console.error('Failed to delete layer:', e);
       this.notification.error('Failed to delete layer.');
@@ -675,11 +744,16 @@ export class SceneEditorComponent implements OnInit {
     const scene = this.selectedScene();
     if (!scene) return;
     try {
+      const previousLayers = scene.layers.map((l) => ({
+        ...l,
+        tileData: l.tileData.map((row) => [...row]),
+      }));
       const newLayers = scene.layers.map((l) =>
         l.id === layerId ? { ...l, visible: !l.visible } : l,
       );
       await this.sceneService.updateScene(scene.id, { layers: newLayers });
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+      this.pushLayerUndo('Toggle layer visibility', scene.id, previousLayers, newLayers);
     } catch (e) {
       console.error('Failed to toggle layer visibility:', e);
     }
@@ -693,11 +767,16 @@ export class SceneEditorComponent implements OnInit {
     const scene = this.selectedScene();
     if (!scene) return;
     try {
+      const previousLayers = scene.layers.map((l) => ({
+        ...l,
+        tileData: l.tileData.map((row) => [...row]),
+      }));
       const newLayers = scene.layers.map((l) =>
         l.id === event.layerId ? { ...l, opacity: event.opacity } : l,
       );
       await this.sceneService.updateScene(scene.id, { layers: newLayers });
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+      this.pushLayerUndo('Change layer opacity', scene.id, previousLayers, newLayers);
     } catch (e) {
       console.error('Failed to update layer opacity:', e);
     }
@@ -711,11 +790,16 @@ export class SceneEditorComponent implements OnInit {
     const scene = this.selectedScene();
     if (!scene) return;
     try {
+      const previousLayers = scene.layers.map((l) => ({
+        ...l,
+        tileData: l.tileData.map((row) => [...row]),
+      }));
       const newLayers = scene.layers.map((l) =>
         l.id === event.layerId ? { ...l, name: event.name } : l,
       );
       await this.sceneService.updateScene(scene.id, { layers: newLayers });
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+      this.pushLayerUndo('Rename layer', scene.id, previousLayers, newLayers);
     } catch (e) {
       console.error('Failed to rename layer:', e);
     }
@@ -733,11 +817,16 @@ export class SceneEditorComponent implements OnInit {
     const targetIdx = event.direction === 'up' ? idx + 1 : idx - 1;
     if (targetIdx < 0 || targetIdx >= scene.layers.length) return;
     try {
+      const previousLayers = scene.layers.map((l) => ({
+        ...l,
+        tileData: l.tileData.map((row) => [...row]),
+      }));
       const newLayers = [...scene.layers];
       const [moved] = newLayers.splice(idx, 1);
       newLayers.splice(targetIdx, 0, moved);
       await this.sceneService.updateScene(scene.id, { layers: newLayers });
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
+      this.pushLayerUndo('Reorder layer', scene.id, previousLayers, newLayers);
     } catch (e) {
       console.error('Failed to reorder layer:', e);
     }

@@ -412,6 +412,7 @@ export class SpriteEditorComponent implements OnInit {
     const previous = this.previousIndices;
     this.previousIndices = null;
     const svc = this.spriteService;
+    const spriteId = sprite.id;
     const palette = this.projectPalette();
     const selIndices = this.paletteIndices;
     const selSprite = this.selectedSprite;
@@ -419,18 +420,18 @@ export class SpriteEditorComponent implements OnInit {
     this.undo.push({
       label: 'Draw pixels',
       execute() {
-        const pd = svc.encodePixelData(finalIndices, palette);
-        selIndices.set(finalIndices.map((r) => [...r]));
-        selSprite.update((s) =>
-          s ? { ...s, paletteIndices: finalIndices.map((r) => [...r]), pixelData: pd } : null,
-        );
+        const grid = finalIndices.map((r) => [...r]);
+        const pd = svc.encodePixelData(grid, palette);
+        selIndices.set(grid);
+        selSprite.update((s) => (s ? { ...s, paletteIndices: grid, pixelData: pd } : null));
+        void svc.updateSprite(spriteId, { paletteIndices: grid, pixelData: pd });
       },
       undo() {
-        const pd = svc.encodePixelData(previous, palette);
-        selIndices.set(previous.map((r) => [...r]));
-        selSprite.update((s) =>
-          s ? { ...s, paletteIndices: previous.map((r) => [...r]), pixelData: pd } : null,
-        );
+        const grid = previous.map((r) => [...r]);
+        const pd = svc.encodePixelData(grid, palette);
+        selIndices.set(grid);
+        selSprite.update((s) => (s ? { ...s, paletteIndices: grid, pixelData: pd } : null));
+        void svc.updateSprite(spriteId, { paletteIndices: grid, pixelData: pd });
       },
     });
   }
@@ -488,10 +489,40 @@ export class SpriteEditorComponent implements OnInit {
       );
       const newSpriteIds = [...tile.spriteIds, newSprite.id];
       const newType = newSpriteIds.length > 1 ? 'animated' : tile.type;
+      const prevSpriteIds = tile.spriteIds;
+      const prevType = tile.type;
       await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds, type: newType });
       await this.loadSprites();
       await this.loadTiles();
       await this.selectSprite(newSprite.id);
+
+      const tileId = tile.id;
+      this.undo.push({
+        label: 'Add frame',
+        execute: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: newSpriteIds, type: newType });
+            await this.spriteService.restoreSprite(newSprite);
+            await this.loadSprites();
+            await this.loadTiles();
+            await this.selectSprite(newSprite.id);
+          } catch (e) {
+            this.notification.error('Failed to redo add frame');
+            console.error(e);
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds, type: prevType });
+            await this.spriteService.deleteSprite(newSprite.id);
+            await this.loadSprites();
+            await this.loadTiles();
+          } catch (e) {
+            this.notification.error('Failed to undo add frame');
+            console.error(e);
+          }
+        },
+      });
     } catch (e) {
       this.notification.error('Failed to add frame');
       console.error(e);
@@ -506,6 +537,10 @@ export class SpriteEditorComponent implements OnInit {
       const idx = tile.spriteIds.indexOf(frameId);
       const newSpriteIds = tile.spriteIds.filter((id) => id !== frameId);
       const newType = newSpriteIds.length > 1 ? 'animated' : 'static';
+      const deletedSprite = await this.spriteService.getSprite(frameId);
+      if (!deletedSprite) return;
+      const prevSpriteIds = tile.spriteIds;
+      const prevType = tile.type;
       await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds, type: newType });
       await this.spriteService.deleteSprite(frameId);
       await this.loadSprites();
@@ -514,6 +549,35 @@ export class SpriteEditorComponent implements OnInit {
       if (adjacentIdx >= 0) {
         await this.selectSprite(newSpriteIds[adjacentIdx]);
       }
+
+      const tileId = tile.id;
+      this.undo.push({
+        label: 'Delete frame',
+        execute: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: newSpriteIds, type: newType });
+            await this.spriteService.deleteSprite(frameId);
+            await this.loadSprites();
+            await this.loadTiles();
+            if (adjacentIdx >= 0) await this.selectSprite(newSpriteIds[adjacentIdx]);
+          } catch (e) {
+            this.notification.error('Failed to redo delete frame');
+            console.error(e);
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds, type: prevType });
+            await this.spriteService.restoreSprite(deletedSprite);
+            await this.loadSprites();
+            await this.loadTiles();
+            await this.selectSprite(frameId);
+          } catch (e) {
+            this.notification.error('Failed to undo delete frame');
+            console.error(e);
+          }
+        },
+      });
     } catch (e) {
       this.notification.error('Failed to delete frame');
       console.error(e);
@@ -543,9 +607,41 @@ export class SpriteEditorComponent implements OnInit {
       const idx = tile.spriteIds.indexOf(frameId);
       const newSpriteIds = [...tile.spriteIds];
       newSpriteIds.splice(idx + 1, 0, newSprite.id);
+      const prevSpriteIds = [...tile.spriteIds];
       await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds });
       await this.loadSprites();
       await this.selectSprite(newSprite.id);
+
+      const tileId = tile.id;
+      const sprite = newSprite;
+      const removedId = newSprite.id;
+      this.undo.push({
+        label: 'Duplicate frame',
+        execute: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: newSpriteIds });
+            await this.spriteService.restoreSprite(sprite);
+            await this.loadSprites();
+            await this.loadTiles();
+            await this.selectSprite(removedId);
+          } catch (e) {
+            this.notification.error('Failed to redo duplicate frame');
+            console.error(e);
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds });
+            await this.spriteService.deleteSprite(removedId);
+            await this.loadSprites();
+            await this.loadTiles();
+            await this.selectSprite(prevSpriteIds[0]);
+          } catch (e) {
+            this.notification.error('Failed to undo duplicate frame');
+            console.error(e);
+          }
+        },
+      });
     } catch (e) {
       this.notification.error('Failed to duplicate frame');
       console.error(e);
@@ -560,11 +656,35 @@ export class SpriteEditorComponent implements OnInit {
     if (fromIndex < 0 || fromIndex >= tile.spriteIds.length) return;
     if (toIndex < 0 || toIndex >= tile.spriteIds.length) return;
     try {
+      const prevSpriteIds = [...tile.spriteIds];
       const newSpriteIds = [...tile.spriteIds];
       const [moved] = newSpriteIds.splice(fromIndex, 1);
       newSpriteIds.splice(toIndex, 0, moved);
       await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds });
       await this.loadTiles();
+
+      const tileId = tile.id;
+      this.undo.push({
+        label: 'Reorder frame',
+        execute: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: newSpriteIds });
+            await this.loadTiles();
+          } catch (e) {
+            this.notification.error('Failed to redo reorder frame');
+            console.error(e);
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds });
+            await this.loadTiles();
+          } catch (e) {
+            this.notification.error('Failed to undo reorder frame');
+            console.error(e);
+          }
+        },
+      });
     } catch (e) {
       this.notification.error('Failed to reorder frame');
       console.error(e);
@@ -579,8 +699,32 @@ export class SpriteEditorComponent implements OnInit {
     const tile = this.currentTile();
     if (!tile || tile.type === type) return;
     try {
+      const prevType = tile.type;
       await this.tileService.updateTile(tile.id, { type });
       await this.loadTiles();
+
+      const tileId = tile.id;
+      this.undo.push({
+        label: 'Change tile type',
+        execute: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { type });
+            await this.loadTiles();
+          } catch (e) {
+            this.notification.error('Failed to redo type change');
+            console.error(e);
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { type: prevType });
+            await this.loadTiles();
+          } catch (e) {
+            this.notification.error('Failed to undo type change');
+            console.error(e);
+          }
+        },
+      });
     } catch (e) {
       this.notification.error('Failed to update tile type');
       console.error(e);
@@ -597,8 +741,32 @@ export class SpriteEditorComponent implements OnInit {
     const clamped = Math.max(1, Math.min(60, speed));
     if (tile.animationSpeed === clamped) return;
     try {
+      const prevSpeed = tile.animationSpeed;
       await this.tileService.updateTile(tile.id, { animationSpeed: clamped });
       await this.loadTiles();
+
+      const tileId = tile.id;
+      this.undo.push({
+        label: 'Change animation speed',
+        execute: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { animationSpeed: clamped });
+            await this.loadTiles();
+          } catch (e) {
+            this.notification.error('Failed to redo speed change');
+            console.error(e);
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { animationSpeed: prevSpeed });
+            await this.loadTiles();
+          } catch (e) {
+            this.notification.error('Failed to undo speed change');
+            console.error(e);
+          }
+        },
+      });
     } catch (e) {
       this.notification.error('Failed to update animation speed');
       console.error(e);

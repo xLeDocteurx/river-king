@@ -21,6 +21,7 @@ import { SessionService } from '../../core/services/session.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
 import { SpriteService } from './services/sprite.service';
+import { UndoService } from '../../core/services/undo.service';
 import type { Sprite } from '../../shared/models/sprite.model';
 import type { Tile } from '../../shared/models/tile.model';
 
@@ -76,6 +77,11 @@ describe('SpriteEditorComponent', () => {
   async function flushRouteWork() {
     await fixture.whenStable();
     await new Promise((r) => setTimeout(r, 50));
+  }
+
+  /** Flushes the fire-and-forget async undo/redo closures (Dexie + reload chain). */
+  async function flushUndo() {
+    await new Promise((r) => setTimeout(r, 250));
   }
 
   async function createProjectWithPalette() {
@@ -437,6 +443,182 @@ describe('SpriteEditorComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(fixture.componentInstance.onionSkinPrevData()).toBe('A');
+  });
+
+  it('undo removes an added frame and redo re-adds it', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Hero',
+      type: 'static',
+      spriteIds: [11],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Hero 1',
+      width: 16,
+      height: 16,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    await component.selectSprite(11);
+
+    const undo = TestBed.inject(UndoService);
+    expect(undo.undoLabel()).toBe('');
+
+    await component.onAddFrame();
+    const tile = component.currentTile();
+    expect(tile?.spriteIds).toHaveLength(2);
+    expect(tile?.type).toBe('animated');
+    const newId = tile!.spriteIds[1];
+
+    undo.undo();
+    await flushUndo();
+    expect((await db.tiles.get(1))!.spriteIds).toEqual([11]);
+    expect(component.currentTile()?.spriteIds).toEqual([11]);
+    expect(component.currentTile()?.type).toBe('static');
+    expect(await db.sprites.get(newId)).toBeUndefined();
+
+    undo.redo();
+    await flushUndo();
+    expect(component.currentTile()?.spriteIds).toEqual([11, newId]);
+    expect(await db.sprites.get(newId)).toBeTruthy();
+  });
+
+  it('undo restores a deleted frame and redo deletes it again', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Hero',
+      type: 'animated',
+      spriteIds: [11, 12],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Hero 1',
+      width: 16,
+      height: 16,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await db.sprites.add({
+      id: 12,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Hero 2',
+      width: 16,
+      height: 16,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.selectedTileId.set(1);
+
+    await component.onDeleteFrame(12);
+    expect(component.currentTile()?.spriteIds).toEqual([11]);
+    expect(await db.sprites.get(12)).toBeUndefined();
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await flushUndo();
+    expect(component.currentTile()?.spriteIds).toEqual([11, 12]);
+    expect(await db.sprites.get(12)).toBeTruthy();
+
+    undo.redo();
+    await flushUndo();
+    expect(component.currentTile()?.spriteIds).toEqual([11]);
+    expect(await db.sprites.get(12)).toBeUndefined();
+  });
+
+  it('undo persists the previous pixels back to the sprite', async () => {
+    const { spriteService, existingSpriteId } = await seedTwoSprites();
+    const updateSpy = vi
+      .spyOn(spriteService, 'updateSprite')
+      .mockImplementation(() => Promise.resolve());
+    await fixture.componentInstance.selectSprite(existingSpriteId);
+    const before = fixture.componentInstance.paletteIndices()!.map((row) => [...row]);
+    const stroke = before.map((row) => [...row]);
+    stroke[0][0] = 1;
+    fixture.componentInstance.onStrokeStart();
+    await fixture.componentInstance.onCanvasChange(stroke);
+    fixture.componentInstance.onStrokeEnd(stroke);
+    updateSpy.mockClear();
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(updateSpy.mock.calls.at(-1)![0]).toBe(existingSpriteId);
+    expect(updateSpy.mock.calls.at(-1)![1].paletteIndices).toEqual(before);
+    expect(fixture.componentInstance.paletteIndices()).toEqual(before);
+    fixture.destroy();
+  });
+
+  it('undo restores the original frame order after a reorder', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Hero',
+      type: 'animated',
+      spriteIds: [11, 12],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Hero 1',
+      width: 16,
+      height: 16,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await db.sprites.add({
+      id: 12,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Hero 2',
+      width: 16,
+      height: 16,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.selectedTileId.set(1);
+
+    expect(component.currentTile()?.spriteIds).toEqual([11, 12]);
+    await component.onFrameReorder(0, 1);
+    expect(component.currentTile()?.spriteIds).toEqual([12, 11]);
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await flushUndo();
+    expect(component.currentTile()?.spriteIds).toEqual([11, 12]);
   });
 
   it('switches the drawing tool on digit key shortcuts', async () => {

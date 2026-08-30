@@ -462,6 +462,70 @@ describe('SceneEditorComponent', () => {
     expect(stored?.layers[0].tileData[0]).toHaveLength(4);
   });
 
+  it('undo restores a deleted scene and redo deletes it again', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Del', 2, 2);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+
+    component.onDeleteSceneRequest(scene.id);
+    await component.onConfirmDelete();
+    expect(component.scenes().some((s) => s.id === scene.id)).toBe(false);
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(component.scenes().some((s) => s.id === scene.id)).toBe(true);
+    expect(await db.scenes.get(scene.id)).toBeTruthy();
+
+    undo.redo();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(component.scenes().some((s) => s.id === scene.id)).toBe(false);
+  });
+
+  it('undo restores a layer after it was added then deleted', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Lyr', 4, 4);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+
+    await component.onAddLayer('Details');
+    const before = component.selectedScene()?.layers.length ?? 0;
+    expect(before).toBeGreaterThan(1);
+    const addedId = component.activeLayerId()!;
+
+    await component.onDeleteLayer(addedId);
+    expect(component.selectedScene()?.layers).toHaveLength(before - 1);
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(component.selectedScene()?.layers).toHaveLength(before);
+    expect((await db.scenes.get(scene.id))?.layers).toHaveLength(before);
+  });
+
+  it('undo restores layer visibility after a toggle', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Vis', 2, 2);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+
+    const layerId = scene.layers[0].id;
+    await component.onToggleLayerVisibility(layerId);
+    expect(component.selectedScene()?.layers[0].visible).toBe(false);
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(component.selectedScene()?.layers[0].visible).toBe(true);
+  });
+
   it('persists the selected scene into the session', async () => {
     fixture.detectChanges();
     await fixture.whenStable();

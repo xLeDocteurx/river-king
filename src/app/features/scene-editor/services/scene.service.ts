@@ -87,6 +87,14 @@ export class SceneService {
   }
 
   /**
+   * Re-inserts a previously deleted scene (used to undo a deletion).
+   * @param scene - The full scene row to restore.
+   */
+  async restoreScene(scene: Scene): Promise<void> {
+    await this.db.scenes.add(scene);
+  }
+
+  /**
    * Retrieves a single scene by id.
    * @param id The scene id.
    * @returns The scene, or undefined if not found.

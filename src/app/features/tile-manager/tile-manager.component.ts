@@ -23,6 +23,7 @@ import {
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
+import { UndoService } from '../../core/services/undo.service';
 import {
   KeyboardShortcutsService,
   ShortcutId,
@@ -55,6 +56,7 @@ export class TileManagerComponent implements OnInit {
   private readonly notification = inject(NotificationService);
   private readonly statusBar = inject(StatusBarService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly undo = inject(UndoService);
   private readonly shortcuts = inject(KeyboardShortcutsService);
 
   /** Reference to the confirm-dialog component for programmatic open/close. */
@@ -250,10 +252,35 @@ export class TileManagerComponent implements OnInit {
    * @param event - Contains tileId and the new folderPath.
    */
   async onTileFolderChange(event: { tileId: number; folderPath: string }): Promise<void> {
+    const oldPath = this.tiles().find((t) => t.id === event.tileId)?.folderPath ?? '';
+    if (oldPath === event.folderPath) return;
     try {
       await this.tileService.updateTileFolder(event.tileId, event.folderPath);
       await this.loadTiles();
       await this.loadFolders();
+      this.undo.push({
+        label: 'Move tile',
+        execute: async () => {
+          try {
+            await this.tileService.updateTileFolder(event.tileId, event.folderPath);
+            await this.loadTiles();
+            await this.loadFolders();
+          } catch (e) {
+            this.notification.error('Failed to move tile');
+            console.error(e);
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.updateTileFolder(event.tileId, oldPath);
+            await this.loadTiles();
+            await this.loadFolders();
+          } catch (e) {
+            this.notification.error('Failed to move tile');
+            console.error(e);
+          }
+        },
+      });
     } catch (e) {
       console.error('Failed to move tile:', e);
       this.notification.error('Failed to move tile');
@@ -276,6 +303,16 @@ export class TileManagerComponent implements OnInit {
    */
   onCreateFolder(name: string): void {
     this.folders.update((list) => [...list, name].sort((a, b) => a.localeCompare(b)));
+    const folders = this.folders;
+    this.undo.push({
+      label: 'Create folder',
+      execute() {
+        folders.update((list) => [...list, name].sort((a, b) => a.localeCompare(b)));
+      },
+      undo() {
+        folders.update((list) => list.filter((p) => p !== name));
+      },
+    });
   }
 
   /**
@@ -344,6 +381,14 @@ export class TileManagerComponent implements OnInit {
     const tilesToUpdate = this.tiles().filter(
       (t) => (t.folderPath || '') === from || (t.folderPath || '').startsWith(prefix),
     );
+    const moves = tilesToUpdate.map((tile) => ({
+      tileId: tile.id,
+      oldPath: tile.folderPath || '',
+      newPath:
+        (tile.folderPath || '') === from
+          ? newPrefix
+          : (tile.folderPath || '').replace(from, newPrefix),
+    }));
     try {
       for (const tile of tilesToUpdate) {
         const oldPath = tile.folderPath || '';
@@ -352,6 +397,27 @@ export class TileManagerComponent implements OnInit {
       }
       await this.loadTiles();
       await this.loadFolders();
+      this.undo.push({
+        label: 'Move folder',
+        execute: async () => {
+          try {
+            for (const m of moves) await this.tileService.updateTileFolder(m.tileId, m.newPath);
+            await this.loadTiles();
+            await this.loadFolders();
+          } catch (e) {
+            console.error('Failed to move folder:', e);
+          }
+        },
+        undo: async () => {
+          try {
+            for (const m of moves) await this.tileService.updateTileFolder(m.tileId, m.oldPath);
+            await this.loadTiles();
+            await this.loadFolders();
+          } catch (e) {
+            console.error('Failed to move folder:', e);
+          }
+        },
+      });
     } catch (e) {
       console.error('Failed to move folder:', e);
       this.notification.error('Failed to move folder');
@@ -432,6 +498,28 @@ export class TileManagerComponent implements OnInit {
       await this.tileService.updateTile(tile.id, { spriteIds: [frame.id] });
       await this.loadTiles();
       await this.selectTile(tile.id);
+      this.undo.push({
+        label: 'Create tile',
+        execute: async () => {
+          try {
+            await this.tileService.restoreTile(tile, [frame]);
+            await this.loadTiles();
+            await this.selectTile(tile.id);
+          } catch (e) {
+            this.notification.error('Failed to create tile');
+            console.error(e);
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.deleteTile(tile.id);
+            await this.loadTiles();
+          } catch (e) {
+            this.notification.error('Failed to create tile');
+            console.error(e);
+          }
+        },
+      });
     } catch (e) {
       this.notification.error('Failed to create tile');
       console.error(e);
@@ -445,6 +533,7 @@ export class TileManagerComponent implements OnInit {
    */
   async saveTile(tile: Tile): Promise<void> {
     try {
+      const previous = await this.tileService.getTile(tile.id);
       await this.tileService.updateTile(tile.id, {
         name: tile.name,
         type: tile.type,
@@ -455,6 +544,42 @@ export class TileManagerComponent implements OnInit {
       await this.loadTiles();
       const updated = await this.tileService.getTile(tile.id);
       this.selectedTile.set(updated ?? null);
+      if (!previous) return;
+      this.undo.push({
+        label: 'Edit tile',
+        execute: async () => {
+          try {
+            await this.tileService.updateTile(tile.id, {
+              name: tile.name,
+              type: tile.type,
+              animationSpeed: tile.animationSpeed,
+              properties: tile.properties,
+              spriteIds: tile.spriteIds,
+            });
+            const applied = await this.tileService.getTile(tile.id);
+            this.selectedTile.set(applied ?? null);
+          } catch (e) {
+            this.notification.error('Failed to save tile');
+            console.error(e);
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.updateTile(tile.id, {
+              name: previous.name,
+              type: previous.type,
+              animationSpeed: previous.animationSpeed,
+              properties: previous.properties,
+              spriteIds: previous.spriteIds,
+            });
+            const restored = await this.tileService.getTile(tile.id);
+            this.selectedTile.set(restored ?? null);
+          } catch (e) {
+            this.notification.error('Failed to save tile');
+            console.error(e);
+          }
+        },
+      });
     } catch (e) {
       this.notification.error('Failed to save tile');
       console.error(e);
@@ -477,6 +602,8 @@ export class TileManagerComponent implements OnInit {
    */
   async deleteTile(tileId: number): Promise<void> {
     try {
+      const tile = await this.tileService.getTile(tileId);
+      const sprites = await this.tileService.getSpritesForTile(tileId);
       await this.tileService.deleteTile(tileId);
       this.tileToDelete.set(null);
       if (this.selectedTileId() === tileId) {
@@ -488,6 +615,28 @@ export class TileManagerComponent implements OnInit {
         }
       }
       await this.loadTiles();
+      if (!tile) return;
+      this.undo.push({
+        label: 'Delete tile',
+        execute: async () => {
+          try {
+            await this.tileService.deleteTile(tileId);
+            await this.loadTiles();
+          } catch (e) {
+            this.notification.error('Failed to redo delete tile');
+            console.error(e);
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.restoreTile(tile, sprites);
+            await this.loadTiles();
+          } catch (e) {
+            this.notification.error('Failed to undo delete tile');
+            console.error(e);
+          }
+        },
+      });
     } catch (e) {
       this.notification.error('Failed to delete tile');
       console.error(e);
