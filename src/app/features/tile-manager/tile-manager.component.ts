@@ -258,6 +258,29 @@ export class TileManagerComponent implements OnInit {
   }
 
   /**
+   * Renames a folder, relocating every tile inside it (including nested
+   * sub-folders) to the new path.
+   * @param event The rename request emitted by the tile list tree.
+   */
+  async onFolderRename(event: { fromKey: string; toKey: string }): Promise<void> {
+    const { fromKey, toKey } = event;
+    if (!fromKey || fromKey === toKey) return;
+    if (this.folders().includes(toKey)) {
+      this.notification.warning('A folder with that name already exists.');
+      return;
+    }
+    try {
+      await this.tileService.renameFolder(this.projectId(), fromKey, toKey);
+      await this.loadTiles();
+      await this.loadFolders();
+      this.notification.success('Folder renamed');
+    } catch (e) {
+      console.error('Failed to rename folder:', e);
+      this.notification.error('Failed to rename the folder.');
+    }
+  }
+
+  /**
    * Moves all tiles from one folder into another (nested).
    * Updates folderPath for direct members and all nested sub-folders.
    * @param event Object containing fromKey and toKey folder paths.

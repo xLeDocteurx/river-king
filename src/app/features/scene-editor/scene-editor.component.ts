@@ -371,6 +371,28 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
+   * Renames a folder, relocating the folder row and every scene inside it.
+   * @param event The rename request emitted by the shared grouped list.
+   */
+  async onFolderRename(event: { fromKey: string; toKey: string }): Promise<void> {
+    const { fromKey, toKey } = event;
+    if (!fromKey || fromKey === toKey) return;
+    if (this.folders().includes(toKey)) {
+      this.notification.warning('A folder with that name already exists.');
+      return;
+    }
+    try {
+      await this.sceneService.renameFolder(this.projectId(), fromKey, toKey);
+      await this.loadFolders();
+      await this.loadScenes();
+      this.notification.success('Folder renamed');
+    } catch (e) {
+      console.error('Failed to rename folder:', e);
+      this.notification.error('Failed to rename the folder.');
+    }
+  }
+
+  /**
    * Opens the deletion confirmation dialog for a scene.
    * @param sceneId The id of the scene the user wants to delete.
    */

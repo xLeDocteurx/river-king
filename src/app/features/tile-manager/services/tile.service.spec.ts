@@ -90,4 +90,31 @@ describe('TileService', () => {
     const folders = await service.getFolders('p1');
     expect(folders).toEqual(['', 'UI/Buttons']);
   });
+
+  it('renameFolder rewrites folder paths of direct and nested tiles', async () => {
+    const direct = await service.createTile('p1', 'Direct');
+    await service.updateTileFolder(direct.id, 'forest');
+    const nested = await service.createTile('p1', 'Nested');
+    await service.updateTileFolder(nested.id, 'forest/caves');
+    const unrelated = await service.createTile('p1', 'Town');
+    await service.updateTileFolder(unrelated.id, 'town');
+
+    await service.renameFolder('p1', 'forest', 'woods');
+
+    expect((await service.getTile(direct.id))?.folderPath).toBe('woods');
+    expect((await service.getTile(nested.id))?.folderPath).toBe('woods/caves');
+    expect((await service.getTile(unrelated.id))?.folderPath).toBe('town');
+  });
+
+  it('renameFolder only affects the requested project', async () => {
+    const mine = await service.createTile('p1', 'Mine');
+    await service.updateTileFolder(mine.id, 'forest');
+    const other = await service.createTile('p2', 'Other');
+    await service.updateTileFolder(other.id, 'forest');
+
+    await service.renameFolder('p1', 'forest', 'woods');
+
+    expect((await service.getTile(mine.id))?.folderPath).toBe('woods');
+    expect((await service.getTile(other.id))?.folderPath).toBe('forest');
+  });
 });

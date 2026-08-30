@@ -24,6 +24,7 @@ import { TileService } from './services/tile.service';
 import { TileSpritesService } from './services/tile-sprites.service';
 import { ProjectService } from '../../features/dashboard/services/project.service';
 import type { Tile } from '../../shared/models/tile.model';
+import { NotificationService } from '../../core/services/notification.service';
 
 describe('TileManagerComponent', () => {
   let fixture: ComponentFixture<TileManagerComponent>;
@@ -248,6 +249,73 @@ describe('TileManagerComponent', () => {
     const lastCall = spy.mock.calls[spy.mock.calls.length - 1][0] as string;
     expect(lastCall).toContain('T');
     expect(lastCall).toContain('frames');
+  });
+
+  it('renames a folder and relocates its tiles', async () => {
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 50));
+    const comp = fixture.componentInstance;
+    const db = TestBed.inject(DatabaseService);
+    const directId = await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'Direct',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: 'forest',
+    } as unknown as import('../../shared/models/tile.model').Tile);
+    const nestedId = await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'Nested',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: 'forest/caves',
+    } as unknown as import('../../shared/models/tile.model').Tile);
+
+    const successSpy = vi.spyOn(TestBed.inject(NotificationService), 'success');
+    await comp.onFolderRename({ fromKey: 'forest', toKey: 'woods' });
+
+    expect((await db.tiles.get(directId))?.folderPath).toBe('woods');
+    expect((await db.tiles.get(nestedId))?.folderPath).toBe('woods/caves');
+    expect(comp.folders()).toContain('woods');
+    expect(comp.folders()).not.toContain('forest');
+    expect(successSpy).toHaveBeenCalledWith('Folder renamed');
+  });
+
+  it('warns instead of renaming when the target folder already exists', async () => {
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 50));
+    const comp = fixture.componentInstance;
+    const db = TestBed.inject(DatabaseService);
+    const directId = await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'Direct',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: 'forest',
+    } as unknown as import('../../shared/models/tile.model').Tile);
+    await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'Town',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: 'town',
+    } as unknown as import('../../shared/models/tile.model').Tile);
+
+    const warningSpy = vi.spyOn(TestBed.inject(NotificationService), 'warning');
+    await comp.loadTiles();
+    await comp.loadFolders();
+    await comp.onFolderRename({ fromKey: 'forest', toKey: 'town' });
+
+    expect(warningSpy).toHaveBeenCalledWith('A folder with that name already exists.');
+    expect((await db.tiles.get(directId))?.folderPath).toBe('forest');
   });
 
   it('requests deletion of the selected tile on Delete', async () => {

@@ -89,4 +89,36 @@ describe('SceneService', () => {
     expect(await service.getFolders('proj-1')).toHaveLength(1);
     expect(await service.getFolders('proj-2')).toHaveLength(1);
   });
+
+  it('renameFolder rewrites folder rows and scene folderPaths (direct and nested)', async () => {
+    await service.createFolder('proj-1', 'forest');
+    await service.createFolder('proj-1', 'forest/caves');
+    await service.createFolder('proj-1', 'town');
+    const direct = await service.createScene('proj-1', 'Direct', 10, 10);
+    await service.updateSceneFolder(direct.id, 'forest');
+    const nested = await service.createScene('proj-1', 'Nested', 10, 10);
+    await service.updateSceneFolder(nested.id, 'forest/caves');
+    const root = await service.createScene('proj-1', 'Root', 10, 10);
+
+    await service.renameFolder('proj-1', 'forest', 'woods');
+
+    const paths = (await service.getFolders('proj-1')).map((f) => f.path).sort();
+    expect(paths).toEqual(['town', 'woods', 'woods/caves']);
+    expect((await service.getScene(direct.id))?.folderPath).toBe('woods');
+    expect((await service.getScene(nested.id))?.folderPath).toBe('woods/caves');
+    expect((await service.getScene(root.id))?.folderPath).toBe('');
+  });
+
+  it('renameFolder leaves other projects untouched', async () => {
+    await service.createFolder('proj-1', 'forest');
+    await service.createFolder('proj-2', 'forest');
+    const other = await service.createScene('proj-2', 'Other', 10, 10);
+    await service.updateSceneFolder(other.id, 'forest');
+
+    await service.renameFolder('proj-1', 'forest', 'woods');
+
+    expect((await service.getFolders('proj-1')).map((f) => f.path)).toEqual(['woods']);
+    expect((await service.getFolders('proj-2')).map((f) => f.path)).toEqual(['forest']);
+    expect((await service.getScene(other.id))?.folderPath).toBe('forest');
+  });
 });

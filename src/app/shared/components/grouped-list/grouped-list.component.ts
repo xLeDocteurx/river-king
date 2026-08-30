@@ -52,8 +52,10 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
   groupChange = output<{ itemId: string | number; groupKey: string }>();
   /** Emitted when a group header is toggled. */
   toggleGroup = output<string>();
-  /** Emitted when a group (folder) header is dropped on another group header. */
+  /** Emitted when a folder is dropped on/in another folder. */
   groupMove = output<{ fromKey: string; toKey: string }>();
+  /** Emitted when a group header is renamed via the inline input. */
+  groupRename = output<{ fromKey: string; toKey: string }>();
   /** Emitted when a new group is confirmed from the inline creation input. */
   createGroup = output<string>();
   /** Emitted when the user requests creation of a new item. */
@@ -61,6 +63,10 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
 
   /** Internal collapsed state, seeded from input. */
   private collapsedSet = computed(() => new Set(this.collapsedGroups()));
+  /** Group key currently being renamed inline, or null. */
+  renamingKey = signal<string | null>(null);
+  /** Current value of the inline rename input. */
+  renameValue = signal('');
   /** Whether the inline new-group input is currently shown. */
   addingGroup = signal(false);
   /** Current value of the inline new-group input. */
@@ -121,6 +127,7 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
    * @param event The native drag event.
    */
   onGroupDragStart(key: string, event: DragEvent): void {
+    if (this.renamingKey() !== null) return;
     this.dragGroupKey = key;
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
@@ -166,6 +173,33 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
    */
   isGroupDropTarget(key: string): boolean {
     return this.dropTargetKey === key;
+  }
+
+  /**
+   * Switches a group header into inline-rename mode.
+   * @param key The group key to rename (root groups are not renamable).
+   */
+  startGroupRename(key: string): void {
+    if (!key || this.renamingKey() !== null) return;
+    this.renamingKey.set(key);
+    this.renameValue.set(key);
+  }
+
+  /**
+   * Commits the pending inline rename. Emits groupRename when the new name
+   * is non-empty and differs from the original key, then leaves edit mode.
+   */
+  commitGroupRename(): void {
+    const key = this.renamingKey();
+    const name = this.renameValue().trim();
+    this.renamingKey.set(null);
+    if (key === null || !name || name === key) return;
+    this.groupRename.emit({ fromKey: key, toKey: name });
+  }
+
+  /** Leaves inline-rename mode without emitting anything. */
+  cancelGroupRename(): void {
+    this.renamingKey.set(null);
   }
 
   /**
