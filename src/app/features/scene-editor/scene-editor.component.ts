@@ -34,6 +34,7 @@ import { SceneListComponent } from './scene-list.component';
 import { TilePaletteComponent } from './tile-palette.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import type { Scene, Layer } from '../../shared/models/scene.model';
+import { computeCollapsedKeys, type Folder } from '../../shared/models/folder.model';
 import type { Tile } from '../../shared/models/tile.model';
 import type { ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import type { TileFootprintMap } from './map-footprint';
@@ -88,6 +89,10 @@ export class SceneEditorComponent implements OnInit {
   scenes = signal<Scene[]>([]);
   /** Persisted folder paths for the current project. */
   folders = signal<string[]>([]);
+  /** Persisted scene folder rows for the current project (kind='scene'). */
+  folderRows = signal<Folder[]>([]);
+  /** Folder paths that render collapsed, derived from persisted folder state. */
+  collapsedFolders = computed(() => computeCollapsedKeys(this.folderRows(), this.folders()));
   /** Id of the currently selected scene. */
   selectedSceneId = signal<string | null>(null);
   /** Full object of the currently selected scene. */
@@ -319,8 +324,9 @@ export class SceneEditorComponent implements OnInit {
    */
   async loadFolders(): Promise<void> {
     try {
-      const folders = await this.sceneService.getFolders(this.projectId());
-      this.folders.set(folders.map((f) => f.path));
+      const rows = await this.sceneService.getFolders(this.projectId());
+      this.folderRows.set(rows);
+      this.folders.set(rows.map((f) => f.path));
     } catch (e) {
       console.error('Failed to load folders:', e);
       this.notification.error('Failed to load folders.');
@@ -341,6 +347,12 @@ export class SceneEditorComponent implements OnInit {
       } else {
         this.activeLayerId.set(null);
       }
+      if (scene?.folderPath) {
+        await this.sceneService.upsertFolderState(this.projectId(), scene.folderPath, {
+          lastOpenedAt: Date.now(),
+        });
+        await this.loadFolders();
+      }
       void this.sessions.updateSession(this.projectId(), {
         lastScreen: 'scenes',
         lastSceneId: sceneId,
@@ -351,6 +363,24 @@ export class SceneEditorComponent implements OnInit {
     } catch (e) {
       console.error('Failed to load scene:', e);
       this.notification.error('Failed to load the scene.');
+    }
+  }
+
+  /**
+   * Persists a manual collapse/expand for a folder and refreshes folder state.
+   * @param path The folder path the user toggled.
+   */
+  async onToggleSceneFolder(path: string): Promise<void> {
+    try {
+      const collapsed = !this.collapsedFolders().includes(path);
+      await this.sceneService.upsertFolderState(this.projectId(), path, {
+        collapsed,
+        lastOpenedAt: Date.now(),
+      });
+      await this.loadFolders();
+    } catch (e) {
+      console.error('Failed to update folder state:', e);
+      this.notification.error('Failed to update folder state.');
     }
   }
 

@@ -645,4 +645,57 @@ describe('SceneEditorComponent', () => {
     expect(lastCall?.[0]).toContain('1 layer');
     expect(lastCall?.[0]).toContain('3 tiles');
   });
+
+  it('loadFolders captures folder rows and computes the collapsed set', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    for (let i = 0; i < 7; i++) await component.onCreateFolder(`f${i}`);
+    await component.loadFolders();
+    expect(component.folderRows()).toHaveLength(7);
+    // 7 top-level folders > threshold 6 -> everything default-collapses
+    expect(component.collapsedFolders().sort()).toEqual(['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6']);
+  });
+
+  it('touching a folder keeps it expanded above the threshold', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    for (let i = 0; i < 7; i++) await component.onCreateFolder(`f${i}`);
+    await component.loadFolders();
+
+    await component.onToggleSceneFolder('f0'); // expands -> writes collapsed=false + lastOpenedAt=now
+
+    expect(component.collapsedFolders()).not.toContain('f0');
+    expect(component.collapsedFolders()).toContain('f1');
+    const row = (await db.folders.toArray()).find((r) => r.path === 'f0');
+    expect(row?.collapsed).toBe(false);
+    expect(row?.lastOpenedAt).toBeGreaterThan(0);
+  });
+
+  it('collapsing a folder above the threshold persists collapsed=true', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    for (let i = 0; i < 7; i++) await component.onCreateFolder(`f${i}`);
+    await component.loadFolders();
+
+    const toggledPath = 'f6';
+    await component.onToggleSceneFolder(toggledPath); // expands an above-threshold folder
+    await component.onToggleSceneFolder(toggledPath); // collapses it again -> collapsed=true
+
+    const row = (await db.folders.toArray()).find((r) => r.path === toggledPath);
+    expect(row?.collapsed).toBe(true);
+    expect(component.collapsedFolders()).toContain(toggledPath);
+  });
+
+  it('selectScene bumps lastOpenedAt of the selected scene folder', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await component.onCreateFolder('forest');
+    const scene = await sceneService.createScene('p1', 'Forest 1', 10, 10);
+    await sceneService.updateSceneFolder(scene.id, 'forest');
+
+    await component.selectScene(scene.id);
+
+    const row = (await db.folders.toArray()).find((r) => r.path === 'forest');
+    expect(row?.lastOpenedAt).toBeGreaterThan(0);
+  });
 });
