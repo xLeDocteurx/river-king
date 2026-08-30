@@ -414,7 +414,6 @@ describe('SceneEditorComponent', () => {
     expect(lastCall?.[0]).toContain('10×10');
   });
 
-<<<<<<< HEAD
   it('undoes the last action on Ctrl+Z', () => {
     const undoService = TestBed.inject(UndoService);
     const undoSpy = vi.spyOn(undoService, 'undo');
