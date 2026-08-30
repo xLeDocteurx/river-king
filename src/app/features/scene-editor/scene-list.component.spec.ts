@@ -114,7 +114,9 @@ describe('SceneListComponent', () => {
     fixture.detectChanges();
 
     expect(
-      (fixture.nativeElement as HTMLElement).querySelector('button[title="Delete folder mountain"]'),
+      (fixture.nativeElement as HTMLElement).querySelector(
+        'button[title="Delete folder mountain"]',
+      ),
     ).toBeNull();
   });
 

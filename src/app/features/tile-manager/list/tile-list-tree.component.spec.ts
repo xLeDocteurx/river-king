@@ -49,13 +49,24 @@ describe('TileListTreeComponent', () => {
 
   it('should not show a folder delete button when the folder has tiles', () => {
     fixture.componentRef.setInput('tiles', [
-      { id: 1, name: 'Grass', projectId: 'p1', type: 'static', animationSpeed: 1, properties: { blocking: false, interactable: false }, spriteIds: [], folderPath: 'mountain' },
+      {
+        id: 1,
+        name: 'Grass',
+        projectId: 'p1',
+        type: 'static',
+        animationSpeed: 1,
+        properties: { blocking: false, interactable: false },
+        spriteIds: [],
+        folderPath: 'mountain',
+      },
     ]);
     fixture.componentRef.setInput('folders', ['mountain']);
     fixture.detectChanges();
 
     expect(
-      (fixture.nativeElement as HTMLElement).querySelector('button[title="Delete folder mountain"]'),
+      (fixture.nativeElement as HTMLElement).querySelector(
+        'button[title="Delete folder mountain"]',
+      ),
     ).toBeNull();
   });
 });
