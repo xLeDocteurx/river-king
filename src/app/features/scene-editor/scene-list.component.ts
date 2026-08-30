@@ -1,10 +1,11 @@
-import { Component, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { GroupedListComponent } from '../../shared/components/grouped-list/grouped-list.component';
 import type { Scene } from '../../shared/models/scene.model';
 
 /**
  * Displays scenes grouped by folderPath with drag-and-drop support.
  * Thin wrapper around {@link GroupedListComponent} for scene-specific binding.
+ * The collapsed set is owned by the parent shell; toggles are emitted upwards.
  */
 @Component({
   selector: 'rk-scene-list',
@@ -26,8 +27,10 @@ export class SceneListComponent {
   /** Emitted when the user requests deletion of an empty folder. */
   folderDelete = output<string>();
   folderRename = output<{ fromKey: string; toKey: string }>();
-
-  collapsedFolders = signal<string[]>([]);
+  /** Folder paths rendered collapsed. Owned and persisted by the parent shell. */
+  collapsedFolders = input<string[]>([]);
+  /** Emitted when the user toggles a folder's collapsed state. */
+  toggleFolder = output<string>();
 
   groupByFolderPath = (scene: Scene) => scene.folderPath || '';
 
@@ -48,8 +51,6 @@ export class SceneListComponent {
   }
 
   onToggleGroup(key: string): void {
-    this.collapsedFolders.update((current) =>
-      current.includes(key) ? current.filter((k) => k !== key) : [...current, key],
-    );
+    this.toggleFolder.emit(key);
   }
 }
