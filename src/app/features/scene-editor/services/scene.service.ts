@@ -124,7 +124,7 @@ export class SceneService {
       .and((f) => f.path === path)
       .count();
     if (exists > 0) return;
-    const folder: Folder = { id: crypto.randomUUID(), projectId, path };
+    const folder: Folder = { id: crypto.randomUUID(), projectId, path, kind: 'scene', collapsed: false, lastOpenedAt: 0 };
     await this.db.folders.add(folder);
   }
 
