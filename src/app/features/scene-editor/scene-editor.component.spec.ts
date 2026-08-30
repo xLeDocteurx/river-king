@@ -414,6 +414,42 @@ describe('SceneEditorComponent', () => {
     expect(lastCall?.[0]).toContain('10×10');
   });
 
+  it('undoes the last action on Ctrl+Z', () => {
+    const undoService = TestBed.inject(UndoService);
+    const undoSpy = vi.spyOn(undoService, 'undo');
+    const event = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, cancelable: true });
+    document.dispatchEvent(event);
+    expect(undoSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('requests scene deletion on Delete when a scene is selected', () => {
+    component.selectedSceneId.set('scene-del');
+    const confirmDialog = component['deleteConfirmDialog']();
+    const openSpy = vi.spyOn(confirmDialog, 'open');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', cancelable: true }));
+    fixture.detectChanges();
+    expect(openSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('saves the current scene on Ctrl+S', async () => {
+    const scene = await sceneService.createScene('p1', 'Savable', 4, 4);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+
+    const svc = fixture.debugElement.injector.get(SceneService);
+    const updateSpy = vi.spyOn(svc, 'updateScene').mockResolvedValue(undefined);
+    const notification = TestBed.inject(NotificationService);
+    const successSpy = vi.spyOn(notification, 'success');
+
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true }),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(updateSpy).toHaveBeenCalledWith(scene.id, expect.objectContaining({ width: 4 }));
+    expect(successSpy).toHaveBeenCalledWith('Scene saved');
+  });
+
   it('shows the selected scene layer and tile counts in the status bar', async () => {
     fixture.detectChanges();
     await fixture.whenStable();
