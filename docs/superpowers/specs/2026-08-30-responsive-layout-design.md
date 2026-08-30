@@ -13,13 +13,13 @@ trois éditeurs sont des rangées flex à largeur fixe de panels `shrink-0` (224
 breakpoint dans le code (zéro `@media` dans tous les `*.scss`, un seul usage de
 `sm:/md:/lg:` dans tous les `*.html`). Résultat à ~360px de large :
 
-| Surface | Config sidebar+panels fixes | Tient à 360px ? |
-|---|---|---|
-| Dashboard | fluide (`grid-cols-1` base) | Oui |
-| Scene editor | 224 + 208 = 432px | Non |
-| Tile manager | 224 | Non (avec sidebar projet) |
-| Sprite editor | 224 + 208 = 432px | Non (pire de tous) |
-| Project shell | + 256px sidebar sur tout | Non |
+| Surface       | Config sidebar+panels fixes | Tient à 360px ?           |
+| ------------- | --------------------------- | ------------------------- |
+| Dashboard     | fluide (`grid-cols-1` base) | Oui                       |
+| Scene editor  | 224 + 208 = 432px           | Non                       |
+| Tile manager  | 224                         | Non (avec sidebar projet) |
+| Sprite editor | 224 + 208 = 432px           | Non (pire de tous)        |
+| Project shell | + 256px sidebar sur tout    | Non                       |
 
 En plus, la topbar (35px) déborde sur les routes projet (brand + 3 onglets + bouton thème,
 pas de wrap/truncate), et le `project-shell` imbrique un `h-screen` (100vh) dans un `main`
@@ -60,7 +60,7 @@ Cible: **utilisable à 640px (sm)**, **non-débordant à 360px**.
 - Utiliser exclusivement des utilitaires Tailwind avec les breakpoints initiaux (`sm:`,
   `md:`) — pas de `@media` SCSS maison, cohérent avec le reste du repo.
 - Les panels d'éditeurs deviennent **pliables** : garder la disposition côte à côte au
- -dessus du breakpoint, et sous le breakpoint proposer un **toggle** (Material Symbol)
+  -dessus du breakpoint, et sous le breakpoint proposer un **toggle** (Material Symbol)
   par panel pour le replier et libérer le canvas, ou un empilement vertical.
 - Éviter de réécrire la logique métier : seul le layout (classes de conteneur) change.
 
