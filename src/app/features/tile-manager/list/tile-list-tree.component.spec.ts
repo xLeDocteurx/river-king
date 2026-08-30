@@ -17,7 +17,15 @@ describe('TileListTreeComponent', () => {
   it('should emit tileSelect on click', () => {
     const spy = vi.spyOn(component.tileSelect, 'emit');
     fixture.componentRef.setInput('tiles', [
-      { id: 1, name: 'Grass', projectId: 'p1', type: 'static', animationSpeed: 1, properties: { blocking: false, interactable: false }, spriteIds: [] },
+      {
+        id: 1,
+        name: 'Grass',
+        projectId: 'p1',
+        type: 'static',
+        animationSpeed: 1,
+        properties: { blocking: false, interactable: false },
+        spriteIds: [],
+      },
     ]);
     fixture.detectChanges();
     // trigger click via emitted output directly — no DOM click in jsdom needed

@@ -83,11 +83,11 @@ needed and within the guard:
   from `map-footprint.ts` on the grown grid, then set
   `newTileData[y + padTop][x + padLeft] = tileId`.
 - Persist via `sceneService.updateScene(scene.id, { width: newWidth, height: newHeight,
-  layers: newLayers })`. `updateScene` already accepts `Partial<Scene>` (line 68), so
+layers: newLayers })`. `updateScene` already accepts `Partial<Scene>` (line 68), so
   `width`/`height` are persisted without a schema change.
 - Shift the camera so the view does not jump:
   `mapCanvasRef().cameraX += padLeft * cell * zoom;
-   mapCanvasRef().cameraY += padTop * cell * zoom`
+ mapCanvasRef().cameraY += padTop * cell * zoom`
   (existing content moves with the world; only the array indices shifted).
 - **Undo/redo**: the pushed undo closure must restore `previousWidth`, `previousHeight`
   **and** `previousLayers`; the redo closure must restore the grown `width`/`height`/
