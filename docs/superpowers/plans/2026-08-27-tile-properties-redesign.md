@@ -22,9 +22,11 @@
 ### Task 1: Add toggle helpers to TS
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/properties/tile-properties.component.ts`
 
 **Interfaces:**
+
 - Consumes: existing signals `interactableChecked`, `actionId`, reactive form `properties.blocking`
 - Produces: public methods `toggleBlocking()`, `toggleInteractable()`
 
@@ -65,9 +67,11 @@ git commit -m "feat: add toggle helpers for blocking and interactable"
 ### Task 2: Rewrite HTML layout
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/properties/tile-properties.component.html`
 
 **Interfaces:**
+
 - Consumes: `form`, `typeSelected()`, `frameCount()`, `tileSprites()`, `widthTiles()`, `heightTiles()`, `currentTiles()`, `interactableChecked()`, `actionId()`, `unknownActionHint()`, `knownActions`
 - Produces: same `@Output` bindings — `save` still emitted via existing auto-save; dialogs unchanged
 
@@ -79,6 +83,7 @@ only reorganize DOM structure.
 - [ ] **Step 1: Rewrite template**
 
 Key DOM structure (full content in edit):
+
 1. `<form>` root unchanged
 2. Row 1: Name (flex-1) + Type select + FPS number inline
 3. Row 2: Sprite card with header + strip; `@if (typeSelected() === 'animated')` around FPS and Play button
@@ -97,9 +102,11 @@ git commit -m "feat: redesign tile properties layout into inline card form"
 ### Task 3: Add SCSS styles
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/properties/tile-properties.component.scss`
 
 **Interfaces:**
+
 - Produces: `.sprite-card`, `.property-badge`, `.property-badge.active`, `.frame-strip-thumb`, `.frame-add-btn`
 
 The file is currently empty. Add badge/card styling.
@@ -151,9 +158,11 @@ git commit -m "style: add badge and sprite card styles for tile properties"
 ### Task 4: Update tests
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/properties/tile-properties.component.spec.ts`
 
 Update test assertions to query the new DOM:
+
 - Replace checkbox queries with button/badge queries
 - Keep form-value assertions (name, type, speed, blocking) intact
 - Verify `frameReorder` etc still work
@@ -213,17 +222,17 @@ git commit --allow-empty -m "chore: verify lint, build, and tests after redesign
 
 ## Spec Coverage Review
 
-| Spec requirement | Task |
-|---|---|
-| Single header row (name/type/fps) | Task 2 |
-| Inline sprite card with header + strip + add | Task 2 |
-| Inline size row with pixel hint | Task 2 |
-| Properties as badges | Task 2 + Task 3 |
-| Remove horizontal dividers | Task 2 |
-| Toggle helper methods | Task 1 |
-| Keep auto-save logic unchanged | implicit — no edits in Task 1–2 |
-| Keep dialogs untouched | implicit — dialogs remain in template |
-| Accessibility (aria-pressed, type=button) | Task 2 |
-| Test DOM selector update | Task 4 |
+| Spec requirement                             | Task                                  |
+| -------------------------------------------- | ------------------------------------- |
+| Single header row (name/type/fps)            | Task 2                                |
+| Inline sprite card with header + strip + add | Task 2                                |
+| Inline size row with pixel hint              | Task 2                                |
+| Properties as badges                         | Task 2 + Task 3                       |
+| Remove horizontal dividers                   | Task 2                                |
+| Toggle helper methods                        | Task 1                                |
+| Keep auto-save logic unchanged               | implicit — no edits in Task 1–2       |
+| Keep dialogs untouched                       | implicit — dialogs remain in template |
+| Accessibility (aria-pressed, type=button)    | Task 2                                |
+| Test DOM selector update                     | Task 4                                |
 
 No placeholders, no gaps.

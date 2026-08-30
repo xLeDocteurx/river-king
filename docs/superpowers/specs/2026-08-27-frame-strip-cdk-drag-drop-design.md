@@ -52,30 +52,32 @@ user clearly sees exactly where the frame will land before releasing the mouse.
     (cdkDropListDropped)="onDropped($event)"
   >
     @for (frame of frames(); track frame.id; let i = $index) {
+    <div
+      class="tw-relative tw-flex tw-flex-col tw-items-center tw-gap-0.5 tw-p-0.5 tw-rounded-sm tw-border tw-cursor-pointer hover:tw-bg-muted"
+      [class.tw-border-accent]="selectedFrameId() === frame.id"
+      [class.tw-border-border]="selectedFrameId() !== frame.id"
+      cdkDrag
+      tabindex="0"
+      (click)="frameSelect.emit(frame.id)"
+      (keydown.enter)="frameSelect.emit(frame.id)"
+      (keydown.space)="frameSelect.emit(frame.id); $event.preventDefault()"
+      [title]="frame.name"
+    >
       <div
-        class="tw-relative tw-flex tw-flex-col tw-items-center tw-gap-0.5 tw-p-0.5 tw-rounded-sm tw-border tw-cursor-pointer hover:tw-bg-muted"
-        [class.tw-border-accent]="selectedFrameId() === frame.id"
-        [class.tw-border-border]="selectedFrameId() !== frame.id"
-        cdkDrag
-        tabindex="0"
-        (click)="frameSelect.emit(frame.id)"
-        (keydown.enter)="frameSelect.emit(frame.id)"
-        (keydown.space)="frameSelect.emit(frame.id); $event.preventDefault()"
-        [title]="frame.name"
-      >
+        class="tw-w-8 tw-h-8 tw-bg-[length:100%_100%] tw-bg-center tw-bg-no-repeat tw-rounded-sm"
+        [style.background-image]="'url(' + frame.pixelData + ')'"
+      ></div>
+      <span class="tw-text-[10px] tw-text-muted-foreground">{{ i + 1 }}</span>
+      <ng-container *cdkDragPreview>
         <div
-          class="tw-w-8 tw-h-8 tw-bg-[length:100%_100%] tw-bg-center tw-bg-no-repeat tw-rounded-sm"
+          class="rk-frame-preview tw-w-8 tw-h-8 tw-bg-[length:100%_100%] tw-bg-center tw-bg-no-repeat"
           [style.background-image]="'url(' + frame.pixelData + ')'"
         ></div>
-        <span class="tw-text-[10px] tw-text-muted-foreground">{{ i + 1 }}</span>
-        <ng-container *cdkDragPreview>
-          <div class="rk-frame-preview tw-w-8 tw-h-8 tw-bg-[length:100%_100%] tw-bg-center tw-bg-no-repeat"
-               [style.background-image]="'url(' + frame.pixelData + ')'"></div>
-        </ng-container>
-        <ng-container *cdkDragPlaceholder>
-          <div class="rk-frame-placeholder tw-w-8 tw-h-8"></div>
-        </ng-container>
-      </div>
+      </ng-container>
+      <ng-container *cdkDragPlaceholder>
+        <div class="rk-frame-placeholder tw-w-8 tw-h-8"></div>
+      </ng-container>
+    </div>
     }
   </div>
   ```

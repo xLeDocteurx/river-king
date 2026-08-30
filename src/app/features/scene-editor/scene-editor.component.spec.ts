@@ -4,7 +4,9 @@ import { ActivatedRoute, provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { SceneEditorComponent } from './scene-editor.component';
+import { AppDummyComponent } from '../../app-dummy.component';
 import { SceneService } from './services/scene.service';
+import { GRID_VISIBLE_STORAGE_KEY } from './map-canvas.component';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
@@ -53,7 +55,7 @@ describe('SceneEditorComponent', () => {
     await TestBed.configureTestingModule({
       imports: [SceneEditorComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([{ path: '**', component: AppDummyComponent }]),
         {
           provide: ActivatedRoute,
           useValue: {
@@ -85,6 +87,28 @@ describe('SceneEditorComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(component).toBeTruthy();
+  });
+
+  it('toggles the grid via the toolbar button and persists it for the session', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const byTitle = (title: string) =>
+      fixture.nativeElement.querySelector(`button[title="${title}"]`) as HTMLButtonElement | null;
+    const gridButton = byTitle('Hide grid');
+    expect(gridButton).toBeTruthy();
+
+    gridButton!.click();
+    fixture.detectChanges();
+    expect(byTitle('Show grid')).toBeTruthy();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('0');
+
+    byTitle('Show grid')!.click();
+    fixture.detectChanges();
+    expect(byTitle('Hide grid')).toBeTruthy();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('1');
   });
 
   it('should persist a newly created folder and expose it to the scene list', async () => {
@@ -388,5 +412,26 @@ describe('SceneEditorComponent', () => {
     const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
     expect(lastCall?.[0]).toContain('Forest');
     expect(lastCall?.[0]).toContain('10×10');
+  });
+
+  it('shows the selected scene layer and tile counts in the status bar', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const statusBar = TestBed.inject(StatusBarService);
+    const spy = vi.spyOn(statusBar, 'setContext');
+    const scene = await sceneService.createScene('p1', 'Forest', 10, 10);
+    scene.layers[0].tileData[0][0] = 5;
+    scene.layers[0].tileData[1][1] = 5;
+    scene.layers[0].tileData[2][4] = 3;
+    await sceneService.updateScene(scene.id, { layers: scene.layers });
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
+    expect(lastCall?.[0]).toContain('1 layer');
+    expect(lastCall?.[0]).toContain('3 tiles');
   });
 });

@@ -104,7 +104,7 @@ existing mini-toolbar) with:
 - Two toggle buttons: « Previous | Next » (Material Symbols: `skip_previous` /
   `skip_next`).
 - Two small opacity sliders (range inputs, 0–100%) shown when the matching
-toggle is active.
+  toggle is active.
 - A keyboard shortcut — `O` toggles previous, `P` toggles next (optional,
   out-of-scope for first pass).
 
@@ -149,7 +149,7 @@ None. No DB migration. Onion-skin state is purely runtime.
   frames reuses the cache (the same URIs appear repeatedly during animation
   playback).
 - The canvas render loop already runs on every brush stroke; adding two extra
- `drawImage` calls per frame is negligible for 16×16 to 64×64 sprites.
+  `drawImage` calls per frame is negligible for 16×16 to 64×64 sprites.
 
 ## Out of scope
 

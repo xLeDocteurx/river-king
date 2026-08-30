@@ -9,11 +9,11 @@ Manage the idea → issue → kanban pipeline for the River King engine.
 
 ## The 3-layer model
 
-| Layer | Where | Purpose |
-|-------|-------|---------|
-| **INBOX** | `docs/ideas.md` | Raw, uncommitted ideas. Verbatim capture, no promises. Every new idea starts here. |
-| **BACKLOG** | GitHub Issues + kanban (#6) | Committed topics with status/lifecycle and discussion. One issue per idea. |
-| **DETAIL** | `docs/superpowers/specs/` + `plans/` | The precise what/how once an idea is Groomed and Ready. Linked to the issue. |
+| Layer       | Where                                | Purpose                                                                            |
+| ----------- | ------------------------------------ | ---------------------------------------------------------------------------------- |
+| **INBOX**   | `docs/ideas.md`                      | Raw, uncommitted ideas. Verbatim capture, no promises. Every new idea starts here. |
+| **BACKLOG** | GitHub Issues + kanban (#6)          | Committed topics with status/lifecycle and discussion. One issue per idea.         |
+| **DETAIL**  | `docs/superpowers/specs/` + `plans/` | The precise what/how once an idea is Groomed and Ready. Linked to the issue.       |
 
 ## Workflow
 
@@ -42,12 +42,15 @@ devbox run gh issue create --title "<Title>" --body "<Body>" 2>&1 | grep -v "dev
 
 ```markdown
 ## Context
+
 <!-- why this matters, what user flow it enables -->
 
 ## Proposed behavior
+
 <!-- what should happen -->
 
 ## Acceptance criteria
+
 - [ ]
 - [ ]
 ```
@@ -87,6 +90,7 @@ devbox run gh project item-edit 6 --owner xLeDocteurx --url "<ISSUE_URL>" \
 ```
 
 **Valid values (field-list confirmed):**
+
 - `Priority`: `P0`, `P1`, `P2`
 - `Size`: `XS`, `S`, `M`, `L`, `XL`
 - `Status`: `Backlog`, `Ready`, `In progress`, `In review`, `Done`
@@ -95,6 +99,7 @@ Verify current options anytime with
 `devbox run gh project field-list 6 --owner xLeDocteurx` (filtered the same way).
 
 **Constraints of `gh project item-edit`:**
+
 - Non-draft issues: **one field per invocation** only.
 - By-name `--field "Status" --value "Backlog"` syntax is preferred over GraphQL IDs.
 - Use `--owner xLeDocteurx` explicitly.

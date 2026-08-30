@@ -77,7 +77,11 @@ export class UndoService {
   private syncSignals(): void {
     this.canUndo.set(this.undoStack.length > 0);
     this.canRedo.set(this.redoStack.length > 0);
-    this.undoLabel.set(this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1].label : '');
-    this.redoLabel.set(this.redoStack.length > 0 ? this.redoStack[this.redoStack.length - 1].label : '');
+    this.undoLabel.set(
+      this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1].label : '',
+    );
+    this.redoLabel.set(
+      this.redoStack.length > 0 ? this.redoStack[this.redoStack.length - 1].label : '',
+    );
   }
 }
