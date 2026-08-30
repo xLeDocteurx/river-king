@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from '../../../core/services/database.service';
-import { rewriteFolderPath } from '../../../shared/models/folder.model';
+import { rewriteFolderPath, type Folder } from '../../../shared/models/folder.model';
 import type { Tile } from '../../../shared/models/tile.model';
 import type { Sprite } from '../../../shared/models/sprite.model';
 
@@ -72,7 +72,10 @@ export class TileService {
    */
   async getFolders(projectId: string): Promise<string[]> {
     const tiles = await this.db.tiles.where('projectId').equals(projectId).toArray();
-    const paths = new Set(tiles.map((t) => t.folderPath ?? ''));
+    const rows = await this.getFolderRows(projectId);
+    const paths = new Set<string>();
+    for (const tile of tiles) paths.add(tile.folderPath ?? '');
+    for (const row of rows) paths.add(row.path);
     return Array.from(paths).sort((a, b) => a.localeCompare(b));
   }
 
@@ -84,13 +87,16 @@ export class TileService {
    * @param toPath The new folder path.
    */
   async renameFolder(projectId: string, fromPath: string, toPath: string): Promise<void> {
-    const tiles = await this.db.tiles.where('projectId').equals(projectId).toArray();
-    for (const tile of tiles) {
-      const rewritten = rewriteFolderPath(tile.folderPath ?? '', fromPath, toPath);
-      if (rewritten !== tile.folderPath) {
-        await this.updateTileFolder(tile.id, rewritten);
+    await this.db.transaction('rw', this.db.tiles, this.db.folders, async () => {
+      const tiles = await this.db.tiles.where('projectId').equals(projectId).toArray();
+      for (const tile of tiles) {
+        const rewritten = rewriteFolderPath(tile.folderPath ?? '', fromPath, toPath);
+        if (rewritten !== tile.folderPath) {
+          await this.updateTileFolder(tile.id, rewritten);
+        }
       }
-    }
+      await this.db.renameFoldersOfKind(projectId, 'tile', fromPath, toPath);
+    });
   }
 
   /**
@@ -135,5 +141,49 @@ export class TileService {
    */
   async getTile(id: number): Promise<Tile | undefined> {
     return this.db.tiles.get(id);
+  }
+
+  /**
+   * Returns the materialized tile folder rows (kind='tile') for a project.
+   * Rows only exist for folders the user has interacted with.
+   * @param projectId - The project to query.
+   */
+  async getFolderRows(projectId: string): Promise<Folder[]> {
+    return this.db.getFoldersByKind(projectId, 'tile');
+  }
+
+  /**
+   * Inserts or updates the persisted state of a tile folder row (materializing
+   * the row on first interaction).
+   * @param projectId - The owning project id.
+   * @param path - The folder path.
+   * @param changes - Fields to persist (collapsed override / lastOpenedAt touch).
+   */
+  async upsertFolderState(
+    projectId: string,
+    path: string,
+    changes: { collapsed?: boolean; lastOpenedAt?: number },
+  ): Promise<void> {
+    await this.db.upsertFolderState(projectId, 'tile', path, changes);
+  }
+
+  /**
+   * Deletes every materialized tile folder row under a path (exact or nested).
+   * @param projectId - The owning project id.
+   * @param path - The folder path to remove, including descendants.
+   */
+  async deleteTileFolders(projectId: string, path: string): Promise<void> {
+    await this.db.deleteFoldersByKind(projectId, 'tile', path);
+  }
+
+  /**
+   * Rewrites materialized tile folder rows after a nesting folder move, where
+   * `fromPath` moves beneath `toPath` (so `fromPath` becomes `toPath/fromPath`).
+   * @param projectId - The owning project id.
+   * @param fromPath - The moved folder path.
+   * @param toPath - The destination path (`fromPath` prefixed with it).
+   */
+  async rewriteFolderRows(projectId: string, fromPath: string, toPath: string): Promise<void> {
+    await this.db.renameFoldersOfKind(projectId, 'tile', fromPath, toPath);
   }
 }
