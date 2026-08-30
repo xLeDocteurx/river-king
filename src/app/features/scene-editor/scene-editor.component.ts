@@ -121,12 +121,19 @@ export class SceneEditorComponent implements OnInit {
     const cursor = canvas.cursorCell();
     const cursorStr = cursor ? `Cursor: ${cursor.x},${cursor.y}` : '';
     const layerName = this.activeLayer()?.name ?? '';
+    const layerCount = scene.layers.length;
+    const activeLayerData = this.activeLayer()?.tileData;
+    const tileCount = activeLayerData
+      ? activeLayerData.reduce((sum, row) => sum + row.filter((cell) => cell !== -1).length, 0)
+      : 0;
     const parts = [
       scene.name,
       `${scene.width}×${scene.height}`,
       layerName,
       `Cam: ${x},${y}`,
       `Zoom: ${zoom}%`,
+      `${layerCount} layer${layerCount === 1 ? '' : 's'}`,
+      `${tileCount} tile${tileCount === 1 ? '' : 's'}`,
     ];
     if (cursorStr) parts.push(cursorStr);
     this.statusBar.setContext(parts.join(' | '));
