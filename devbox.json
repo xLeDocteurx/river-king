@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.5/.schema/devbox.schema.json",
   "packages": {
     "nodejs": "22",
-    "gh":     "latest"
+    "gh": "latest"
   },
   "env": {
     "NODE_OPTIONS": "--max-old-space-size=4096"
@@ -14,14 +14,14 @@
       "echo 'npm version:' && npm -v"
     ],
     "scripts": {
-      "start":              "npm run start",
-      "build":              "npm run build",
-      "build:dev":          "npm run build -- --configuration development",
-      "test":               "npm run test",
-      "test:watch":         "ng test --watch=true",
-      "lint":               "npm run lint",
-      "format":             "npm run format",
-      "format:check":       "npm run format:check",
+      "start": "npm run start",
+      "build": "npm run build",
+      "build:dev": "npm run build -- --configuration development",
+      "test": "npm run test",
+      "test:watch": "ng test --watch=true",
+      "lint": "npm run lint",
+      "format": "npm run format",
+      "format:check": "npm run format:check",
       "generate:component": "ng generate component"
     }
   }

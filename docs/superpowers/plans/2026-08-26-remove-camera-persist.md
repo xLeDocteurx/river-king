@@ -23,25 +23,27 @@
 
 ## File Map
 
-| File | Change |
-|------|--------|
-| `src/app/shared/models/session.model.ts` | Remove `cameraX`, `cameraY`, `cameraZoom` from `Session` interface and `createEmptySession()` |
-| `src/app/features/scene-editor/map-canvas.component.ts` | Remove 3 inputs, 2 effects, `scheduleCameraPersist()`, `cameraRestored` flag, `SessionService` injection; add `centerOnGrid()` + one-shot effect |
-| `src/app/features/scene-editor/map-canvas.component.html` | No change expected (no camera-specific template bindings in the canvas template) |
-| `src/app/features/scene-editor/scene-editor.component.ts` | Remove 3 signals (`restoreCamera`, `initialCameraX`, `initialCameraY`), `restoreSession()`, camera reads from `selectScene()`, `restoreSession()` call from `ngOnInit()` |
-| `src/app/features/scene-editor/scene-editor.component.html` | Remove `[restoreCamera]`, `[initialCameraX]`, `[initialCameraY]` bindings |
-| `src/app/core/services/session.service.spec.ts` | Remove camera fields from test data and assertions |
-| `src/app/features/scene-editor/map-canvas.component.spec.ts` | Remove 3 camera tests, add `centerOnGrid` test |
-| `src/app/features/scene-editor/scene-editor.component.spec.ts` | Remove 3 session-restore/camera tests |
+| File                                                           | Change                                                                                                                                                                   |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/app/shared/models/session.model.ts`                       | Remove `cameraX`, `cameraY`, `cameraZoom` from `Session` interface and `createEmptySession()`                                                                            |
+| `src/app/features/scene-editor/map-canvas.component.ts`        | Remove 3 inputs, 2 effects, `scheduleCameraPersist()`, `cameraRestored` flag, `SessionService` injection; add `centerOnGrid()` + one-shot effect                         |
+| `src/app/features/scene-editor/map-canvas.component.html`      | No change expected (no camera-specific template bindings in the canvas template)                                                                                         |
+| `src/app/features/scene-editor/scene-editor.component.ts`      | Remove 3 signals (`restoreCamera`, `initialCameraX`, `initialCameraY`), `restoreSession()`, camera reads from `selectScene()`, `restoreSession()` call from `ngOnInit()` |
+| `src/app/features/scene-editor/scene-editor.component.html`    | Remove `[restoreCamera]`, `[initialCameraX]`, `[initialCameraY]` bindings                                                                                                |
+| `src/app/core/services/session.service.spec.ts`                | Remove camera fields from test data and assertions                                                                                                                       |
+| `src/app/features/scene-editor/map-canvas.component.spec.ts`   | Remove 3 camera tests, add `centerOnGrid` test                                                                                                                           |
+| `src/app/features/scene-editor/scene-editor.component.spec.ts` | Remove 3 session-restore/camera tests                                                                                                                                    |
 
 ---
 
 ### Task 1: Remove camera fields from Session model
 
 **Files:**
+
 - Modify: `src/app/shared/models/session.model.ts:5-39`
 
 **Interfaces:**
+
 - Consumes: none (first task)
 - Produces: `Session` interface (no camera fields), `createEmptySession()` (no camera fields)
 
@@ -153,20 +155,24 @@ git commit -m "remove cameraX/cameraY/cameraZoom from Session model"
 ### Task 2: Remove camera persist from MapCanvasComponent
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/map-canvas.component.ts`
 
 **Interfaces:**
+
 - Consumes: `Session` model (already updated, no camera fields)
 - Produces: `MapCanvasComponent` without camera persist or restore inputs
 
 - [ ] **Step 1: Remove `SessionService` import and injection**
 
 Remove line 18:
+
 ```typescript
 import { SessionService } from '../../core/services/session.service';
 ```
 
 Remove line 111-112:
+
 ```typescript
   /** Persists camera state so a project reopens where the user left it. */
   private readonly sessions = inject(SessionService);
@@ -179,21 +185,24 @@ Looking at the imports: `Component, inject, input, output, viewChild, signal, ef
 - [ ] **Step 2: Remove camera restore inputs**
 
 Remove lines 50-63:
+
 ```typescript
-  /** Camera state to restore once at startup (from the persisted session). */
-  restoreCamera = input<{ x: number; y: number; zoom: number } | null>(null);
-  initialCameraX = input(0);
-  initialCameraY = input(0);
+/** Camera state to restore once at startup (from the persisted session). */
+restoreCamera = input<{ x: number; y: number; zoom: number } | null>(null);
+initialCameraX = input(0);
+initialCameraY = input(0);
 ```
 
 - [ ] **Step 3: Remove `cameraRestored` flag and `cameraPersistTimer`**
 
 Remove line 98-99:
+
 ```typescript
   private cameraPersistTimer: ReturnType<typeof setTimeout> | null = null;
 ```
 
 Remove line 100-101:
+
 ```typescript
   private cameraRestored = false;
 ```
@@ -201,6 +210,7 @@ Remove line 100-101:
 - [ ] **Step 4: Remove camera restore effects**
 
 Remove lines 136-158 (both effects):
+
 ```typescript
   /** Snap camera position when the parent signals a scene switch. */
   effect(() => { ... });
@@ -214,15 +224,15 @@ Remove lines 136-158 (both effects):
 Add to the constructor (after the existing effects):
 
 ```typescript
-    /** Center the camera on the grid once when the scene first loads. */
-    effect(() => {
-      const scene = this.scene();
-      if (!scene) return;
-      // Run once per scene load — if cameraX and cameraY are already set (from
-      // a previous scene), we want to re-center. Use a simple flag approach:
-      // read the canvas size, compute center offset, and let the user pan from there.
-      queueMicrotask(() => this.centerOnGrid());
-    });
+/** Center the camera on the grid once when the scene first loads. */
+effect(() => {
+  const scene = this.scene();
+  if (!scene) return;
+  // Run once per scene load — if cameraX and cameraY are already set (from
+  // a previous scene), we want to re-center. Use a simple flag approach:
+  // read the canvas size, compute center offset, and let the user pan from there.
+  queueMicrotask(() => this.centerOnGrid());
+});
 ```
 
 Add the `centerOnGrid()` method:
@@ -251,6 +261,7 @@ Add the `centerOnGrid()` method:
 - [ ] **Step 6: Remove `scheduleCameraPersist()` method**
 
 Remove lines 497-515:
+
 ```typescript
   private scheduleCameraPersist(): void { ... }
 ```
@@ -258,6 +269,7 @@ Remove lines 497-515:
 - [ ] **Step 7: Remove all `scheduleCameraPersist()` call sites**
 
 Three call sites to remove:
+
 - Line 428 in `onMouseMove`: remove `this.scheduleCameraPersist();`
 - Line 478 in `onWheel`: remove `this.scheduleCameraPersist();`
 - Line 493 in `centerOn`: remove `this.scheduleCameraPersist();`
@@ -279,20 +291,23 @@ git commit -m "remove camera persist and restore from MapCanvasComponent"
 ### Task 3: Remove camera restore from SceneEditorComponent
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/scene-editor.component.ts`
 - Modify: `src/app/features/scene-editor/scene-editor.component.html`
 
 **Interfaces:**
+
 - Consumes: `MapCanvasComponent` (no longer has camera inputs)
 - Produces: `SceneEditorComponent` without camera signals or `restoreSession()`
 
 - [ ] **Step 1: Remove camera signals**
 
 Remove lines 90-101:
+
 ```typescript
-  restoreCamera = signal<{ x: number; y: number; zoom: number } | null>(null);
-  initialCameraX = signal(0);
-  initialCameraY = signal(0);
+restoreCamera = signal<{ x: number; y: number; zoom: number } | null>(null);
+initialCameraX = signal(0);
+initialCameraY = signal(0);
 ```
 
 - [ ] **Step 2: Remove `restoreSession()` method**
@@ -302,25 +317,29 @@ Remove lines 145-162 (the entire `restoreSession()` method).
 - [ ] **Step 3: Remove camera reads from `selectScene()`**
 
 In `selectScene()` (lines 237-256), remove lines 246-248:
+
 ```typescript
-      const stored = await this.sessions.getSession(this.projectId()).catch(() => undefined);
-      this.initialCameraX.set(stored?.cameraX ?? 0);
-      this.initialCameraY.set(stored?.cameraY ?? 0);
+const stored = await this.sessions.getSession(this.projectId()).catch(() => undefined);
+this.initialCameraX.set(stored?.cameraX ?? 0);
+this.initialCameraY.set(stored?.cameraY ?? 0);
 ```
 
 - [ ] **Step 4: Remove `restoreSession()` call from `ngOnInit()`**
 
 Change lines 137-139 from:
+
 ```typescript
-        this.loadScenes()
-          .then(() => this.restoreSession())
-          .catch(() => undefined);
+this.loadScenes()
+  .then(() => this.restoreSession())
+  .catch(() => undefined);
 ```
+
 to:
+
 ```typescript
-        this.loadScenes()
-          .then(() => this.restoreLastScene())
-          .catch(() => undefined);
+this.loadScenes()
+  .then(() => this.restoreLastScene())
+  .catch(() => undefined);
 ```
 
 Add a new `restoreLastScene()` method that handles just the scene-selection part (without camera restore):
@@ -343,10 +362,10 @@ Add a new `restoreLastScene()` method that handles just the scene-selection part
 - [ ] **Step 5: Remove camera bindings from template**
 
 In `scene-editor.component.html`, remove lines 22-24:
+
 ```html
-      [restoreCamera]="restoreCamera()"
-      [initialCameraX]="initialCameraX()"
-      [initialCameraY]="initialCameraY()"
+[restoreCamera]="restoreCamera()" [initialCameraX]="initialCameraX()"
+[initialCameraY]="initialCameraY()"
 ```
 
 - [ ] **Step 6: Remove `SessionService` import if no longer needed**
@@ -370,10 +389,12 @@ git commit -m "remove camera restore from SceneEditorComponent"
 ### Task 4: Update all tests
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/map-canvas.component.spec.ts`
 - Modify: `src/app/features/scene-editor/scene-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: Tasks 1-3 (all implementation changes)
 - Produces: Passing test suite
 
@@ -390,16 +411,16 @@ Remove these tests from `map-canvas.component.spec.ts`:
 Add a new test for `centerOnGrid`:
 
 ```typescript
-  it('centers the camera on the grid when a scene is loaded', () => {
-    setup(makeScene(10, 8));
-    const instance = fixture.componentInstance;
-    // Default tileSize is 16, canvas is 0x0 in jsdom so center is (0, 0)
-    // The method sets cameraX = (vpW - gridW) / 2, cameraY = (vpH - gridH) / 2
-    // With jsdom: vpW=0, vpH=0, gridW=10*16=160, gridH=8*16=128
-    expect(instance.cameraX()).toBe(-80); // (0 - 160) / 2
-    expect(instance.cameraY()).toBe(-64); // (0 - 128) / 2
-    expect(instance.zoom()).toBe(1);
-  });
+it('centers the camera on the grid when a scene is loaded', () => {
+  setup(makeScene(10, 8));
+  const instance = fixture.componentInstance;
+  // Default tileSize is 16, canvas is 0x0 in jsdom so center is (0, 0)
+  // The method sets cameraX = (vpW - gridW) / 2, cameraY = (vpH - gridH) / 2
+  // With jsdom: vpW=0, vpH=0, gridW=10*16=160, gridH=8*16=128
+  expect(instance.cameraX()).toBe(-80); // (0 - 160) / 2
+  expect(instance.cameraY()).toBe(-64); // (0 - 128) / 2
+  expect(instance.zoom()).toBe(1);
+});
 ```
 
 Also remove the `SessionService` import at the top of the spec file (line 4).
@@ -416,23 +437,23 @@ Remove these tests from `scene-editor.component.spec.ts`:
 **Test "prefers the scene from the URL over the stored session when restoring" (lines 173-189):** This test calls `component.restoreSession()` which no longer exists. Rewrite to use `restoreLastScene()`:
 
 ```typescript
-  it('prefers the scene from the URL over the stored session when restoring', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
+it('prefers the scene from the URL over the stored session when restoring', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
 
-    const fromUrl = await sceneService.createScene('p1', 'FromUrl', 10, 10);
-    const fromSession = await sceneService.createScene('p1', 'FromSession', 10, 10);
-    await component.loadScenes();
-    await TestBed.inject(SessionService).updateSession('p1', {
-      lastScreen: 'scenes',
-      lastSceneId: fromSession.id,
-    });
-    paramSceneId = fromUrl.id;
-
-    await component.restoreLastScene();
-
-    expect(component.selectedSceneId()).toBe(fromUrl.id);
+  const fromUrl = await sceneService.createScene('p1', 'FromUrl', 10, 10);
+  const fromSession = await sceneService.createScene('p1', 'FromSession', 10, 10);
+  await component.loadScenes();
+  await TestBed.inject(SessionService).updateSession('p1', {
+    lastScreen: 'scenes',
+    lastSceneId: fromSession.id,
   });
+  paramSceneId = fromUrl.id;
+
+  await component.restoreLastScene();
+
+  expect(component.selectedSceneId()).toBe(fromUrl.id);
+});
 ```
 
 **Test "restores the stored scene and camera state" (lines 227-255):** Delete entirely — `restoreSession()` and `restoreCamera` signal no longer exist.
@@ -440,14 +461,14 @@ Remove these tests from `scene-editor.component.spec.ts`:
 **Test "keeps defaults when no session exists" (lines 257-265):** Rewrite to test `restoreLastScene()`:
 
 ```typescript
-  it('keeps defaults when no session exists', async () => {
-    const sessions = TestBed.inject(SessionService);
-    vi.spyOn(sessions, 'getSession').mockResolvedValue(undefined);
+it('keeps defaults when no session exists', async () => {
+  const sessions = TestBed.inject(SessionService);
+  vi.spyOn(sessions, 'getSession').mockResolvedValue(undefined);
 
-    await component.restoreLastScene();
+  await component.restoreLastScene();
 
-    expect(component.selectedSceneId()).toBeNull();
-  });
+  expect(component.selectedSceneId()).toBeNull();
+});
 ```
 
 **Test "restores camera position from session and saves back after panning" (lines 284-353):** Delete entirely — camera persistence and `initialCameraX/Y` removed.

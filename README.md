@@ -2,7 +2,7 @@
 
 > A lightweight, browser-based tile engine for crafting 2D worlds — built with Angular 22 and saved entirely in your browser via IndexedDB.
 
-[River King](https://github.com/your-org/river-king) is a **pixel-perfect tile editor and scene composer** that runs without a backend. Every sprite, tile, scene, and layer is stored locally in your browser using IndexedDB, so your work travels with you and never hits a server.
+[River King](https://github.com/xLeDocteurx/river-king) is a **pixel-perfect tile editor and scene composer** that runs without a backend. Every sprite, tile, scene, and layer is stored locally in your browser using IndexedDB, so your work travels with you and never hits a server.
 
 Whether you're sketching mock-ups, building a retro RPG overworld, or prototyping a platformer, River King gives you the tools to draw sprites, assemble tiles, compose layered scenes, and iterate fast — all in one tab.
 
@@ -11,6 +11,7 @@ Whether you're sketching mock-ups, building a retro RPG overworld, or prototypin
 ## Features
 
 ### 🎨 Sprite Editor
+
 - Draw pixel-art sprites with a custom palette per project
 - Pen, eraser, and flood-fill tools
 - Frame-by-frame animation strip with drag-to-reorder
@@ -18,6 +19,7 @@ Whether you're sketching mock-ups, building a retro RPG overworld, or prototypin
 - Undo/redo support
 
 ### 🧱 Tile Builder
+
 - Link multiple sprite frames to a single tile
 - Define tile size in tile-units (e.g., 2×3)
 - Toggle between **static** and **animated** tile types
@@ -25,6 +27,7 @@ Whether you're sketching mock-ups, building a retro RPG overworld, or prototypin
 - Auto-resize frames when tile dimensions change
 
 ### 🗺️ Scene Composer
+
 - Multi-layered scene editing with per-layer visibility and opacity
 - Paint tiles onto scenes with footprint-aware placement
 - Pan and zoom the canvas with mouse-wheel zoom-to-pointer
@@ -33,6 +36,7 @@ Whether you're sketching mock-ups, building a retro RPG overworld, or prototypin
 - Minimap for quick navigation
 
 ### 🏗️ Project Management
+
 - Browser-local storage via IndexedDB — no backend required
 - Projects, scenes, tiles, and sprites are all persisted
 - Session restoration: reopen the last edited screen on reload
@@ -42,17 +46,17 @@ Whether you're sketching mock-ups, building a retro RPG overworld, or prototypin
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Angular 22 (standalone components, no NgModule) |
-| Language | TypeScript ~6.0 |
-| Styling | Tailwind CSS v3 with `tw-` prefix |
-| State | Angular Signals (`signal`, `computed`, `effect`) |
-| Storage | IndexedDB via Dexie |
-| Testing | Vitest + jsdom via `@angular/build:unit-test` |
-| Linting | ESLint 9 + `@angular-eslint` + `typescript-eslint` |
-| Formatting | Prettier 3 with Angular HTML parser |
-| Environment | Devbox (Nix-based, Node 22.x) |
+| Layer       | Technology                                         |
+| ----------- | -------------------------------------------------- |
+| Framework   | Angular 22 (standalone components, no NgModule)    |
+| Language    | TypeScript ~6.0                                    |
+| Styling     | Tailwind CSS v3 with `tw-` prefix                  |
+| State       | Angular Signals (`signal`, `computed`, `effect`)   |
+| Storage     | IndexedDB via Dexie                                |
+| Testing     | Vitest + jsdom via `@angular/build:unit-test`      |
+| Linting     | ESLint 9 + `@angular-eslint` + `typescript-eslint` |
+| Formatting  | Prettier 3 with Angular HTML parser                |
+| Environment | Devbox (Nix-based, Node 22.x)                      |
 
 ---
 
@@ -73,14 +77,14 @@ devbox run npm run start
 
 ### Development Commands
 
-| Command | Purpose |
-|---------|---------|
-| `npm run start` | Start the dev server (`ng serve`) |
-| `npm run build` | Production build |
-| `npm run test` | Run all tests headlessly (Vitest) |
-| `npm run lint` | Run ESLint on TS and HTML |
-| `npm run format` | Format everything with Prettier |
-| `npm run format:check` | Dry-run formatting check (CI) |
+| Command                | Purpose                           |
+| ---------------------- | --------------------------------- |
+| `npm run start`        | Start the dev server (`ng serve`) |
+| `npm run build`        | Production build                  |
+| `npm run test`         | Run all tests headlessly (Vitest) |
+| `npm run lint`         | Run ESLint on TS and HTML         |
+| `npm run format`       | Format everything with Prettier   |
+| `npm run format:check` | Dry-run formatting check (CI)     |
 
 > **Note:** On WSL or environments where bare `npm` resolves to Windows binaries over UNC paths, always use `devbox run ...`.
 
@@ -94,12 +98,14 @@ src/app/
 ├── shared/        # Reusable UI components: dialog, toast, searchable-select, confirm dialogs
 └── features/      # Lazy-loaded business features
     ├── dashboard/       # Project list and creation
+    ├── project/         # Project workspace shell + sidebar (Scenes / Tiles / Sprites)
     ├── scene-editor/    # Scene painter, minimap, layers, tile palette
     ├── sprite-editor/   # Pixel canvas, frame strip, palette manager, drawing tools
     └── tile-manager/    # Tile properties, frame lifecycle, resize, sprite linking
 ```
 
 **Key design rules:**
+
 - `core/` never imports from `shared/` or `features/`
 - `features/` expose lazy-loaded routes and keep internals private
 - Components follow the "services over outputs" rule: application-level actions go through injected services, not chained `@Output()` emissions

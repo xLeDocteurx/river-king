@@ -34,7 +34,6 @@ export class SpriteService {
     return this.db.sprites.where('tileId').equals(tileId).toArray();
   }
 
-
   /**
    * Create a new blank sprite and persist it to the database.
    *

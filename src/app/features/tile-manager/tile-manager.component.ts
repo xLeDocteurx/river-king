@@ -86,8 +86,6 @@ export class TileManagerComponent implements OnInit {
   /** Collapsed folder paths in the tree view. */
   collapsedFolders = signal<string[]>([]);
 
-
-
   /** Static configuration data passed to the confirmation dialog. */
   readonly deleteDialogData: ConfirmDialogData = {
     title: 'Delete Tile',
@@ -244,7 +242,9 @@ export class TileManagerComponent implements OnInit {
    * @param path - The folder path to toggle.
    */
   toggleFolder(path: string): void {
-    this.collapsedFolders.update((list) => (list.includes(path) ? list.filter((p) => p !== path) : [...list, path]));
+    this.collapsedFolders.update((list) =>
+      list.includes(path) ? list.filter((p) => p !== path) : [...list, path],
+    );
   }
 
   /**
