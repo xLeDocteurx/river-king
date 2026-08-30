@@ -33,6 +33,43 @@ describe('TileListTreeComponent', () => {
     expect(spy).toHaveBeenCalledWith(1);
   });
 
+  it('should show a delete button on an empty folder header and emit folderDelete', () => {
+    const deleteSpy = vi.spyOn(component.folderDelete, 'emit');
+    fixture.componentRef.setInput('tiles', []);
+    fixture.componentRef.setInput('folders', ['mountain']);
+    fixture.detectChanges();
+
+    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector(
+      'button[title="Delete folder mountain"]',
+    ) as HTMLButtonElement | null;
+    expect(deleteButton).toBeTruthy();
+    deleteButton!.click();
+    expect(deleteSpy).toHaveBeenCalledWith('mountain');
+  });
+
+  it('should not show a folder delete button when the folder has tiles', () => {
+    fixture.componentRef.setInput('tiles', [
+      {
+        id: 1,
+        name: 'Grass',
+        projectId: 'p1',
+        type: 'static',
+        animationSpeed: 1,
+        properties: { blocking: false, interactable: false },
+        spriteIds: [],
+        folderPath: 'mountain',
+      },
+    ]);
+    fixture.componentRef.setInput('folders', ['mountain']);
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector(
+        'button[title="Delete folder mountain"]',
+      ),
+    ).toBeNull();
+  });
+
   it('renames a folder inline via double-click and Enter', () => {
     fixture.componentRef.setInput('tiles', [
       {

@@ -27,6 +27,8 @@ export class TileListTreeComponent {
   folderChange = output<{ tileId: number; folderPath: string }>();
   folderMove = output<{ fromKey: string; toKey: string }>();
   toggleFolder = output<string>();
+  /** Emitted when the user requests deletion of an empty folder. */
+  folderDelete = output<string>();
   folderRename = output<{ fromKey: string; toKey: string }>();
 
   groupByFolderPath = (tile: Tile) => tile.folderPath || '';
@@ -45,5 +47,9 @@ export class TileListTreeComponent {
 
   onGroupMove(event: { fromKey: string; toKey: string }): void {
     this.folderMove.emit(event);
+  }
+
+  onFolderDelete(key: string): void {
+    this.folderDelete.emit(key);
   }
 }

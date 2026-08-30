@@ -9,6 +9,7 @@
       (tileCreate)="createTile()"
       (tileDelete)="requestDelete($event)"
       (createFolder)="onCreateFolder($event)"
+      (folderDelete)="onFolderDeleteRequest($event)"
       (folderMove)="onFolderMove($event)"
       (folderRename)="onFolderRename($event)"
       (folderChange)="onTileFolderChange($event)"
@@ -40,4 +41,11 @@
   [data]="deleteDialogData"
   (confirmed)="deleteTile(tileToDelete()!)"
   (cancelled)="tileToDelete.set(null)"
+/>
+
+<rk-confirm-dialog
+  #folderDeleteDialog
+  [data]="folderDeleteDialogData()"
+  (confirmed)="onConfirmFolderDelete()"
+  (cancelled)="pendingDeleteFolderPath.set(null)"
 />

@@ -60,6 +60,8 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
   createGroup = output<string>();
   /** Emitted when the user requests creation of a new item. */
   createItem = output<void>();
+  /** Emitted when the user requests deletion of a group (folder). */
+  groupDelete = output<string>();
 
   /** Internal collapsed state, seeded from input. */
   private collapsedSet = computed(() => new Set(this.collapsedGroups()));
@@ -173,6 +175,18 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
    */
   isGroupDropTarget(key: string): boolean {
     return this.dropTargetKey === key;
+  }
+
+  /**
+   * Handles a click on a group (folder) delete button.
+   * Stops propagation so the click never collapses the group or starts a drag.
+   * @param key The group key to delete.
+   * @param event The native click event.
+   */
+  onGroupDelete(key: string, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.groupDelete.emit(key);
   }
 
   /**

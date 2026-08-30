@@ -73,6 +73,18 @@
                 >
                 <span>{{ group.key || 'Ungrouped' }}</span>
               </button>
+              @if (group.key && group.items.length === 0) {
+                <button
+                  type="button"
+                  draggable="false"
+                  (mousedown)="$event.stopPropagation()"
+                  (click)="onGroupDelete(group.key, $event)"
+                  [title]="'Delete folder ' + group.key"
+                  class="tw-p-1 tw-rounded-sm tw-ml-auto tw-shrink-0 tw-text-muted-foreground hover:tw-text-destructive hover:tw-bg-muted tw-transition-colors"
+                >
+                  <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
+                </button>
+              }
             }
           </div>
           @if (!isCollapsed(group.key)) {

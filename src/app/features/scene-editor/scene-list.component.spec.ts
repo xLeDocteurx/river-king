@@ -97,6 +97,51 @@ describe('SceneListComponent', () => {
     expect(compiled.querySelectorAll('[cdkDropList]').length).toBe(2);
   });
 
+  it('should show a delete button on an empty folder header', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Untitled')]);
+    fixture.componentRef.setInput('folders', ['mountain']);
+    fixture.detectChanges();
+
+    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector(
+      'button[title="Delete folder mountain"]',
+    );
+    expect(deleteButton).toBeTruthy();
+  });
+
+  it('should not show a folder delete button when the folder has scenes', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Mountain Path', 'mountain')]);
+    fixture.componentRef.setInput('folders', ['mountain']);
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector(
+        'button[title="Delete folder mountain"]',
+      ),
+    ).toBeNull();
+  });
+
+  it('should not show a folder delete button on the ungrouped header', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Untitled')]);
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('button[title^="Delete folder"]'),
+    ).toBeNull();
+  });
+
+  it('should emit folderDelete when an empty folder delete button is clicked', () => {
+    fixture.componentRef.setInput('scenes', []);
+    fixture.componentRef.setInput('folders', ['mountain']);
+    fixture.detectChanges();
+
+    const deleteSpy = vi.spyOn(component.folderDelete, 'emit');
+    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector(
+      'button[title="Delete folder mountain"]',
+    ) as HTMLButtonElement;
+    deleteButton.click();
+    expect(deleteSpy).toHaveBeenCalledWith('mountain');
+  });
+
   it('should emit createFolder via the inline input when Enter is pressed', () => {
     fixture.componentRef.setInput('scenes', []);
     fixture.detectChanges();

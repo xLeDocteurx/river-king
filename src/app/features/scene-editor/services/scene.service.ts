@@ -121,6 +121,21 @@ export class SceneService {
   }
 
   /**
+   * Deletes a folder and its (empty) descendant folders from the project.
+   * Scenes inside the removed folders are left untouched; callers must ensure
+   * the whole subtree holds no scenes before calling this.
+   * @param projectId The project the folder belongs to.
+   * @param path The folder path to delete, including descendant paths.
+   */
+  async deleteFolder(projectId: string, path: string): Promise<void> {
+    await this.db.folders
+      .where('projectId')
+      .equals(projectId)
+      .filter((f) => f.path === path || f.path.startsWith(path + '/'))
+      .delete();
+  }
+
+  /**
    * Renames a folder path, rewriting every folder row and scene that
    * references it (exact match or any nested descendant). Runs atomically.
    * @param projectId The project that owns the folder.
