@@ -121,4 +121,40 @@ describe('SceneService', () => {
     expect((await service.getFolders('proj-2')).map((f) => f.path)).toEqual(['forest']);
     expect((await service.getScene(other.id))?.folderPath).toBe('forest');
   });
+
+  it('createFolder persists a kind=scene row with default folding state', async () => {
+    await service.createFolder('proj-1', 'forest');
+    const [folder] = await service.getFolders('proj-1');
+    expect(folder.kind).toBe('scene');
+    expect(folder.collapsed).toBe(false);
+    expect(folder.lastOpenedAt).toBe(0);
+  });
+
+  it('upsertFolderState updates the existing scene folder row in place', async () => {
+    await service.createFolder('proj-1', 'forest');
+    await service.upsertFolderState('proj-1', 'forest', { collapsed: true, lastOpenedAt: 42 });
+
+    const folders = await service.getFolders('proj-1');
+    expect(folders).toHaveLength(1);
+    expect(folders[0].collapsed).toBe(true);
+    expect(folders[0].lastOpenedAt).toBe(42);
+  });
+
+  it('upsertFolderState inserts a row for a path that has no folder row yet', async () => {
+    await service.upsertFolderState('proj-1', 'forest', { lastOpenedAt: 7 });
+    const [folder] = await service.getFolders('proj-1');
+    expect(folder.path).toBe('forest');
+    expect(folder.kind).toBe('scene');
+    expect(folder.lastOpenedAt).toBe(7);
+  });
+
+  it('getFolders ignores tile-kind folder rows sharing the same path', async () => {
+    await service.createFolder('proj-1', 'forest');
+    const db = TestBed.inject(DatabaseService);
+    await db.upsertFolderState('proj-1', 'tile', 'forest', { collapsed: true });
+
+    const folders = await service.getFolders('proj-1');
+    expect(folders).toHaveLength(1);
+    expect(folders[0].kind).toBe('scene');
+  });
 });
