@@ -278,6 +278,9 @@ Workflow: **oral idea → append to `docs/ideas.md` → clarify → GitHub issue
 - **Feature branches:** `feature-<ticket_number>` (e.g., `feature-42`)
 - **Commit messages:** prefix with the branch name, e.g. `feature-42: add login form`
 - The initial project setup commit (this repo's first commit) has **no prefix**.
+- **Auto-delete:** GitHub's "auto-delete head branches" is enabled — a `feature-*` branch is
+  deleted automatically as soon as its pull request is merged. Do not restore or reuse a
+  merged branch; always branch from `main` again.
 
 ---
 
@@ -294,4 +297,7 @@ Workflow: **oral idea → append to `docs/ideas.md` → clarify → GitHub issue
 
 ## Collaboration preferences
 
+- **English-only GitHub-facing content:** everything visible on GitHub (About, README, pull
+  requests, issues, comments, reports) must be written in English. Internal scratch docs such
+  as `docs/ideas.md` may stay in French.
 - The user likes to be **challenged** on their proposals: question assumptions, point out design risks, and suggest alternatives instead of implementing requests blindly.
