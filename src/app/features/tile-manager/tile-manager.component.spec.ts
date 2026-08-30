@@ -1,5 +1,17 @@
 import 'fake-indexeddb/auto';
 import { vi } from 'vitest';
+
+if (!('showModal' in HTMLDialogElement.prototype)) {
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+    value: vi.fn(),
+    writable: true,
+  });
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+    value: vi.fn(),
+    writable: true,
+  });
+}
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
@@ -12,6 +24,8 @@ import { TileService } from './services/tile.service';
 import { TileSpritesService } from './services/tile-sprites.service';
 import { ProjectService } from '../../features/dashboard/services/project.service';
 import { UndoService } from '../../core/services/undo.service';
+import type { Tile } from '../../shared/models/tile.model';
+import { NotificationService } from '../../core/services/notification.service';
 
 describe('TileManagerComponent', () => {
   let fixture: ComponentFixture<TileManagerComponent>;
@@ -111,6 +125,51 @@ describe('TileManagerComponent', () => {
     const comp = fixture.componentInstance;
     expect(comp.tileSize()).toBe(32);
     expect(comp.palette()).toEqual(['#ff0000', '#00ff00']);
+  });
+
+  it('deletes an empty folder from the folder signal after confirmation', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    comp.onCreateFolder('mountain');
+    expect(comp.folders()).toContain('mountain');
+
+    comp.onFolderDeleteRequest('mountain');
+    expect(comp.pendingDeleteFolderPath()).toBe('mountain');
+
+    comp.onConfirmFolderDelete();
+    expect(comp.folders()).not.toContain('mountain');
+  });
+
+  it('removes empty descendant folders together with the deleted folder', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    comp.onCreateFolder('forest');
+    comp.onCreateFolder('forest/caves');
+    comp.folders.update((list) => list.sort((a, b) => a.localeCompare(b)));
+
+    comp.onFolderDeleteRequest('forest');
+    comp.onConfirmFolderDelete();
+
+    expect(comp.folders()).not.toContain('forest');
+    expect(comp.folders()).not.toContain('forest/caves');
+  });
+
+  it('blocks deletion of a folder that still contains tiles', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    const db = TestBed.inject(DatabaseService);
+    const tileId = await addSeedTile();
+    await db.tiles.update(tileId, { folderPath: 'mountain' });
+    comp.folders.update((list) => [...list, 'mountain']);
+    await comp.loadTiles();
+
+    const notification = TestBed.inject(NotificationService);
+    const warnSpy = vi.spyOn(notification, 'warning');
+
+    comp.onFolderDeleteRequest('mountain');
+
+    expect(comp.pendingDeleteFolderPath()).toBeNull();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
   it('creates a first frame and selects the new tile', async () => {
@@ -376,5 +435,102 @@ describe('TileManagerComponent', () => {
     await flushUndo();
     const remade = await db.tiles.where('projectId').equals('test-proj').toArray();
     expect(remade.every((t) => t.folderPath === 'B/A')).toBe(true);
+  });
+
+  it('renames a folder and relocates its tiles', async () => {
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 50));
+    const comp = fixture.componentInstance;
+    const db = TestBed.inject(DatabaseService);
+    const directId = await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'Direct',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: 'forest',
+    } as unknown as import('../../shared/models/tile.model').Tile);
+    const nestedId = await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'Nested',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: 'forest/caves',
+    } as unknown as import('../../shared/models/tile.model').Tile);
+
+    const successSpy = vi.spyOn(TestBed.inject(NotificationService), 'success');
+    await comp.onFolderRename({ fromKey: 'forest', toKey: 'woods' });
+
+    expect((await db.tiles.get(directId))?.folderPath).toBe('woods');
+    expect((await db.tiles.get(nestedId))?.folderPath).toBe('woods/caves');
+    expect(comp.folders()).toContain('woods');
+    expect(comp.folders()).not.toContain('forest');
+    expect(successSpy).toHaveBeenCalledWith('Folder renamed');
+  });
+
+  it('warns instead of renaming when the target folder already exists', async () => {
+    await setupWithProject();
+    await new Promise((r) => setTimeout(r, 50));
+    const comp = fixture.componentInstance;
+    const db = TestBed.inject(DatabaseService);
+    const directId = await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'Direct',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: 'forest',
+    } as unknown as import('../../shared/models/tile.model').Tile);
+    await db.tiles.add({
+      projectId: 'test-proj',
+      name: 'Town',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: 'town',
+    } as unknown as import('../../shared/models/tile.model').Tile);
+
+    const warningSpy = vi.spyOn(TestBed.inject(NotificationService), 'warning');
+    await comp.loadTiles();
+    await comp.loadFolders();
+    await comp.onFolderRename({ fromKey: 'forest', toKey: 'town' });
+
+    expect(warningSpy).toHaveBeenCalledWith('A folder with that name already exists.');
+    expect((await db.tiles.get(directId))?.folderPath).toBe('forest');
+  });
+
+  it('requests deletion of the selected tile on Delete', async () => {
+    fixture = TestBed.createComponent(TileManagerComponent);
+    const comp = fixture.componentInstance;
+    comp.selectedTileId.set(7);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', cancelable: true }));
+    fixture.detectChanges();
+    expect(comp.tileToDelete()).toBe(7);
+  });
+
+  it('saves the selected tile on Ctrl+S', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    const tile = {
+      id: 3,
+      projectId: 'test-proj',
+      name: 'Ground',
+      type: 'static' as const,
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: '',
+    } as Tile;
+    comp.selectedTile.set(tile);
+    const saveSpy = vi.spyOn(comp, 'saveTile').mockResolvedValue();
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true }),
+    );
+    expect(saveSpy).toHaveBeenCalledWith(tile);
   });
 });

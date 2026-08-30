@@ -8,7 +8,7 @@
     <div class="tw-flex tw-gap-1">
       <button
         type="button"
-        (click)="createGroup.emit()"
+        (click)="startGroupCreate()"
         class="tw-p-1 tw-rounded-sm hover:tw-bg-muted"
         [title]="createGroupLabel()"
       >
@@ -25,31 +25,67 @@
     </div>
   </div>
   <div class="tw-flex-1 tw-overflow-auto tw-p-2">
+    @if (addingGroup()) {
+      <input
+        class="tw-w-full tw-mb-2 tw-px-2 tw-py-1 tw-text-xs tw-bg-background tw-text-foreground tw-border tw-border-border tw-rounded-sm tw-outline-none"
+        placeholder="New folder name"
+        [value]="newGroupName()"
+        (input)="newGroupName.set($any($event.target).value)"
+        (keydown.enter)="commitGroupCreate()"
+        (keydown.escape)="cancelGroupCreate()"
+        (blur)="commitGroupCreate()"
+      />
+    }
     <div cdkDropListGroup>
       @for (group of groups(); track group.key) {
         <div class="tw-mb-3" [style.padding-left.px]="indentGroups() ? group.depth * 16 : 0">
           <div
             class="tw-w-full tw-flex tw-items-center tw-gap-2 tw-px-2 tw-py-1 tw-rounded-sm tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground tw-cursor-pointer"
             [class.tw-bg-primary/10]="isGroupDropTarget(group.key)"
-            draggable="true"
+            [attr.draggable]="renamingKey() === group.key ? 'false' : 'true'"
+            (dblclick)="group.key && startGroupRename(group.key)"
             (dragstart)="onGroupDragStart(group.key, $event)"
             (dragover)="onGroupDragOver(group.key, $event)"
             (drop)="onGroupDrop(group.key)"
             (dragend)="onGroupDragEnd()"
           >
-            <button
-              type="button"
-              (click)="toggleGroup.emit(group.key)"
-              class="tw-flex tw-items-center tw-gap-2 tw-text-left tw-bg-transparent tw-border-0 tw-p-0 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground"
-            >
-              <span
-                class="material-symbols tw-text-sm tw-transition-transform"
-                [class.-tw-rotate-90]="isCollapsed(group.key)"
-                aria-hidden="true"
-                >expand_more</span
+            @if (renamingKey() === group.key) {
+              <input
+                class="tw-w-full tw-min-w-0 tw-px-1 tw-py-0.5 tw-text-[11px] tw-bg-background tw-text-foreground tw-border tw-border-border tw-rounded-sm tw-outline-none"
+                [value]="renameValue()"
+                (input)="renameValue.set($any($event.target).value)"
+                (keydown.enter)="commitGroupRename()"
+                (keydown.escape)="cancelGroupRename()"
+                (blur)="commitGroupRename()"
+                (click)="$event.stopPropagation()"
+              />
+            } @else {
+              <button
+                type="button"
+                (click)="toggleGroup.emit(group.key)"
+                class="tw-flex tw-items-center tw-gap-2 tw-text-left tw-bg-transparent tw-border-0 tw-p-0 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground hover:tw-text-foreground"
               >
-              <span>{{ group.key || 'Ungrouped' }}</span>
-            </button>
+                <span
+                  class="material-symbols tw-text-sm tw-transition-transform"
+                  [class.-tw-rotate-90]="isCollapsed(group.key)"
+                  aria-hidden="true"
+                  >expand_more</span
+                >
+                <span>{{ group.key || 'Ungrouped' }}</span>
+              </button>
+              @if (group.key && group.items.length === 0) {
+                <button
+                  type="button"
+                  draggable="false"
+                  (mousedown)="$event.stopPropagation()"
+                  (click)="onGroupDelete(group.key, $event)"
+                  [title]="'Delete folder ' + group.key"
+                  class="tw-p-1 tw-rounded-sm tw-ml-auto tw-shrink-0 tw-text-muted-foreground hover:tw-text-destructive hover:tw-bg-muted tw-transition-colors"
+                >
+                  <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
+                </button>
+              }
+            }
           </div>
           @if (!isCollapsed(group.key)) {
             <div

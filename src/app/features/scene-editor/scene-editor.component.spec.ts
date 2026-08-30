@@ -133,6 +133,117 @@ describe('SceneEditorComponent', () => {
     expect(await db.folders.toArray()).toHaveLength(1);
   });
 
+  it('should delete an empty folder and its empty descendants after confirmation', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    await sceneService.createFolder('p1', 'forest');
+    await sceneService.createFolder('p1', 'forest/caves');
+    await component.loadFolders();
+    expect(component.folders().sort()).toEqual(['forest', 'forest/caves']);
+
+    component.onFolderDeleteRequest('forest');
+    expect(component.pendingDeleteFolderPath()).toBe('forest');
+
+    await component.onConfirmFolderDelete();
+
+    const stored = await db.folders.toArray();
+    expect(stored.some((f) => f.path === 'forest')).toBe(false);
+    expect(stored.some((f) => f.path === 'forest/caves')).toBe(false);
+    expect(component.folders()).not.toContain('forest');
+  });
+
+  it('should block deletion of a folder that still contains scenes', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    await sceneService.createFolder('p1', 'mountain');
+    const scene = await sceneService.createScene('p1', 'Inside', 10, 10);
+    await sceneService.updateSceneFolder(scene.id, 'mountain');
+    await component.loadFolders();
+    await component.loadScenes();
+
+    const notification = TestBed.inject(NotificationService);
+    const warnSpy = vi.spyOn(notification, 'warning');
+
+    component.onFolderDeleteRequest('mountain');
+
+    expect(component.pendingDeleteFolderPath()).toBeNull();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(await db.folders.toArray()).toHaveLength(1);
+  });
+
+  it('should block deletion of a folder whose descendant folder still contains scenes', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    await sceneService.createFolder('p1', 'forest');
+    await sceneService.createFolder('p1', 'forest/caves');
+    const scene = await sceneService.createScene('p1', 'Hidden', 10, 10);
+    await sceneService.updateSceneFolder(scene.id, 'forest/caves');
+    await component.loadFolders();
+    await component.loadScenes();
+
+    const notification = TestBed.inject(NotificationService);
+    const warnSpy = vi.spyOn(notification, 'warning');
+
+    component.onFolderDeleteRequest('forest');
+
+    expect(component.pendingDeleteFolderPath()).toBeNull();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('renames a folder and relocates every scene inside it', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    await component.onCreateFolder('forest');
+    const scene = await sceneService.createScene('p1', 'Forest Scene', 10, 10);
+    await sceneService.updateSceneFolder(scene.id, 'forest');
+    await component.loadScenes();
+
+    const successSpy = vi.spyOn(TestBed.inject(NotificationService), 'success');
+    await component.onFolderRename({ fromKey: 'forest', toKey: 'woods' });
+
+    expect((await db.folders.toArray()).map((f) => f.path)).toEqual(['woods']);
+    expect((await db.scenes.get(scene.id))?.folderPath).toBe('woods');
+    expect(component.folders()).toEqual(['woods']);
+    expect(component.scenes()[0].folderPath).toBe('woods');
+    expect(successSpy).toHaveBeenCalledWith('Folder renamed');
+  });
+
+  it('renames nested descendants along with the folder', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    await component.onCreateFolder('forest/caves');
+    const scene = await sceneService.createScene('p1', 'Deep Scene', 10, 10);
+    await sceneService.updateSceneFolder(scene.id, 'forest/caves');
+    await component.loadScenes();
+
+    await component.onFolderRename({ fromKey: 'forest', toKey: 'woods' });
+
+    expect((await db.folders.toArray()).map((f) => f.path)).toEqual(['woods/caves']);
+    expect((await db.scenes.get(scene.id))?.folderPath).toBe('woods/caves');
+  });
+
+  it('warns instead of renaming when the target folder already exists', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    await component.onCreateFolder('forest');
+    await component.onCreateFolder('town');
+    const scene = await sceneService.createScene('p1', 'S', 10, 10);
+    await sceneService.updateSceneFolder(scene.id, 'forest');
+    await component.loadScenes();
+
+    const warningSpy = vi.spyOn(TestBed.inject(NotificationService), 'warning');
+    await component.onFolderRename({ fromKey: 'forest', toKey: 'town' });
+
+    expect(warningSpy).toHaveBeenCalledWith('A folder with that name already exists.');
+    expect((await db.scenes.get(scene.id))?.folderPath).toBe('forest');
+  });
+
   it('should delete a scene after confirmation and clear its selection', async () => {
     fixture.detectChanges();
     await fixture.whenStable();
@@ -476,6 +587,42 @@ describe('SceneEditorComponent', () => {
     const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
     expect(lastCall?.[0]).toContain('Forest');
     expect(lastCall?.[0]).toContain('10×10');
+  });
+
+  it('undoes the last action on Ctrl+Z', () => {
+    const undoService = TestBed.inject(UndoService);
+    const undoSpy = vi.spyOn(undoService, 'undo');
+    const event = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, cancelable: true });
+    document.dispatchEvent(event);
+    expect(undoSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('requests scene deletion on Delete when a scene is selected', () => {
+    component.selectedSceneId.set('scene-del');
+    const confirmDialog = component['deleteConfirmDialog']();
+    const openSpy = vi.spyOn(confirmDialog, 'open');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', cancelable: true }));
+    fixture.detectChanges();
+    expect(openSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('saves the current scene on Ctrl+S', async () => {
+    const scene = await sceneService.createScene('p1', 'Savable', 4, 4);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+
+    const svc = fixture.debugElement.injector.get(SceneService);
+    const updateSpy = vi.spyOn(svc, 'updateScene').mockResolvedValue(undefined);
+    const notification = TestBed.inject(NotificationService);
+    const successSpy = vi.spyOn(notification, 'success');
+
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true }),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(updateSpy).toHaveBeenCalledWith(scene.id, expect.objectContaining({ width: 4 }));
+    expect(successSpy).toHaveBeenCalledWith('Scene saved');
   });
 
   it('shows the selected scene layer and tile counts in the status bar', async () => {

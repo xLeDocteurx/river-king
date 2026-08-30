@@ -23,6 +23,9 @@ export class SceneListComponent {
   sceneDelete = output<string>();
   sceneFolderChange = output<{ sceneId: string; folderPath: string }>();
   createFolder = output<string>();
+  /** Emitted when the user requests deletion of an empty folder. */
+  folderDelete = output<string>();
+  folderRename = output<{ fromKey: string; toKey: string }>();
 
   collapsedFolders = signal<string[]>([]);
 
@@ -36,6 +39,10 @@ export class SceneListComponent {
     this.sceneDelete.emit(String(id));
   }
 
+  onFolderDelete(key: string): void {
+    this.folderDelete.emit(key);
+  }
+
   onSceneFolderChange(event: { itemId: string | number; groupKey: string }): void {
     this.sceneFolderChange.emit({ sceneId: String(event.itemId), folderPath: event.groupKey });
   }
@@ -44,13 +51,5 @@ export class SceneListComponent {
     this.collapsedFolders.update((current) =>
       current.includes(key) ? current.filter((k) => k !== key) : [...current, key],
     );
-  }
-
-  onCreateGroup(): void {
-    const name = window.prompt('Enter group name:')?.trim();
-    if (!name) return;
-    if (this.folders().includes(name)) return;
-    if (this.scenes().some((s) => s.folderPath === name)) return;
-    this.createFolder.emit(name);
   }
 }

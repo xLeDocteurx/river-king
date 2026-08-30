@@ -8,7 +8,9 @@
     (createScene)="onCreateScene()"
     (sceneDelete)="onDeleteSceneRequest($event)"
     (createFolder)="onCreateFolder($event)"
+    (folderDelete)="onFolderDeleteRequest($event)"
     (sceneFolderChange)="onSceneFolderChange($event)"
+    (folderRename)="onFolderRename($event)"
   />
   <div class="tw-flex-1 tw-relative tw-overflow-hidden tw-bg-background">
     <rk-map-canvas
@@ -71,3 +73,10 @@
 </div>
 
 <rk-confirm-dialog [data]="deleteDialogData()" (confirmed)="onConfirmDelete()" />
+
+<rk-confirm-dialog
+  #folderDeleteDialog
+  [data]="folderDeleteDialogData()"
+  (confirmed)="onConfirmFolderDelete()"
+  (cancelled)="pendingDeleteFolderPath.set(null)"
+/>

@@ -11,9 +11,11 @@
   createItemLabel="New Tile"
   (itemSelect)="onTileSelect($event)"
   (itemDelete)="onTileDelete($event)"
+  (groupDelete)="onFolderDelete($event)"
   (groupChange)="onTileFolderChange($event)"
   (toggleGroup)="toggleFolder.emit($event)"
   (groupMove)="onGroupMove($event)"
-  (createGroup)="onCreateGroup()"
+  (groupRename)="folderRename.emit($event)"
+  (createGroup)="createFolder.emit($event)"
   (createItem)="tileCreate.emit()"
 ></rk-grouped-list>

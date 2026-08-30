@@ -97,45 +97,148 @@ describe('SceneListComponent', () => {
     expect(compiled.querySelectorAll('[cdkDropList]').length).toBe(2);
   });
 
-  it('should emit createFolder when onCreateGroup is invoked', () => {
-    fixture.componentRef.setInput('scenes', []);
+  it('should show a delete button on an empty folder header', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Untitled')]);
+    fixture.componentRef.setInput('folders', ['mountain']);
     fixture.detectChanges();
 
-    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('mountain');
-    const createSpy = vi.spyOn(component.createFolder, 'emit');
-
-    component.onCreateGroup();
-
-    expect(createSpy).toHaveBeenCalledOnce();
-    expect(createSpy).toHaveBeenCalledWith('mountain');
-    promptSpy.mockRestore();
+    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector(
+      'button[title="Delete folder mountain"]',
+    );
+    expect(deleteButton).toBeTruthy();
   });
 
-  it('should not emit createFolder for a name that already exists in folders input', () => {
+  it('should not show a folder delete button when the folder has scenes', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Mountain Path', 'mountain')]);
+    fixture.componentRef.setInput('folders', ['mountain']);
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector(
+        'button[title="Delete folder mountain"]',
+      ),
+    ).toBeNull();
+  });
+
+  it('should not show a folder delete button on the ungrouped header', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Untitled')]);
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('button[title^="Delete folder"]'),
+    ).toBeNull();
+  });
+
+  it('should emit folderDelete when an empty folder delete button is clicked', () => {
     fixture.componentRef.setInput('scenes', []);
     fixture.componentRef.setInput('folders', ['mountain']);
     fixture.detectChanges();
 
-    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('mountain');
-    const createSpy = vi.spyOn(component.createFolder, 'emit');
-
-    component.onCreateGroup();
-
-    expect(createSpy).not.toHaveBeenCalled();
-    promptSpy.mockRestore();
+    const deleteSpy = vi.spyOn(component.folderDelete, 'emit');
+    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector(
+      'button[title="Delete folder mountain"]',
+    ) as HTMLButtonElement;
+    deleteButton.click();
+    expect(deleteSpy).toHaveBeenCalledWith('mountain');
   });
 
-  it('should not emit createFolder for a name that exists as a scene folderPath', () => {
+  it('should emit createFolder via the inline input when Enter is pressed', () => {
+    fixture.componentRef.setInput('scenes', []);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const newGroupButton = compiled.querySelector('button[title="New Group"]') as HTMLButtonElement;
+    newGroupButton.click();
+    fixture.detectChanges();
+
+    const input = compiled.querySelector('input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'mountain';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+
+    const createSpy = vi.spyOn(component.createFolder, 'emit');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(createSpy).toHaveBeenCalledOnce();
+    expect(createSpy).toHaveBeenCalledWith('mountain');
+    expect(compiled.querySelector('input')).toBeNull();
+  });
+
+  it('should reject empty names from the inline input', () => {
+    fixture.componentRef.setInput('scenes', []);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    (compiled.querySelector('button[title="New Group"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const input = compiled.querySelector('input') as HTMLInputElement;
+    input.value = '   ';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const createSpy = vi.spyOn(component.createFolder, 'emit');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(compiled.querySelector('input')).toBeNull();
+  });
+
+  it('should reject duplicates already present in the folders input', () => {
+    fixture.componentRef.setInput('scenes', []);
+    fixture.componentRef.setInput('folders', ['mountain']);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    (compiled.querySelector('button[title="New Group"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const input = compiled.querySelector('input') as HTMLInputElement;
+    input.value = 'mountain';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const createSpy = vi.spyOn(component.createFolder, 'emit');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it('should reject a name that exists as a scene folderPath', () => {
     fixture.componentRef.setInput('scenes', [makeScene('s1', 'A', 'forest')]);
     fixture.detectChanges();
 
-    const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('forest');
-    const createSpy = vi.spyOn(component.createFolder, 'emit');
+    const compiled = fixture.nativeElement as HTMLElement;
+    (compiled.querySelector('button[title="New Group"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const input = compiled.querySelector('input') as HTMLInputElement;
+    input.value = 'forest';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
 
-    component.onCreateGroup();
+    const createSpy = vi.spyOn(component.createFolder, 'emit');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
 
     expect(createSpy).not.toHaveBeenCalled();
-    promptSpy.mockRestore();
+  });
+
+  it('should cancel folder creation on Escape without emitting', () => {
+    fixture.componentRef.setInput('scenes', []);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    (compiled.querySelector('button[title="New Group"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const input = compiled.querySelector('input') as HTMLInputElement;
+    input.value = 'mountain';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const createSpy = vi.spyOn(component.createFolder, 'emit');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(compiled.querySelector('input')).toBeNull();
   });
 
   it('should give every drop list a minimum height so empty folders accept drops', () => {
@@ -211,4 +314,66 @@ describe('SceneListComponent', () => {
     component.onSceneFolderChange({ itemId: 's1', groupKey: 'new' });
     expect(changeSpy).toHaveBeenCalledWith({ sceneId: 's1', folderPath: 'new' });
   });
+
+  it('turns a folder header into an inline input on double-click and emits folderRename on Enter', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Scene A', 'forest')]);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const header = headerButtonFor('forest');
+
+    header.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    fixture.detectChanges();
+
+    const input = compiled.querySelector('input') as HTMLInputElement | null;
+    expect(input).toBeTruthy();
+    expect(input?.value).toBe('forest');
+
+    const renameSpy = vi.spyOn(component.folderRename, 'emit');
+    input!.value = 'woods';
+    input!.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+    input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(renameSpy).toHaveBeenCalledWith({ fromKey: 'forest', toKey: 'woods' });
+    expect(compiled.querySelector('input')).toBeNull();
+  });
+
+  it('cancels the inline rename on Escape without emitting', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Scene A', 'forest')]);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    headerButtonFor('forest').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    fixture.detectChanges();
+    const input = compiled.querySelector('input') as HTMLInputElement;
+    input.value = 'woods';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const renameSpy = vi.spyOn(component.folderRename, 'emit');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('input')).toBeNull();
+    expect(renameSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not offer inline rename for the Ungrouped (root) header', () => {
+    fixture.componentRef.setInput('scenes', [makeScene('s1', 'Root Scene')]);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const ungrouped = headerButtonFor('Ungrouped');
+
+    ungrouped.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('input')).toBeNull();
+  });
+
+  function headerButtonFor(path: string): HTMLButtonElement {
+    const compiled = fixture.nativeElement as HTMLElement;
+    return Array.from(compiled.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes(path),
+    ) as HTMLButtonElement;
+  }
 });

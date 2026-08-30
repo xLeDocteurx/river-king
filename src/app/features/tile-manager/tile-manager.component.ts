@@ -3,6 +3,7 @@ import {
   DestroyRef,
   inject,
   signal,
+  computed,
   OnInit,
   ChangeDetectionStrategy,
   viewChild,
@@ -23,6 +24,10 @@ import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
 import { UndoService } from '../../core/services/undo.service';
+import {
+  KeyboardShortcutsService,
+  ShortcutId,
+} from '../../core/services/keyboard-shortcuts.service';
 import type { Tile } from '../../shared/models/tile.model';
 
 /**
@@ -52,9 +57,15 @@ export class TileManagerComponent implements OnInit {
   private readonly statusBar = inject(StatusBarService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly undo = inject(UndoService);
+  private readonly shortcuts = inject(KeyboardShortcutsService);
 
   /** Reference to the confirm-dialog component for programmatic open/close. */
   private readonly confirmDialog = viewChild.required(ConfirmDialogComponent);
+
+  /** Reference to the folder deletion confirm-dialog. */
+  private readonly folderDeleteDialog = viewChild.required('folderDeleteDialog', {
+    read: ConfirmDialogComponent,
+  });
 
   /** ID of the currently loaded project. */
   projectId = signal<string>('');
@@ -77,6 +88,9 @@ export class TileManagerComponent implements OnInit {
   /** ID of the tile pending deletion (null when no deletion requested). */
   tileToDelete = signal<number | null>(null);
 
+  /** Folder path pending deletion confirmation (null when none pending). */
+  pendingDeleteFolderPath = signal<string | null>(null);
+
   /** Distinct folder paths for the current project. */
   folders = signal<string[]>([]);
 
@@ -91,7 +105,23 @@ export class TileManagerComponent implements OnInit {
     cancelLabel: 'Cancel',
   };
 
+  /** Data shown in the folder deletion confirmation dialog. */
+  readonly folderDeleteDialogData = computed<ConfirmDialogData>(() => {
+    const path = this.pendingDeleteFolderPath();
+    return {
+      title: 'Delete Folder',
+      message: path
+        ? `Are you sure you want to delete the folder "${path}"? This cannot be undone.`
+        : 'Are you sure you want to delete this folder? This cannot be undone.',
+      confirmLabel: 'Delete',
+    };
+  });
+
   constructor() {
+    this.shortcuts.shortcuts
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((id) => this.onShortcut(id));
+
     effect(() => {
       const id = this.tileToDelete();
       if (id !== null) {
@@ -120,6 +150,31 @@ export class TileManagerComponent implements OnInit {
         `${selected.name} | ${selected.type} | ${blocking} | ${frameCount} frame${frameCount === 1 ? '' : 's'}`,
       );
     });
+  }
+
+  /**
+   * Handles a global keyboard shortcut.
+   * @param id - The shortcut that was pressed.
+   */
+  onShortcut(id: ShortcutId): void {
+    switch (id) {
+      case 'delete': {
+        const tileId = this.selectedTileId();
+        if (tileId !== null) {
+          this.requestDelete(tileId);
+        }
+        break;
+      }
+      case 'save': {
+        const tile = this.selectedTile();
+        if (tile) {
+          void this.saveTile(tile);
+        }
+        break;
+      }
+      default:
+        break;
+    }
   }
 
   /** Reads the project ID from the parent route and loads tiles + project settings. */
@@ -151,7 +206,9 @@ export class TileManagerComponent implements OnInit {
    */
   async loadProject(): Promise<void> {
     try {
-      const project = await this.projectService.getById(this.projectId());
+      const project =
+        this.projectService.currentProject() ??
+        (await this.projectService.getById(this.projectId()));
       if (project) {
         this.tileSize.set(project.tileSize);
         this.palette.set(project.palette);
@@ -256,6 +313,58 @@ export class TileManagerComponent implements OnInit {
         folders.update((list) => list.filter((p) => p !== name));
       },
     });
+  }
+
+  /**
+   * Requests deletion of an empty folder, opening the confirmation dialog.
+   * Blocks folders whose tree still contains tiles with a notification.
+   * @param path The folder path the user wants to delete.
+   */
+  onFolderDeleteRequest(path: string): void {
+    const hasTiles = this.tiles().some(
+      (t) => (t.folderPath ?? '') === path || (t.folderPath ?? '').startsWith(path + '/'),
+    );
+    if (hasTiles) {
+      this.notification.warning(`Folder "${path}" is not empty and cannot be deleted.`);
+      return;
+    }
+    this.pendingDeleteFolderPath.set(path);
+    this.folderDeleteDialog().open();
+  }
+
+  /**
+   * Removes the pending folder (and any empty descendant folders) from the list
+   * after user confirmation. Tile folders are derived from tiles at runtime, so
+   * this only updates the local signal; there is nothing to persist.
+   */
+  onConfirmFolderDelete(): void {
+    const path = this.pendingDeleteFolderPath();
+    if (!path) return;
+    this.pendingDeleteFolderPath.set(null);
+    this.folders.update((list) => list.filter((p) => p !== path && !p.startsWith(path + '/')));
+  }
+
+  /**
+   * Renames a folder, relocating every tile inside it (including nested
+   * sub-folders) to the new path.
+   * @param event The rename request emitted by the tile list tree.
+   */
+  async onFolderRename(event: { fromKey: string; toKey: string }): Promise<void> {
+    const { fromKey, toKey } = event;
+    if (!fromKey || fromKey === toKey) return;
+    if (this.folders().includes(toKey)) {
+      this.notification.warning('A folder with that name already exists.');
+      return;
+    }
+    try {
+      await this.tileService.renameFolder(this.projectId(), fromKey, toKey);
+      await this.loadTiles();
+      await this.loadFolders();
+      this.notification.success('Folder renamed');
+    } catch (e) {
+      console.error('Failed to rename folder:', e);
+      this.notification.error('Failed to rename the folder.');
+    }
   }
 
   /**

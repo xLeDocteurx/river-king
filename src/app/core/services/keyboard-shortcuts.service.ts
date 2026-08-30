@@ -1,54 +1,98 @@
+import { DOCUMENT } from '@angular/common';
 import { Injectable, inject } from '@angular/core';
-import { UndoService } from './undo.service';
+import { Subject, Observable } from 'rxjs';
+
+/** The set of editor shortcuts that can be triggered via the keyboard. */
+export type ShortcutId =
+  'undo' | 'redo' | 'delete' | 'save' | 'tool.brush' | 'tool.eraser' | 'tool.fill';
 
 /**
- * App-wide keyboard shortcut handling.
+ * Listens for global keyboard shortcuts and broadcasts them as a typed stream.
  *
- * Binds `Ctrl/Cmd+Z` to undo and `Ctrl/Cmd+Shift+Z` to redo on the shared
- * undo stack. Inputs are ignored while the focus sits inside an editable
- * element (input, textarea, select or contenteditable) so global shortcuts
- * never conflict with text editing.
+ * Shortcuts never fire while the user is typing in an input, a textarea, a
+ * select or a contenteditable region, nor for auto-repeated keydown events.
  */
 @Injectable({ providedIn: 'root' })
 export class KeyboardShortcutsService {
-  private readonly undo = inject(UndoService);
-  private readonly listener = (event: KeyboardEvent): void => {
-    const key = event.key.toLowerCase();
-    if (key !== 'z') return;
-    const mod = event.ctrlKey || event.metaKey;
-    if (!mod || event.altKey) return;
-    if (this.isEditableTarget(event.target)) return;
-    event.preventDefault();
-    if (event.shiftKey) {
-      this.undo.redo();
-    } else {
-      this.undo.undo();
-    }
-  };
+  private readonly shortcuts$ = new Subject<ShortcutId>();
+  private readonly document = inject(DOCUMENT);
+
+  /** Emits an identifier each time a known shortcut is pressed. */
+  readonly shortcuts: Observable<ShortcutId> = this.shortcuts$.asObservable();
 
   constructor() {
-    document.addEventListener('keydown', this.listener);
-  }
-
-  /** @internal Detaches the keydown listener (used in tests). */
-  destroy(): void {
-    document.removeEventListener('keydown', this.listener);
+    this.document.addEventListener('keydown', (event) => {
+      if (!this.accepts(event)) {
+        return;
+      }
+      const id = this.match(event);
+      if (!id) {
+        return;
+      }
+      event.preventDefault();
+      this.shortcuts$.next(id);
+    });
   }
 
   /**
-   * Whether the event target is an editable form control.
-   * @param target - The DOM event target.
-   * @returns True when the target is an input, textarea, select or contenteditable element.
+   * Determines whether a keydown event should be considered for shortcuts.
+   * @param event - The keydown event.
+   * @returns True when the event can trigger a shortcut.
    */
-  private isEditableTarget(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) return false;
+  private accepts(event: KeyboardEvent): boolean {
+    if (event.repeat) {
+      return false;
+    }
+    const target = event.target;
     if (
       target instanceof HTMLInputElement ||
       target instanceof HTMLTextAreaElement ||
       target instanceof HTMLSelectElement
     ) {
-      return true;
+      return false;
     }
-    return target.isContentEditable;
+    if (target instanceof HTMLElement && target.isContentEditable) {
+      return false;
+    }
+    if (target instanceof HTMLElement && target.getAttribute('contenteditable') !== null) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Maps a keydown event to a shortcut identifier.
+   * @param event - The keydown event.
+   * @returns The matching shortcut id, or null when the key is not a shortcut.
+   */
+  private match(event: KeyboardEvent): ShortcutId | null {
+    const mod = event.ctrlKey || event.metaKey;
+    if (mod) {
+      if (event.key.toLowerCase() === 'z') {
+        return event.shiftKey ? 'redo' : 'undo';
+      }
+      if (event.key.toLowerCase() === 'y') {
+        return 'redo';
+      }
+      if (event.key.toLowerCase() === 's') {
+        return 'save';
+      }
+      return null;
+    }
+    if (event.shiftKey || event.altKey || event.metaKey) {
+      return null;
+    }
+    switch (event.key) {
+      case 'Delete':
+        return 'delete';
+      case '1':
+        return 'tool.brush';
+      case '2':
+        return 'tool.eraser';
+      case '3':
+        return 'tool.fill';
+      default:
+        return null;
+    }
   }
 }

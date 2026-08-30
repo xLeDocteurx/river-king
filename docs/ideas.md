@@ -13,22 +13,22 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 
 ## Medium Impact
 
-- [ ] **Keyboard shortcuts** — Ctrl+Z undo, Delete, numéros pour switch d'outil, Ctrl+S save. → [#13](https://github.com/xLeDocteurx/river-king/issues/13)
-- [ ] **Visualisation des collisions/footprints** — Toggle pour voir les tiles bloquants sur la map (`map-footprint.ts` existe déjà). → [#14](https://github.com/xLeDocteurx/river-king/issues/14)
+- [x] **Keyboard shortcuts** — Ctrl+Z undo, Delete, numéros pour switch d'outil, Ctrl+S save. → [#13](https://github.com/xLeDocteurx/river-king/issues/13)
+- [x] **Visualisation des collisions/footprints** — Toggle pour voir les tiles bloquants sur la map (`map-footprint.ts` existe déjà). → [#14](https://github.com/xLeDocteurx/river-king/issues/14)
 - [x] **Grid visibility toggle** — Afficher/masquer la grille dans l'éditeur de scène. → [#5](https://github.com/xLeDocteurx/river-king/issues/5)
-- [ ] **Sprite editor : frame management** — Éditeur multi-frame avec onion-skinning et preview d'animation. → [#15](https://github.com/xLeDocteurx/river-king/issues/15)
+- [x] **Sprite editor : frame management** — Éditeur multi-frame avec onion-skinning et preview d'animation. → [#15](https://github.com/xLeDocteurx/river-king/issues/15)
 - [x] **Folder : suppression** — Bouton de suppression sur l'en-tête d'un groupe vide (scènes et tuiles) pour nettoyer les dossiers inutiles. → [#4](https://github.com/xLeDocteurx/river-king/issues/4)
-- [ ] **Folder : renommage** — Double-click sur le titre d'un groupe pour renommer le dossier sans tout redéplacer. → [#16](https://github.com/xLeDocteurx/river-king/issues/16)
-- [ ] **Folders premium folding** — Fermer certains dossiers par défaut quand la liste est longue, pour une navigation plus rapide. → [#17](https://github.com/xLeDocteurx/river-king/issues/17)
-- [ ] **UI : création de dossier** — Remplacer `window.prompt()` par un petit inline input dans `grouped-list` pour une création de dossier plus propre et cohérente. → [#18](https://github.com/xLeDocteurx/river-king/issues/18)
+- [x] **Folder : renommage** — Double-click sur le titre d'un groupe pour renommer le dossier sans tout redéplacer. → [#16](https://github.com/xLeDocteurx/river-king/issues/16)
+- [x] **Folders premium folding** — Fermer certains dossiers par défaut quand la liste est longue, pour une navigation plus rapide. → [#17](https://github.com/xLeDocteurx/river-king/issues/17)
+- [x] **UI : création de dossier** — Remplacer `window.prompt()` par un petit inline input dans `grouped-list` pour une création de dossier plus propre et cohérente. → [#18](https://github.com/xLeDocteurx/river-king/issues/18)
 
 ## Lower Priority
 
-- [ ] **Project rename/settings** — Renommer un projet après création. → [#19](https://github.com/xLeDocteurx/river-king/issues/19)
-- [ ] **Loading states** — Skeleton/spinner pendant les opérations IndexedDB async. → [#20](https://github.com/xLeDocteurx/river-king/issues/20)
-- [ ] **Guard route projet** — Valider l'existence du projet avant de charger les nested routes. → [#21](https://github.com/xLeDocteurx/river-king/issues/21)
-- [ ] **Nettoyage des stubs vides** — `core/guards/`, `shared/directives/`, `shared/pipes/` sont des dossiers vides. → [#22](https://github.com/xLeDocteurx/river-king/issues/22)
+- [x] **Project rename/settings** — Renommer un projet après création. → [#19](https://github.com/xLeDocteurx/river-king/issues/19)
+- [x] **Loading states** — Skeleton/spinner pendant les opérations IndexedDB async. → [#20](https://github.com/xLeDocteurx/river-king/issues/20)
+- [x] **Guard route projet** — Valider l'existence du projet avant de charger les nested routes. → [#21](https://github.com/xLeDocteurx/river-king/issues/21)
+- [x] **Nettoyage des stubs vides** — `core/guards/`, `shared/directives/`, `shared/pipes/` sont des dossiers vides. → [#22](https://github.com/xLeDocteurx/river-king/issues/22)
 - [x] **README projet** — Le README est le template Angular CLI par défaut. Le remplacer par une vraie description du projet. → [#6](https://github.com/xLeDocteurx/river-king/issues/6)
-- [ ] **Responsive/mobile** — Les layouts fixes cassent sur les petits écrans. Ajouter des breakpoints ou panneaux repliables. → [#23](https://github.com/xLeDocteurx/river-king/issues/23)
-- [ ] **Favicon & branding** — Pas de favicon ni de manifest PWA. → [#24](https://github.com/xLeDocteurx/river-king/issues/24)
-- [ ] **CI/CD** — Pipeline de lint + test (GitHub Actions ou similaire). → [#25](https://github.com/xLeDocteurx/river-king/issues/25)
+- [x] **Responsive/mobile** — Les layouts fixes cassent sur les petits écrans. Ajouter des breakpoints ou panneaux repliables. → [#23](https://github.com/xLeDocteurx/river-king/issues/23)
+- [x] **Favicon & branding** — Pas de favicon ni de manifest PWA. → [#24](https://github.com/xLeDocteurx/river-king/issues/24)
+- [x] **CI/CD** — Pipeline de lint + test (GitHub Actions ou similaire). → [#25](https://github.com/xLeDocteurx/river-king/issues/25)

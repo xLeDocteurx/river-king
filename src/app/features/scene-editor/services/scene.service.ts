@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from '../../../core/services/database.service';
 import type { Scene } from '../../../shared/models/scene.model';
-import type { Folder } from '../../../shared/models/folder.model';
+import { rewriteFolderPath, type Folder } from '../../../shared/models/folder.model';
 
 /**
  * Feature-private service providing CRUD operations for scenes and folders.
@@ -126,5 +126,46 @@ export class SceneService {
     if (exists > 0) return;
     const folder: Folder = { id: crypto.randomUUID(), projectId, path };
     await this.db.folders.add(folder);
+  }
+
+  /**
+   * Deletes a folder and its (empty) descendant folders from the project.
+   * Scenes inside the removed folders are left untouched; callers must ensure
+   * the whole subtree holds no scenes before calling this.
+   * @param projectId The project the folder belongs to.
+   * @param path The folder path to delete, including descendant paths.
+   */
+  async deleteFolder(projectId: string, path: string): Promise<void> {
+    await this.db.folders
+      .where('projectId')
+      .equals(projectId)
+      .filter((f) => f.path === path || f.path.startsWith(path + '/'))
+      .delete();
+  }
+
+  /**
+   * Renames a folder path, rewriting every folder row and scene that
+   * references it (exact match or any nested descendant). Runs atomically.
+   * @param projectId The project that owns the folder.
+   * @param fromPath The current folder path.
+   * @param toPath The new folder path.
+   */
+  async renameFolder(projectId: string, fromPath: string, toPath: string): Promise<void> {
+    await this.db.transaction('rw', this.db.folders, this.db.scenes, async () => {
+      const folders = await this.db.folders.where('projectId').equals(projectId).toArray();
+      for (const folder of folders) {
+        const rewritten = rewriteFolderPath(folder.path, fromPath, toPath);
+        if (rewritten !== folder.path) {
+          await this.db.folders.update(folder.id, { path: rewritten });
+        }
+      }
+      const scenes = await this.db.scenes.where('projectId').equals(projectId).toArray();
+      for (const scene of scenes) {
+        const rewritten = rewriteFolderPath(scene.folderPath, fromPath, toPath);
+        if (rewritten !== scene.folderPath) {
+          await this.db.scenes.update(scene.id, { folderPath: rewritten });
+        }
+      }
+    });
   }
 }

@@ -7,10 +7,17 @@ import {
   computed,
   viewChild,
   effect,
+  DestroyRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatabaseService } from '../../core/services/database.service';
+import {
+  KeyboardShortcutsService,
+  ShortcutId,
+} from '../../core/services/keyboard-shortcuts.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ProjectService } from '../dashboard/services/project.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
 import { UndoService } from '../../core/services/undo.service';
@@ -58,11 +65,17 @@ export class SceneEditorComponent implements OnInit {
   private readonly sceneService = inject(SceneService);
   private readonly db = inject(DatabaseService);
   private readonly notification = inject(NotificationService);
+  private readonly projectService = inject(ProjectService);
   private readonly mapTilesService = inject(MapTilesService);
   private readonly sessions = inject(SessionService);
   private readonly statusBar = inject(StatusBarService);
   private readonly undo = inject(UndoService);
+  private readonly shortcuts = inject(KeyboardShortcutsService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly deleteConfirmDialog = viewChild.required(ConfirmDialogComponent);
+  private readonly folderDeleteDialog = viewChild.required('folderDeleteDialog', {
+    read: ConfirmDialogComponent,
+  });
   mapCanvasRef = viewChild(MapCanvasComponent);
 
   /** Currently active project id derived from route params. */
@@ -93,6 +106,8 @@ export class SceneEditorComponent implements OnInit {
   projectTileSize = signal<number>(16);
   /** Id of the scene pending deletion confirmation. */
   pendingDeleteSceneId = signal<string | null>(null);
+  /** Folder path pending deletion confirmation. */
+  pendingDeleteFolderPath = signal<string | null>(null);
   /** Id of the currently active layer for tile placement. */
   activeLayerId = signal<string | null>(null);
 
@@ -151,6 +166,24 @@ export class SceneEditorComponent implements OnInit {
     };
   });
 
+  /** Data for the folder deletion confirmation dialog. */
+  folderDeleteDialogData = computed<ConfirmDialogData>(() => {
+    const path = this.pendingDeleteFolderPath();
+    return {
+      title: 'Delete Folder',
+      message: path
+        ? `Are you sure you want to delete the folder "${path}"? This cannot be undone.`
+        : 'Are you sure you want to delete this folder? This cannot be undone.',
+      confirmLabel: 'Delete',
+    };
+  });
+
+  constructor() {
+    this.shortcuts.shortcuts
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((id) => this.onShortcut(id));
+  }
+
   ngOnInit(): void {
     this.route.parent?.params.subscribe((params) => {
       const id = params['id'];
@@ -163,6 +196,53 @@ export class SceneEditorComponent implements OnInit {
         this.loadFolders();
       }
     });
+  }
+
+  /**
+   * Handles a global keyboard shortcut.
+   * @param id - The shortcut that was pressed.
+   */
+  onShortcut(id: ShortcutId): void {
+    switch (id) {
+      case 'undo':
+        this.undo.undo();
+        break;
+      case 'redo':
+        this.undo.redo();
+        break;
+      case 'delete': {
+        const sceneId = this.selectedSceneId();
+        if (sceneId) {
+          this.onDeleteSceneRequest(sceneId);
+        }
+        break;
+      }
+      case 'save':
+        void this.saveCurrentScene();
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * Persists the currently selected scene synchronously through the whole layer stack.
+   */
+  async saveCurrentScene(): Promise<void> {
+    const scene = this.selectedScene();
+    if (!scene) {
+      return;
+    }
+    try {
+      await this.sceneService.updateScene(scene.id, {
+        width: scene.width,
+        height: scene.height,
+        layers: scene.layers,
+      });
+      this.notification.success('Scene saved');
+    } catch {
+      this.notification.error('Failed to save the scene.');
+    }
   }
 
   /**
@@ -182,7 +262,9 @@ export class SceneEditorComponent implements OnInit {
    */
   async loadProjectData(): Promise<void> {
     try {
-      const project = await this.db.projects.get(this.projectId());
+      const project =
+        this.projectService.currentProject() ??
+        (await this.projectService.getById(this.projectId()));
       if (project) {
         this.projectPalette.set(project.palette);
         this.projectTileSize.set(project.tileSize ?? 16);
@@ -302,6 +384,61 @@ export class SceneEditorComponent implements OnInit {
     } catch (e) {
       console.error('Failed to create folder:', e);
       this.notification.error('Failed to create the folder.');
+    }
+  }
+
+  /**
+   * Requests deletion of an empty folder, opening the confirmation dialog.
+   * Blocks folders whose tree still contains scenes with a notification.
+   * @param path The folder path the user wants to delete.
+   */
+  onFolderDeleteRequest(path: string): void {
+    const hasScenes = this.scenes().some(
+      (s) => s.folderPath === path || s.folderPath.startsWith(path + '/'),
+    );
+    if (hasScenes) {
+      this.notification.warning(`Folder "${path}" is not empty and cannot be deleted.`);
+      return;
+    }
+    this.pendingDeleteFolderPath.set(path);
+    this.folderDeleteDialog().open();
+  }
+
+  /**
+   * Deletes the pending folder after user confirmation, then refreshes the list.
+   */
+  async onConfirmFolderDelete(): Promise<void> {
+    const path = this.pendingDeleteFolderPath();
+    if (!path) return;
+    this.pendingDeleteFolderPath.set(null);
+    try {
+      await this.sceneService.deleteFolder(this.projectId(), path);
+      await this.loadFolders();
+    } catch (e) {
+      console.error('Failed to delete folder:', e);
+      this.notification.error('Failed to delete the folder.');
+    }
+  }
+
+  /**
+   * Renames a folder, relocating the folder row and every scene inside it.
+   * @param event The rename request emitted by the shared grouped list.
+   */
+  async onFolderRename(event: { fromKey: string; toKey: string }): Promise<void> {
+    const { fromKey, toKey } = event;
+    if (!fromKey || fromKey === toKey) return;
+    if (this.folders().includes(toKey)) {
+      this.notification.warning('A folder with that name already exists.');
+      return;
+    }
+    try {
+      await this.sceneService.renameFolder(this.projectId(), fromKey, toKey);
+      await this.loadFolders();
+      await this.loadScenes();
+      this.notification.success('Folder renamed');
+    } catch (e) {
+      console.error('Failed to rename folder:', e);
+      this.notification.error('Failed to rename the folder.');
     }
   }
 
