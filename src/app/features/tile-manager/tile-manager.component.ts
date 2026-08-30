@@ -29,6 +29,7 @@ import {
   ShortcutId,
 } from '../../core/services/keyboard-shortcuts.service';
 import type { Tile } from '../../shared/models/tile.model';
+import { computeCollapsedKeys, type Folder } from '../../shared/models/folder.model';
 
 /**
  * Tile manager page component.
@@ -91,11 +92,14 @@ export class TileManagerComponent implements OnInit {
   /** Folder path pending deletion confirmation (null when none pending). */
   pendingDeleteFolderPath = signal<string | null>(null);
 
-  /** Distinct folder paths for the current project. */
+  /** Distinct folder paths for the current project (derived + materialized rows). */
   folders = signal<string[]>([]);
 
-  /** Collapsed folder paths in the tree view. */
-  collapsedFolders = signal<string[]>([]);
+  /** Materialized tile folder rows (kind='tile') for the current project. */
+  folderRows = signal<Folder[]>([]);
+
+  /** Collapsed folder paths, derived from persisted folder state. */
+  collapsedFolders = computed(() => computeCollapsedKeys(this.folderRows(), this.folders()));
 
   /** Static configuration data passed to the confirmation dialog. */
   readonly deleteDialogData: ConfirmDialogData = {
@@ -240,7 +244,9 @@ export class TileManagerComponent implements OnInit {
   async loadFolders(): Promise<void> {
     try {
       const folders = await this.tileService.getFolders(this.projectId());
+      const folderRows = await this.tileService.getFolderRows(this.projectId());
       this.folders.set(folders);
+      this.folderRows.set(folderRows);
     } catch (e) {
       this.notification.error('Failed to load folders');
       console.error(e);
@@ -288,31 +294,48 @@ export class TileManagerComponent implements OnInit {
   }
 
   /**
-   * Toggles a folder's collapsed state in the tree view.
+   * Toggles a folder's collapsed state and persists it to the tile folder rows.
    * @param path - The folder path to toggle.
+   * @returns Promise that resolves when the folder state is persisted and folders reloaded.
    */
-  toggleFolder(path: string): void {
-    this.collapsedFolders.update((list) =>
-      list.includes(path) ? list.filter((p) => p !== path) : [...list, path],
-    );
+  async toggleFolder(path: string): Promise<void> {
+    try {
+      const collapsed = !this.collapsedFolders().includes(path);
+      await this.tileService.upsertFolderState(this.projectId(), path, {
+        collapsed,
+        lastOpenedAt: Date.now(),
+      });
+      await this.loadFolders();
+    } catch (e) {
+      this.notification.error('Failed to update folder state');
+      console.error(e);
+    }
   }
 
   /**
-   * Creates a folder locally and persists it to both local state and service.
+   * Creates a folder, materializing a tile folder row and reloading folders.
    * @param name - The name of the new folder.
+   * @returns Promise that resolves when the folder is created and folders reloaded.
    */
-  onCreateFolder(name: string): void {
-    this.folders.update((list) => [...list, name].sort((a, b) => a.localeCompare(b)));
-    const folders = this.folders;
-    this.undo.push({
-      label: 'Create folder',
-      execute() {
-        folders.update((list) => [...list, name].sort((a, b) => a.localeCompare(b)));
-      },
-      undo() {
-        folders.update((list) => list.filter((p) => p !== name));
-      },
-    });
+  async onCreateFolder(name: string): Promise<void> {
+    try {
+      await this.tileService.upsertFolderState(this.projectId(), name, {});
+      await this.loadFolders();
+      this.undo.push({
+        label: 'Create folder',
+        execute: async () => {
+          await this.tileService.upsertFolderState(this.projectId(), name, {});
+          await this.loadFolders();
+        },
+        undo: async () => {
+          await this.tileService.deleteTileFolders(this.projectId(), name);
+          await this.loadFolders();
+        },
+      });
+    } catch (e) {
+      this.notification.error('Failed to create the folder');
+      console.error(e);
+    }
   }
 
   /**
@@ -333,15 +356,21 @@ export class TileManagerComponent implements OnInit {
   }
 
   /**
-   * Removes the pending folder (and any empty descendant folders) from the list
-   * after user confirmation. Tile folders are derived from tiles at runtime, so
-   * this only updates the local signal; there is nothing to persist.
+   * Deletes the pending folder (and any empty descendant folders) from the list
+   * and its materialized tile folder rows, after user confirmation.
+   * @returns Promise that resolves when the folder is deleted and folders reloaded.
    */
-  onConfirmFolderDelete(): void {
+  async onConfirmFolderDelete(): Promise<void> {
     const path = this.pendingDeleteFolderPath();
     if (!path) return;
     this.pendingDeleteFolderPath.set(null);
-    this.folders.update((list) => list.filter((p) => p !== path && !p.startsWith(path + '/')));
+    try {
+      await this.tileService.deleteTileFolders(this.projectId(), path);
+      await this.loadFolders();
+    } catch (e) {
+      this.notification.error('Failed to delete the folder');
+      console.error(e);
+    }
   }
 
   /**
@@ -395,6 +424,7 @@ export class TileManagerComponent implements OnInit {
         const newPath = oldPath === from ? newPrefix : oldPath.replace(from, newPrefix);
         await this.tileService.updateTileFolder(tile.id, newPath);
       }
+      await this.tileService.rewriteFolderRows(this.projectId(), from, newPrefix);
       await this.loadTiles();
       await this.loadFolders();
       this.undo.push({
@@ -402,6 +432,7 @@ export class TileManagerComponent implements OnInit {
         execute: async () => {
           try {
             for (const m of moves) await this.tileService.updateTileFolder(m.tileId, m.newPath);
+            await this.tileService.rewriteFolderRows(this.projectId(), from, newPrefix);
             await this.loadTiles();
             await this.loadFolders();
           } catch (e) {
@@ -411,6 +442,7 @@ export class TileManagerComponent implements OnInit {
         undo: async () => {
           try {
             for (const m of moves) await this.tileService.updateTileFolder(m.tileId, m.oldPath);
+            await this.tileService.rewriteFolderRows(this.projectId(), newPrefix, from);
             await this.loadTiles();
             await this.loadFolders();
           } catch (e) {
@@ -434,6 +466,12 @@ export class TileManagerComponent implements OnInit {
       this.selectedTileId.set(tileId);
       const tile = await this.tileService.getTile(tileId);
       this.selectedTile.set(tile ?? null);
+      if (tile?.folderPath) {
+        await this.tileService.upsertFolderState(this.projectId(), tile.folderPath, {
+          lastOpenedAt: Date.now(),
+        });
+        await this.loadFolders();
+      }
       await this.tileSpritesService.loadForTile(tileId);
       void this.sessions.updateSession(this.projectId(), { lastTileId: tileId });
       if (this.route.snapshot.paramMap.get('tileId') !== String(tileId)) {

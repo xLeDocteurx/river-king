@@ -64,6 +64,7 @@ describe('TileManagerComponent', () => {
     await db.tiles.clear();
     await db.sprites.clear();
     await db.sessions.clear();
+    await db.folders.clear();
 
     // Reset route param streams so subscriptions created in the next test
     // do not replay a stale tileId from a previous test.
@@ -127,31 +128,36 @@ describe('TileManagerComponent', () => {
     expect(comp.palette()).toEqual(['#ff0000', '#00ff00']);
   });
 
-  it('deletes an empty folder from the folder signal after confirmation', async () => {
+  it('deletes an empty folder from the folder list after confirmation', async () => {
     await setupWithProject();
     const comp = fixture.componentInstance;
-    comp.onCreateFolder('mountain');
+    const db = TestBed.inject(DatabaseService);
+    await comp.onCreateFolder('mountain');
+    await new Promise((r) => setTimeout(r, 50));
     expect(comp.folders()).toContain('mountain');
 
     comp.onFolderDeleteRequest('mountain');
     expect(comp.pendingDeleteFolderPath()).toBe('mountain');
 
-    comp.onConfirmFolderDelete();
+    await comp.onConfirmFolderDelete();
     expect(comp.folders()).not.toContain('mountain');
+    expect((await db.folders.toArray()).filter((f) => f.path === 'mountain')).toEqual([]);
   });
 
   it('removes empty descendant folders together with the deleted folder', async () => {
     await setupWithProject();
     const comp = fixture.componentInstance;
-    comp.onCreateFolder('forest');
-    comp.onCreateFolder('forest/caves');
-    comp.folders.update((list) => list.sort((a, b) => a.localeCompare(b)));
+    const db = TestBed.inject(DatabaseService);
+    await comp.onCreateFolder('forest');
+    await comp.onCreateFolder('forest/caves');
+    await new Promise((r) => setTimeout(r, 50));
 
     comp.onFolderDeleteRequest('forest');
-    comp.onConfirmFolderDelete();
+    await comp.onConfirmFolderDelete();
 
     expect(comp.folders()).not.toContain('forest');
     expect(comp.folders()).not.toContain('forest/caves');
+    expect(await db.folders.toArray()).toEqual([]);
   });
 
   it('blocks deletion of a folder that still contains tiles', async () => {
@@ -532,5 +538,35 @@ describe('TileManagerComponent', () => {
       new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true }),
     );
     expect(saveSpy).toHaveBeenCalledWith(tile);
+  });
+
+  it('toggleFolder persists folded state and materializes a tile folder row', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    const db = TestBed.inject(DatabaseService);
+
+    await comp.toggleFolder('mountain');
+
+    const rows = await db.getFoldersByKind('test-proj', 'tile');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].path).toBe('mountain');
+    expect(rows[0].collapsed).toBe(true);
+    expect(comp.collapsedFolders()).toContain('mountain');
+  });
+
+  it('selecting a tile touches its folder row', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    const db = TestBed.inject(DatabaseService);
+    const tileId = await addSeedTile();
+    await db.tiles.update(tileId, { folderPath: 'mountain' });
+    await comp.loadTiles();
+
+    await comp.selectTile(tileId);
+
+    const rows = await db.getFoldersByKind('test-proj', 'tile');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].path).toBe('mountain');
+    expect(rows[0].lastOpenedAt).toBeGreaterThan(0);
   });
 });
