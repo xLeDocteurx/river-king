@@ -102,9 +102,7 @@ describe('SceneListComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const newGroupButton = compiled.querySelector(
-      'button[title="New Group"]',
-    ) as HTMLButtonElement;
+    const newGroupButton = compiled.querySelector('button[title="New Group"]') as HTMLButtonElement;
     newGroupButton.click();
     fixture.detectChanges();
 
