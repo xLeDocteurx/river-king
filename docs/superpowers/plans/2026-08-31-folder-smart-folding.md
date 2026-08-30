@@ -88,8 +88,6 @@ describe('computeCollapsedKeys', () => {
 });
 ```
 
-Wait — one expectation above is wrong for the "recent lastOpenedAt + collapsed" case. If the user explicitly collapsed 'a', that collapses only 'a', while b..g still follow the default (above threshold) rule and collapse too, so `expect(computeCollapsedKeys(rows, seven)).toEqual(seven)` is correct. Fix the assertion in the test file to `toEqual(seven)` and continue.
-
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `devbox run npm run test -- --include src/app/shared/models/folder.model.spec.ts`
