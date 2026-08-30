@@ -23,10 +23,12 @@
 ## Task 1: Pixel-canvas onion-skin inputs & rendering
 
 **Files:**
+
 - Modify: `src/app/features/sprite-editor/canvas/pixel-canvas.component.ts`
 - Test: `src/app/features/sprite-editor/canvas/pixel-canvas.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: nothing new (parent passes image URIs)
 - Produces: `onionSkinPrev`, `onionSkinNext`, `onionSkinPrevOpacity`, `onionSkinNextOpacity` inputs; updated `render()` that draws prev/current/next in order.
 
@@ -37,16 +39,19 @@ it('should render previous onion skin when provided', async () => {
   const fixture = TestBed.configureTestingModule({
     imports: [PixelCanvasComponent],
   }).createComponent(PixelCanvasComponent);
-  fixture.componentRef.setInput('paletteIndices', [[0, 0], [1, 1]]);
+  fixture.componentRef.setInput('paletteIndices', [
+    [0, 0],
+    [1, 1],
+  ]);
   fixture.componentRef.setInput('palette', ['#000000', '#ffffff']);
   fixture.componentRef.setInput('onionSkinPrev', 'data:image/png;base64,iVBORw0KGgoAAAA…');
   fixture.componentRef.setInput('onionSkinPrevOpacity', 0.5);
   fixture.detectChanges();
-  await new Promise(r => setTimeout(r, 100));
+  await new Promise((r) => setTimeout(r, 100));
   const canvas = fixture.nativeElement.querySelector('canvas');
   const ctxSpy = jest.spyOn(canvas.getContext('2d'), 'drawImage');
   fixture.detectChanges();
-  await new Promise(r => setTimeout(r, 50));
+  await new Promise((r) => setTimeout(r, 50));
   expect(ctxSpy).toHaveBeenCalled();
 });
 ```
@@ -146,11 +151,13 @@ git commit -m "feat: add onion-skin prev/next layers to pixel-canvas"
 ## Task 2: Sprite-editor onion-skin UI + state
 
 **Files:**
+
 - Modify: `src/app/features/sprite-editor/sprite-editor.component.ts`
 - Modify: `src/app/features/sprite-editor/sprite-editor.component.html`
 - Test: `src/app/features/sprite-editor/sprite-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: pixel-canvas now accepts `onionSkinPrev`, `onionSkinNext`, opacities.
 - Produces: `onionSkinPrevEnabled`, `onionSkinNextEnabled`, `onionSkinPrevOpacity`,
   `onionSkinNextOpacity` signals; computed `onionSkinPrevData` and `onionSkinNextData`.
@@ -161,7 +168,10 @@ Add to `sprite-editor.component.spec.ts`:
 
 ```ts
 it('should compute previous onion skin data as the frame before current', async () => {
-  component.currentFrames.set([{ id: 1, pixelData: 'A' }, { id: 2, pixelData: 'B' }] as Sprite[]);
+  component.currentFrames.set([
+    { id: 1, pixelData: 'A' },
+    { id: 2, pixelData: 'B' },
+  ] as Sprite[]);
   component.previewFrameIndex.set(1);
   fixture.detectChanges();
   await fixture.whenStable();
@@ -214,42 +224,57 @@ compact toolbar row:
 
 ```html
 @if (currentTile()?.type === 'animated' && currentFrames().length > 1) {
-  <div class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-1.5 tw-border-b tw-border-border tw-bg-card-bg">
-    <span class="tw-text-[10px] tw-text-muted-foreground tw-uppercase tw-tracking-wider tw-font-semibold">Onion</span>
-    <button
-      type="button"
-      (click)="onionSkinPrevEnabled.update(v => !v)"
-      [disabled]="!hasPrevFrame()"
-      [class.tw-text-accent]="onionSkinPrevEnabled()"
-      [class.tw-text-muted-foreground]="!onionSkinPrevEnabled()"
-      class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition-colors disabled:tw-opacity-30"
-      title="Previous frame"
-    >
-      <span class="material-symbols" aria-hidden="true">skip_previous</span>
-    </button>
-    @if (onionSkinPrevEnabled()) {
-      <input type="range" min="0" max="100" [value]="onionSkinPrevOpacity() * 100"
-             (input)="onionSkinPrevOpacity.set($any($event.target).valueAsNumber / 100)"
-             class="tw-w-16 tw-h-1 tw-appearance-none tw-bg-muted tw-rounded-full" />
-    }
+<div
+  class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-1.5 tw-border-b tw-border-border tw-bg-card-bg"
+>
+  <span
+    class="tw-text-[10px] tw-text-muted-foreground tw-uppercase tw-tracking-wider tw-font-semibold"
+    >Onion</span
+  >
+  <button
+    type="button"
+    (click)="onionSkinPrevEnabled.update(v => !v)"
+    [disabled]="!hasPrevFrame()"
+    [class.tw-text-accent]="onionSkinPrevEnabled()"
+    [class.tw-text-muted-foreground]="!onionSkinPrevEnabled()"
+    class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition-colors disabled:tw-opacity-30"
+    title="Previous frame"
+  >
+    <span class="material-symbols" aria-hidden="true">skip_previous</span>
+  </button>
+  @if (onionSkinPrevEnabled()) {
+  <input
+    type="range"
+    min="0"
+    max="100"
+    [value]="onionSkinPrevOpacity() * 100"
+    (input)="onionSkinPrevOpacity.set($any($event.target).valueAsNumber / 100)"
+    class="tw-w-16 tw-h-1 tw-appearance-none tw-bg-muted tw-rounded-full"
+  />
+  }
 
-    <button
-      type="button"
-      (click)="onionSkinNextEnabled.update(v => !v)"
-      [disabled]="!hasNextFrame()"
-      [class.tw-text-accent]="onionSkinNextEnabled()"
-      [class.tw-text-muted-foreground]="!onionSkinNextEnabled()"
-      class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition-colors disabled:tw-opacity-30"
-      title="Next frame"
-    >
-      <span class="material-symbols" aria-hidden="true">skip_next</span>
-    </button>
-    @if (onionSkinNextEnabled()) {
-      <input type="range" min="0" max="100" [value]="onionSkinNextOpacity() * 100"
-             (input)="onionSkinNextOpacity.set($any($event.target).valueAsNumber / 100)"
-             class="tw-w-16 tw-h-1 tw-appearance-none tw-bg-muted tw-rounded-full" />
-    }
-  </div>
+  <button
+    type="button"
+    (click)="onionSkinNextEnabled.update(v => !v)"
+    [disabled]="!hasNextFrame()"
+    [class.tw-text-accent]="onionSkinNextEnabled()"
+    [class.tw-text-muted-foreground]="!onionSkinNextEnabled()"
+    class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition-colors disabled:tw-opacity-30"
+    title="Next frame"
+  >
+    <span class="material-symbols" aria-hidden="true">skip_next</span>
+  </button>
+  @if (onionSkinNextEnabled()) {
+  <input
+    type="range"
+    min="0"
+    max="100"
+    [value]="onionSkinNextOpacity() * 100"
+    (input)="onionSkinNextOpacity.set($any($event.target).valueAsNumber / 100)"
+    class="tw-w-16 tw-h-1 tw-appearance-none tw-bg-muted tw-rounded-full"
+  />
+  }
+</div>
 }
 ```
 
@@ -259,7 +284,8 @@ Update the `<rk-pixel-canvas>` element in `sprite-editor.component.html`:
 
 ```html
 <rk-pixel-canvas
-  …existing inputs…
+  …existing
+  inputs…
   [onionSkinPrev]="onionSkinPrevEnabled() ? onionSkinPrevData() : null"
   [onionSkinNext]="onionSkinNextEnabled() ? onionSkinNextData() : null"
   [onionSkinPrevOpacity]="onionSkinPrevOpacity()"

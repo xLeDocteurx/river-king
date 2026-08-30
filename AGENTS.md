@@ -255,11 +255,11 @@ confirmDialog().open(); // Uses native <dialog> element under the hood
 
 The project uses a 3-layer pipeline to track feature ideas and bugs:
 
-| Layer   | Where                                              | Purpose                                  |
-| ------- | -------------------------------------------------- | ---------------------------------------- |
-| INBOX   | `docs/ideas.md`                                    | Raw uncommitted ideas, captured verbatim |
-| BACKLOG | GitHub Issues + kanban Project #6                  | Committed topics with status/discussion  |
-| DETAIL  | `docs/superpowers/specs/` + `plans/`               | Precise what/how, linked to the issue    |
+| Layer   | Where                                | Purpose                                  |
+| ------- | ------------------------------------ | ---------------------------------------- |
+| INBOX   | `docs/ideas.md`                      | Raw uncommitted ideas, captured verbatim |
+| BACKLOG | GitHub Issues + kanban Project #6    | Committed topics with status/discussion  |
+| DETAIL  | `docs/superpowers/specs/` + `plans/` | Precise what/how, linked to the issue    |
 
 Workflow: **oral idea → append to `docs/ideas.md` → clarify → GitHub issue → kanban card → groom → spec → plan → implement → PR with `Closes #N`**.
 

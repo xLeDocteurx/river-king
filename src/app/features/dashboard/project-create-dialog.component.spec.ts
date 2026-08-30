@@ -97,7 +97,8 @@ describe('ProjectCreateDialogComponent', () => {
     const rows = Array.from(
       fixture.nativeElement.querySelectorAll('button[role="radio"]'),
     ) as HTMLButtonElement[];
-    const highlighted = rows.filter((row) => row.className.includes('tw-border-accent'));
+    const paletteRows = rows.filter((row) => row.querySelector('span'));
+    const highlighted = paletteRows.filter((row) => row.className.includes('tw-border-accent'));
 
     expect(highlighted.length).toBe(1);
     const label = (highlighted[0] as HTMLElement).querySelector('span')?.textContent ?? '';

@@ -46,14 +46,19 @@ Default value is `undefined` (treated as root / ungrouped).
 Bump the Dexie DB version from current (4) to **version 5**. Migration script:
 
 ```ts
-this.version(5).stores({
-  tiles: '++id, projectId, folderPath',
-  // …other stores unchanged (projects, scenes, sprites, sessions, folders)
-}).upgrade(tx => {
-  return tx.table('tiles').toCollection().modify(tile => {
-    tile.folderPath = '';
+this.version(5)
+  .stores({
+    tiles: '++id, projectId, folderPath',
+    // …other stores unchanged (projects, scenes, sprites, sessions, folders)
+  })
+  .upgrade((tx) => {
+    return tx
+      .table('tiles')
+      .toCollection()
+      .modify((tile) => {
+        tile.folderPath = '';
+      });
   });
-});
 ```
 
 The `tiles` table index is updated from version 1's `'++id, projectId, name, type'`
@@ -90,6 +95,7 @@ grouped folder display. The old component can be deleted once the new one is
 wired in.
 
 **Responsibility**: render tiles grouped by `folderPath`, support:
+
 - Collapsible folder headers (Material Symbols `expand_more` / `chevron_right`)
 - Drag-and-drop of tiles between folders (CDK `CdkDropListGroup`,
   `CdkDropList`, `CdkDrag`) — reuse exact same imports as `scene-list.component.ts`
@@ -97,6 +103,7 @@ wired in.
 - Per-folder drop-zone when empty (same min-height guard as scene-list)
 
 **Inputs**:
+
 ```ts
 tiles = input.required<Tile[]>();
 selectedTileId = input<number | null>(null);
@@ -104,6 +111,7 @@ collapsedFolders = input<string[]>([]); // folder paths currently collapsed
 ```
 
 **Outputs**:
+
 ```ts
 tileSelect = output<number>();
 tileDelete = output<number>();
@@ -113,35 +121,40 @@ toggleFolder = output<string>(); // toggles collapsed state
 ```
 
 **Template structure**:
+
 ```html
 <div cdkDropListGroup>
   <!-- Ungrouped / root tiles -->
-  <div cdkDropList ...>
-    @for (tile of rootTiles(); track tile.id) { … }
-  </div>
+  <div cdkDropList ...>@for (tile of rootTiles(); track tile.id) { … }</div>
 
   <!-- One section per folder -->
   @for (folder of folders(); track folder) {
-    <div class="folder-header" (click)="toggleFolder.emit(folder)">
-      <span class="material-symbols">{{ isCollapsed(folder) ? 'chevron_right' : 'expand_more' }}</span>
-      {{ folder }}
-    </div>
-    @if (!isCollapsed(folder)) {
-      <div cdkDropList [cdkDropListData]="folderTiles(folder)" (cdkDropListDropped)="onDrop($event, folder)">
-        @for (tile of folderTiles(folder); track tile.id) { … }
-      </div>
-    }
-  }
+  <div class="folder-header" (click)="toggleFolder.emit(folder)">
+    <span class="material-symbols"
+      >{{ isCollapsed(folder) ? 'chevron_right' : 'expand_more' }}</span
+    >
+    {{ folder }}
+  </div>
+  @if (!isCollapsed(folder)) {
+  <div
+    cdkDropList
+    [cdkDropListData]="folderTiles(folder)"
+    (cdkDropListDropped)="onDrop($event, folder)"
+  >
+    @for (tile of folderTiles(folder); track tile.id) { … }
+  </div>
+  } }
 </div>
 ```
 
 **SCSS**: Import the `.cdk-drag-preview` / `.cdk-drag-placeholder` rules from
 `scene-list.component.scss`. Add folder-header styling (hover background, pointer
- cursor, 11px uppercase label per design system).
+cursor, 11px uppercase label per design system).
 
 ### 4. State management
 
 `tile-manager.component.ts` owns:
+
 - `folders` signal (loaded from TileService)
 - `collapsedFolders = signal<string[]>([])` — NOT persisted (simple runtime UX preference)
 - Folder creation via a small inline prompt (no dialog needed: an input appears

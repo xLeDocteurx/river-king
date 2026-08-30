@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import { TileManagerComponent } from './tile-manager.component';
+import { AppDummyComponent } from '../../app-dummy.component';
 import { DatabaseService } from '../../core/services/database.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
@@ -24,7 +25,7 @@ describe('TileManagerComponent', () => {
         TileService,
         TileSpritesService,
         ProjectService,
-        provideRouter([]),
+        provideRouter([{ path: '**', component: AppDummyComponent }]),
         {
           provide: ActivatedRoute,
           useValue: {
