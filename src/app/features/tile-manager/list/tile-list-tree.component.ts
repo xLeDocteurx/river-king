@@ -29,6 +29,7 @@ export class TileListTreeComponent {
   toggleFolder = output<string>();
   /** Emitted when the user requests deletion of an empty folder. */
   folderDelete = output<string>();
+  folderRename = output<{ fromKey: string; toKey: string }>();
 
   groupByFolderPath = (tile: Tile) => tile.folderPath || '';
 
@@ -50,17 +51,5 @@ export class TileListTreeComponent {
 
   onFolderDelete(key: string): void {
     this.folderDelete.emit(key);
-  }
-
-  /**
-   * Prompts the user for a folder name and emits it for persistence.
-   * Emits nothing when the prompt is cancelled or the name already exists.
-   */
-  onCreateGroup(): void {
-    const name = window.prompt('Enter folder name:')?.trim();
-    if (!name) return;
-    if (this.folders().includes(name)) return;
-    if (this.tiles().some((t) => t.folderPath === name)) return;
-    this.createFolder.emit(name);
   }
 }

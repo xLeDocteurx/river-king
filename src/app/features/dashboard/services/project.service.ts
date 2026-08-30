@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { DatabaseService } from '../../../core/services/database.service';
 import type { Project } from '../../../shared/models/project.model';
 
@@ -29,6 +29,24 @@ export interface CreateProjectDto {
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
   private readonly db = inject(DatabaseService);
+  private readonly currentProjectSignal = signal<Project | null>(null);
+
+  /**
+   * The project currently open in a workspace, or `null` on the dashboard.
+   *
+   * Set by the route guard when navigation enters a `project/:id` workspace
+   * so editors can read it without re-fetching the database.
+   */
+  readonly currentProject = this.currentProjectSignal.asReadonly();
+
+  /**
+   * Update the currently-open project, or clear it (`null`) when leaving a workspace.
+   *
+   * @param project - The project to expose, or `null` to reset.
+   */
+  setCurrentProject(project: Project | null): void {
+    this.currentProjectSignal.set(project);
+  }
 
   /**
    * Persist a new project.

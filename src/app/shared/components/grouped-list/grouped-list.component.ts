@@ -1,4 +1,4 @@
-import { Component, input, output, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CdkDropListGroup, CdkDropList, CdkDrag, type CdkDragDrop } from '@angular/cdk/drag-drop';
 
 interface Group<T> {
@@ -52,10 +52,12 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
   groupChange = output<{ itemId: string | number; groupKey: string }>();
   /** Emitted when a group header is toggled. */
   toggleGroup = output<string>();
-  /** Emitted when a group (folder) header is dropped on another group header. */
+  /** Emitted when a folder is dropped on/in another folder. */
   groupMove = output<{ fromKey: string; toKey: string }>();
-  /** Emitted when the user requests creation of a new group. */
-  createGroup = output<void>();
+  /** Emitted when a group header is renamed via the inline input. */
+  groupRename = output<{ fromKey: string; toKey: string }>();
+  /** Emitted when a new group is confirmed from the inline creation input. */
+  createGroup = output<string>();
   /** Emitted when the user requests creation of a new item. */
   createItem = output<void>();
   /** Emitted when the user requests deletion of a group (folder). */
@@ -63,6 +65,14 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
 
   /** Internal collapsed state, seeded from input. */
   private collapsedSet = computed(() => new Set(this.collapsedGroups()));
+  /** Group key currently being renamed inline, or null. */
+  renamingKey = signal<string | null>(null);
+  /** Current value of the inline rename input. */
+  renameValue = signal('');
+  /** Whether the inline new-group input is currently shown. */
+  addingGroup = signal(false);
+  /** Current value of the inline new-group input. */
+  newGroupName = signal('');
   /** Group key currently being dragged for a folder move, or null. */
   private dragGroupKey: string | null = null;
   /** Current drop target group key while dragging a folder. */
@@ -119,6 +129,7 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
    * @param event The native drag event.
    */
   onGroupDragStart(key: string, event: DragEvent): void {
+    if (this.renamingKey() !== null) return;
     this.dragGroupKey = key;
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
@@ -176,5 +187,61 @@ export class GroupedListComponent<T extends { id: string | number; name: string 
     event.stopPropagation();
     event.preventDefault();
     this.groupDelete.emit(key);
+  }
+
+  /**
+   * Switches a group header into inline-rename mode.
+   * @param key The group key to rename (root groups are not renamable).
+   */
+  startGroupRename(key: string): void {
+    if (!key || this.renamingKey() !== null) return;
+    this.renamingKey.set(key);
+    this.renameValue.set(key);
+  }
+
+  /**
+   * Commits the pending inline rename. Emits groupRename when the new name
+   * is non-empty and differs from the original key, then leaves edit mode.
+   */
+  commitGroupRename(): void {
+    const key = this.renamingKey();
+    const name = this.renameValue().trim();
+    this.renamingKey.set(null);
+    if (key === null || !name || name === key) return;
+    this.groupRename.emit({ fromKey: key, toKey: name });
+  }
+
+  /** Leaves inline-rename mode without emitting anything. */
+  cancelGroupRename(): void {
+    this.renamingKey.set(null);
+  }
+
+  /**
+   * Shows the inline input for creating a new group. Ignored while the input
+   * is already open.
+   */
+  startGroupCreate(): void {
+    if (this.addingGroup()) return;
+    this.addingGroup.set(true);
+    this.newGroupName.set('');
+  }
+
+  /**
+   * Commits the pending new group. Emits createGroup when the name is
+   * non-empty and does not collide with an existing group, then hides the
+   * input. Guarded so a blur fired while the input is removed cannot re-emit.
+   */
+  commitGroupCreate(): void {
+    if (!this.addingGroup()) return;
+    const name = this.newGroupName().trim();
+    this.addingGroup.set(false);
+    if (!name || this.groups().some((g) => g.key === name)) return;
+    this.createGroup.emit(name);
+  }
+
+  /** Hides the inline new-group input without emitting. */
+  cancelGroupCreate(): void {
+    if (!this.addingGroup()) return;
+    this.addingGroup.set(false);
   }
 }
