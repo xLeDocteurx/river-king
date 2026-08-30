@@ -441,7 +441,9 @@ describe('SceneEditorComponent', () => {
     const notification = TestBed.inject(NotificationService);
     const successSpy = vi.spyOn(notification, 'success');
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true }));
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true }),
+    );
     await new Promise((r) => setTimeout(r, 50));
 
     expect(updateSpy).toHaveBeenCalledWith(scene.id, expect.objectContaining({ width: 4 }));

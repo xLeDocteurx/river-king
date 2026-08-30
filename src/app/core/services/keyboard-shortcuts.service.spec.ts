@@ -78,7 +78,9 @@ describe('KeyboardShortcutsService', () => {
     const subscription = service.shortcuts.subscribe((id) => received.push(id));
     const textarea = document.createElement('textarea');
     document.body.appendChild(textarea);
-    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
+    textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }),
+    );
     textarea.remove();
     expect(received).toEqual([]);
     subscription.unsubscribe();
@@ -101,7 +103,9 @@ describe('KeyboardShortcutsService', () => {
     const editable = document.createElement('div');
     editable.setAttribute('contenteditable', 'true');
     document.body.appendChild(editable);
-    editable.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
+    editable.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }),
+    );
     editable.remove();
     expect(selected).toEqual([]);
     subscription.unsubscribe();

@@ -4,13 +4,7 @@ import { Subject, Observable } from 'rxjs';
 
 /** The set of editor shortcuts that can be triggered via the keyboard. */
 export type ShortcutId =
-  | 'undo'
-  | 'redo'
-  | 'delete'
-  | 'save'
-  | 'tool.brush'
-  | 'tool.eraser'
-  | 'tool.fill';
+  'undo' | 'redo' | 'delete' | 'save' | 'tool.brush' | 'tool.eraser' | 'tool.fill';
 
 /**
  * Listens for global keyboard shortcuts and broadcasts them as a typed stream.

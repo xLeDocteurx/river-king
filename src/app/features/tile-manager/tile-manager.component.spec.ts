@@ -274,7 +274,9 @@ describe('TileManagerComponent', () => {
     } as Tile;
     comp.selectedTile.set(tile);
     const saveSpy = vi.spyOn(comp, 'saveTile').mockResolvedValue();
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true }));
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true }),
+    );
     expect(saveSpy).toHaveBeenCalledWith(tile);
   });
 });
