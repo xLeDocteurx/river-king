@@ -192,8 +192,11 @@ export class SpriteEditorComponent implements OnInit {
     const colorNumber = this.selectedPaletteIndex() + 1;
     const zoom = this.zoomLevel();
     const zoomPercent = `${Math.round(zoom * 100)}%`;
+    const frames = this.currentFrames();
+    const frameIdx = frames.findIndex((f) => f.id === sprite.id);
+    const frameStr = frames.length > 0 ? ` | Frame ${frameIdx + 1}/${frames.length}` : '';
     this.statusBar.setContext(
-      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool} | Color #${colorNumber} | Zoom ${zoomPercent}`,
+      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool} | Color #${colorNumber} | Zoom ${zoomPercent}${frameStr}`,
     );
   });
 

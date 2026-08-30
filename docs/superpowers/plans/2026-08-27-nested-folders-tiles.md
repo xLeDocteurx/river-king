@@ -29,11 +29,13 @@ project via `@angular/cdk`), signals.
 ## Task 1: DB migration + Tile model update
 
 **Files:**
+
 - Modify: `src/app/shared/models/tile.model.ts`
 - Modify: `src/app/core/services/database.service.ts`
 - Test: `src/app/core/services/database.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: existing `Tile` interface
 - Produces: `Tile` with optional `folderPath`; DB version 5 migration.
 
@@ -46,7 +48,14 @@ it('opens at version 5 and tiles have folderPath default', async () => {
   const db = new DatabaseService();
   await db.init();
   expect(db.db.verno).toBe(5);
-  const tile = await db.tiles.add({ projectId: 'p1', name: 'Grass', type: 'static', animationSpeed: 1, properties: {}, spriteIds: [] });
+  const tile = await db.tiles.add({
+    projectId: 'p1',
+    name: 'Grass',
+    type: 'static',
+    animationSpeed: 1,
+    properties: {},
+    spriteIds: [],
+  });
   const fetched = await db.tiles.get(tile);
   expect(fetched?.folderPath).toBe('');
 });
@@ -55,9 +64,11 @@ it('opens at version 5 and tiles have folderPath default', async () => {
 - [ ] **Step 2: Run test → FAIL** (version is still 3)
 
 Run:
+
 ```bash
 devbox run npx vitest run src/app/core/services/database.service.spec.ts -t "version 5"
 ```
+
 Expected: FAIL — `db.verno` is 4.
 
 - [ ] **Step 3: Update Tile model**
@@ -74,14 +85,19 @@ In `src/app/core/services/database.service.ts`, in the constructor / Dexie
 setup where versions are declared:
 
 ```ts
-this.version(5).stores({
-  tiles: '++id, projectId, folderPath',
-  // …other stores inherited from previous versions unchanged
-}).upgrade(async (tx) => {
-  await tx.table('tiles').toCollection().modify((tile: any) => {
-    tile.folderPath = '';
+this.version(5)
+  .stores({
+    tiles: '++id, projectId, folderPath',
+    // …other stores inherited from previous versions unchanged
+  })
+  .upgrade(async (tx) => {
+    await tx
+      .table('tiles')
+      .toCollection()
+      .modify((tile: any) => {
+        tile.folderPath = '';
+      });
   });
-});
 ```
 
 > ⚠️ Make sure the version 3 declaration `this.version(3)` is kept above; Dexie
@@ -104,10 +120,12 @@ git commit -m "feat: add folderPath to Tile model and migrate DB to version 5"
 ## Task 2: TileService helpers
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/services/tile.service.ts`
 - Test: `src/app/features/tile-manager/services/tile.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: DB version 5 with `folderPath` on tiles.
 - Produces: `updateTileFolder()`, `getFolders()`.
 
@@ -139,6 +157,7 @@ it('getFolders returns distinct sorted folder paths', async () => {
 ```bash
 devbox run npx vitest run src/app/features/tile-manager/services/tile.service.spec.ts -t "updateTileFolder\|getFolders"
 ```
+
 Expected: FAIL.
 
 - [ ] **Step 3: Implement methods**
@@ -182,6 +201,7 @@ git commit -m "feat: TileService folder helpers updateTileFolder and getFolders"
 ## Task 3: Tile-list-tree component
 
 **Files:**
+
 - Create: `src/app/features/tile-manager/list/tile-list-tree.component.ts`
 - Create: `src/app/features/tile-manager/list/tile-list-tree.component.html`
 - Create: `src/app/features/tile-manager/list/tile-list-tree.component.scss`
@@ -191,6 +211,7 @@ git commit -m "feat: TileService folder helpers updateTileFolder and getFolders"
 - Delete (eventually): `src/app/features/tile-manager/list/tile-list.component.ts` + html + scss + spec
 
 **Interfaces:**
+
 - Consumes: `Tile[]`, `selectedTileId`, folder paths, collapsed state.
 - Produces: `tileSelect`, `tileDelete`, `tileCreate`, `folderChange`, `toggleFolder`.
 
@@ -217,7 +238,17 @@ describe('TileListTreeComponent', () => {
 
   it('should emit tileSelect on click', () => {
     const spy = jest.spyOn(component.tileSelect, 'emit');
-    component.tiles.set([{ id: 1, name: 'Grass', projectId: 'p1', type: 'static', animationSpeed: 1, properties: {}, spriteIds: [] }]);
+    component.tiles.set([
+      {
+        id: 1,
+        name: 'Grass',
+        projectId: 'p1',
+        type: 'static',
+        animationSpeed: 1,
+        properties: {},
+        spriteIds: [],
+      },
+    ]);
     fixture.detectChanges();
     // trigger click via emitted output directly — no DOM click in jsdom needed
     component.tileSelect.emit(1);
@@ -268,7 +299,7 @@ export class TileListTreeComponent {
   folderChange = output<{ tileId: number; folderPath: string }>();
   toggleFolder = output<string>();
 
-  readonly rootTiles = computed(() => this.tiles().filter(t => !t.folderPath));
+  readonly rootTiles = computed(() => this.tiles().filter((t) => !t.folderPath));
   readonly folderGroups = computed(() => {
     const groups = new Map<string, Tile[]>();
     for (const tile of this.tiles()) {
@@ -293,10 +324,19 @@ export class TileListTreeComponent {
 
 ```html
 <div class="tw-flex tw-flex-col tw-h-full tw-bg-card-bg">
-  <div class="tw-flex tw-items-center tw-justify-between tw-px-3 tw-py-2 tw-border-b tw-border-border">
-    <h3 class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground">Tiles</h3>
+  <div
+    class="tw-flex tw-items-center tw-justify-between tw-px-3 tw-py-2 tw-border-b tw-border-border"
+  >
+    <h3 class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground">
+      Tiles
+    </h3>
     <div class="tw-flex tw-items-center tw-gap-1">
-      <button type="button" (click)="tileCreate.emit()" class="tw-p-1 tw-rounded-sm hover:tw-bg-muted" title="New Tile">
+      <button
+        type="button"
+        (click)="tileCreate.emit()"
+        class="tw-p-1 tw-rounded-sm hover:tw-bg-muted"
+        title="New Tile"
+      >
         <span class="material-symbols" aria-hidden="true">add</span>
       </button>
     </div>
@@ -311,18 +351,61 @@ export class TileListTreeComponent {
       class="tw-min-h-[24px]"
     >
       @for (tile of rootTiles(); track tile.id) {
-        <div
-          cdkDrag
-          [cdkDragData]="tile"
-          class="tw-w-full tw-flex tw-items-center tw-gap-1"
+      <div cdkDrag [cdkDragData]="tile" class="tw-w-full tw-flex tw-items-center tw-gap-1">
+        <button
+          type="button"
+          (click)="tileSelect.emit(tile.id)"
+          [class.tw-bg-primary/10]="selectedTileId() === tile.id"
+          class="tw-flex-1 tw-min-w-0 tw-text-left tw-px-2 tw-py-1.5 tw-rounded-sm tw-text-xs tw-text-foreground hover:tw-bg-muted tw-flex tw-items-center tw-gap-2"
         >
+          <span class="material-symbols tw-text-muted-foreground" aria-hidden="true"
+            >grid_view</span
+          >
+          <span class="tw-truncate">{{ tile.name }}</span>
+        </button>
+        <button
+          type="button"
+          (click)="tileDelete.emit(tile.id); $event.stopPropagation()"
+          class="tw-p-1 tw-rounded-sm tw-shrink-0 tw-text-muted-foreground hover:tw-text-destructive hover:tw-bg-muted"
+        >
+          <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
+        </button>
+      </div>
+      }
+    </div>
+
+    <!-- Folder groups -->
+    @for (group of folderGroups(); track group[0]) {
+    <div class="tw-mt-2">
+      <button
+        type="button"
+        (click)="toggleFolder.emit(group[0])"
+        class="tw-flex tw-items-center tw-gap-1 tw-px-2 tw-py-1 tw-rounded-sm tw-text-[11px] tw-text-muted-foreground hover:tw-bg-muted tw-w-full tw-text-left"
+      >
+        <span class="material-symbols tw-text-sm" aria-hidden="true"
+          >{{ collapsedFolders().includes(group[0]) ? 'chevron_right' : 'expand_more' }}</span
+        >
+        <span class="tw-truncate">{{ group[0] }}</span>
+      </button>
+
+      @if (!collapsedFolders().includes(group[0])) {
+      <div
+        cdkDropList
+        [cdkDropListData]="group[1]"
+        (cdkDropListDropped)="onDrop($event, group[0])"
+        class="tw-min-h-[24px] tw-pl-4"
+      >
+        @for (tile of folderTiles; track tile.id) {
+        <div cdkDrag [cdkDragData]="tile" class="tw-w-full tw-flex tw-items-center tw-gap-1">
           <button
             type="button"
             (click)="tileSelect.emit(tile.id)"
             [class.tw-bg-primary/10]="selectedTileId() === tile.id"
             class="tw-flex-1 tw-min-w-0 tw-text-left tw-px-2 tw-py-1.5 tw-rounded-sm tw-text-xs tw-text-foreground hover:tw-bg-muted tw-flex tw-items-center tw-gap-2"
           >
-            <span class="material-symbols tw-text-muted-foreground" aria-hidden="true">grid_view</span>
+            <span class="material-symbols tw-text-muted-foreground" aria-hidden="true"
+              >grid_view</span
+            >
             <span class="tw-truncate">{{ tile.name }}</span>
           </button>
           <button
@@ -333,55 +416,10 @@ export class TileListTreeComponent {
             <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
           </button>
         </div>
-      }
-    </div>
-
-    <!-- Folder groups -->
-    @for (group of folderGroups(); track group[0]) {
-      <div class="tw-mt-2">
-        <button
-          type="button"
-          (click)="toggleFolder.emit(group[0])"
-          class="tw-flex tw-items-center tw-gap-1 tw-px-2 tw-py-1 tw-rounded-sm tw-text-[11px] tw-text-muted-foreground hover:tw-bg-muted tw-w-full tw-text-left"
-        >
-          <span class="material-symbols tw-text-sm" aria-hidden="true">{{ collapsedFolders().includes(group[0]) ? 'chevron_right' : 'expand_more' }}</span>
-          <span class="tw-truncate">{{ group[0] }}</span>
-        </button>
-
-        @if (!collapsedFolders().includes(group[0])) {
-          <div
-            cdkDropList
-            [cdkDropListData]="group[1]"
-            (cdkDropListDropped)="onDrop($event, group[0])"
-            class="tw-min-h-[24px] tw-pl-4"
-          >
-            @for (tile of folderTiles; track tile.id) {
-              <div
-                cdkDrag
-                [cdkDragData]="tile"
-                class="tw-w-full tw-flex tw-items-center tw-gap-1"
-              >
-                <button
-                  type="button"
-                  (click)="tileSelect.emit(tile.id)"
-                  [class.tw-bg-primary/10]="selectedTileId() === tile.id"
-                  class="tw-flex-1 tw-min-w-0 tw-text-left tw-px-2 tw-py-1.5 tw-rounded-sm tw-text-xs tw-text-foreground hover:tw-bg-muted tw-flex tw-items-center tw-gap-2"
-                >
-                  <span class="material-symbols tw-text-muted-foreground" aria-hidden="true">grid_view</span>
-                  <span class="tw-truncate">{{ tile.name }}</span>
-                </button>
-                <button
-                  type="button"
-                  (click)="tileDelete.emit(tile.id); $event.stopPropagation()"
-                  class="tw-p-1 tw-rounded-sm tw-shrink-0 tw-text-muted-foreground hover:tw-text-destructive hover:tw-bg-muted"
-                >
-                  <span class="material-symbols tw-text-sm" aria-hidden="true">delete</span>
-                </button>
-              </div>
-            }
-          </div>
         }
       </div>
+      }
+    </div>
     }
   </div>
 </div>
@@ -406,6 +444,7 @@ export class TileListTreeComponent {
 - [ ] **Step 4: Wire into tile-manager component + template**
 
 In `tile-manager.component.ts`:
+
 - Replace `TileListComponent` import with `TileListTreeComponent`.
 - Add `folders = signal<string[]>([])`.
 - Add `collapsedFolders = signal<string[]>([])`.
@@ -427,6 +466,7 @@ In `tile-manager.component.ts`:
 - Call `loadFolders()` inside `ngOnInit` after `loadProject()`.
 
 In `tile-manager.component.html`:
+
 - Replace `<rk-tile-list>` with `<rk-tile-list-tree>` wiring all new outputs.
 
 After wiring, delete the old `tile-list.component` files (ts, html, scss, spec) or
@@ -437,6 +477,7 @@ leave them for a cleanup pass.
 ```bash
 devbox run npx vitest run src/app/features/tile-manager/list/tile-list-tree.component.spec.ts
 ```
+
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
@@ -451,6 +492,7 @@ git commit -m "feat: tile-list-tree component with folder grouping and CDK drag-
 ## Task 4: Inline folder creation
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/tile-manager.component.ts`
 - Modify: `src/app/features/tile-manager/tile-manager.component.html`
 
@@ -486,22 +528,22 @@ section, add a "New Folder" quick input:
 
 ```html
 @if (newFolderInputVisible()) {
-  <div class="tw-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1 tw-border-b tw-border-border">
-    <input
-      type="text"
-      [(ngModel)]="newFolderPath"
-      placeholder="Folder path (e.g. UI/Buttons)"
-      class="tw-flex-1 tw-px-2 tw-py-1 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-xs tw-text-foreground"
-      (keydown.enter)="confirmNewFolder()"
-      (keydown.escape)="cancelNewFolder()"
-    />
-    <button type="button" (click)="confirmNewFolder()" class="tw-p-1 tw-rounded-sm hover:tw-bg-muted">
-      <span class="material-symbols" aria-hidden="true">check</span>
-    </button>
-    <button type="button" (click)="cancelNewFolder()" class="tw-p-1 tw-rounded-sm hover:tw-bg-muted">
-      <span class="material-symbols" aria-hidden="true">close</span>
-    </button>
-  </div>
+<div class="tw-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1 tw-border-b tw-border-border">
+  <input
+    type="text"
+    [(ngModel)]="newFolderPath"
+    placeholder="Folder path (e.g. UI/Buttons)"
+    class="tw-flex-1 tw-px-2 tw-py-1 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-xs tw-text-foreground"
+    (keydown.enter)="confirmNewFolder()"
+    (keydown.escape)="cancelNewFolder()"
+  />
+  <button type="button" (click)="confirmNewFolder()" class="tw-p-1 tw-rounded-sm hover:tw-bg-muted">
+    <span class="material-symbols" aria-hidden="true">check</span>
+  </button>
+  <button type="button" (click)="cancelNewFolder()" class="tw-p-1 tw-rounded-sm hover:tw-bg-muted">
+    <span class="material-symbols" aria-hidden="true">close</span>
+  </button>
+</div>
 }
 ```
 
@@ -509,14 +551,10 @@ section, add a "New Folder" quick input:
 > `tile-manager.component.ts`. Since the project prefers signals and we only need
 > a simple text input, either use `(input)` + manual binding with a signal, or
 > import `FormsModule`. To avoid adding a new module import just for one input,
- prefer the signal manual binding:
+> prefer the signal manual binding:
 
 ```html
-<input
-  [value]="newFolderPath()"
-  (input)="newFolderPath.set($any($event.target).value)"
-  …
-/>
+<input [value]="newFolderPath()" (input)="newFolderPath.set($any($event.target).value)" … />
 ```
 
 - [ ] **Step 2: Add a "New Folder" button in tile-list-tree**
@@ -524,7 +562,12 @@ section, add a "New Folder" quick input:
 In `tile-list-tree.component.html`, add next to the "New Tile" button:
 
 ```html
-<button type="button" (click)="createFolder.emit()" class="tw-p-1 tw-rounded-sm hover:tw-bg-muted" title="New Folder">
+<button
+  type="button"
+  (click)="createFolder.emit()"
+  class="tw-p-1 tw-rounded-sm hover:tw-bg-muted"
+  title="New Folder"
+>
   <span class="material-symbols" aria-hidden="true">create_new_folder</span>
 </button>
 ```
@@ -549,6 +592,7 @@ git commit -m "feat: inline folder creation in tile manager"
 ```bash
 devbox run npm run lint
 ```
+
 Expected: All files pass.
 
 - [ ] **Step 2: Run build**
@@ -556,6 +600,7 @@ Expected: All files pass.
 ```bash
 devbox run npm run build
 ```
+
 Expected: Build succeeds.
 
 - [ ] **Step 3: Run full test suite**
@@ -563,6 +608,7 @@ Expected: Build succeeds.
 ```bash
 devbox run npm run test
 ```
+
 Expected: No new failures introduced.
 
 - [ ] **Step 4: Final commit (if lint fixes)**

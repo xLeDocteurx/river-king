@@ -25,6 +25,7 @@ are spread across four separate bordered groups.
 Replace the four bordered groups with a unified stack of 4 inline rows:
 
 1. **Identity row** (3 fields on one line):
+
    ```
    ┌────────────────┐ ┌────────┐ ┌────────┐
    │ Name           │ │ Type   │ │ FPS    │
@@ -47,6 +48,7 @@ Replace the four bordered groups with a unified stack of 4 inline rows:
    - For type `static`: strip is still shown but only frame 1, play hidden.
 
 3. **Size row** (3 fields on one line):
+
    ```
    ┌────────┐ ┌────────┐ ┌──────────────────┐
    │ Width  │ │ Height │ │ 16 x 16 px hint  │
@@ -72,12 +74,12 @@ Replace the four bordered groups with a unified stack of 4 inline rows:
 
 ### Specific field changes
 
-| Old | New | Logic change |
-|---|---|---|
-| Sprite group with count input above strip | Compact card: header line (label + play + count) + strip + add button | Same `tileSprites()` / `onFrameCountInput` / frames dialog; Play button visibility linked to `typeSelected() === 'animated'` |
-| Size in its own bordered group | Inline row with width + height + pixel hint | Same `widthTiles`/`heightTiles` signals & `onSizeInput` / size dialog |
-| Properties group with checkboxes + select below | Inline badge row + select below | New badge toggle methods wrapping existing signals / form controls |
-| 4 `div.tw-border-b` dividers | None | Removed entirely |
+| Old                                             | New                                                                   | Logic change                                                                                                                 |
+| ----------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Sprite group with count input above strip       | Compact card: header line (label + play + count) + strip + add button | Same `tileSprites()` / `onFrameCountInput` / frames dialog; Play button visibility linked to `typeSelected() === 'animated'` |
+| Size in its own bordered group                  | Inline row with width + height + pixel hint                           | Same `widthTiles`/`heightTiles` signals & `onSizeInput` / size dialog                                                        |
+| Properties group with checkboxes + select below | Inline badge row + select below                                       | New badge toggle methods wrapping existing signals / form controls                                                           |
+| 4 `div.tw-border-b` dividers                    | None                                                                  | Removed entirely                                                                                                             |
 
 ### Accessibility
 

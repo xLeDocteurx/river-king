@@ -1,11 +1,4 @@
-import {
-  Component,
-  computed,
-  input,
-  output,
-  signal,
-  ChangeDetectionStrategy,
-} from '@angular/core';
+import { Component, computed, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import type { Layer } from '../../../shared/models/scene.model';
 
