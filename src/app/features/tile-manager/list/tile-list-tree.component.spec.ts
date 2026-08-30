@@ -71,4 +71,30 @@ describe('TileListTreeComponent', () => {
     expect(renameSpy).toHaveBeenCalledWith({ fromKey: 'forest', toKey: 'woods' });
     expect(compiled.querySelector('input')).toBeNull();
   });
+
+  it('creates a folder via the inline input and Enter', () => {
+    fixture.componentRef.setInput('tiles', []);
+    fixture.componentRef.setInput('folders', []);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const newFolderButton = compiled.querySelector(
+      'button[title="New Folder"]',
+    ) as HTMLButtonElement;
+    newFolderButton.click();
+    fixture.detectChanges();
+
+    const input = compiled.querySelector('input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'mountain';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+
+    const createSpy = vi.spyOn(component.createFolder, 'emit');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(createSpy).toHaveBeenCalledWith('mountain');
+    expect(compiled.querySelector('input')).toBeNull();
+  });
 });

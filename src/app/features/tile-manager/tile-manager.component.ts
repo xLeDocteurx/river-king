@@ -22,6 +22,10 @@ import {
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
+import {
+  KeyboardShortcutsService,
+  ShortcutId,
+} from '../../core/services/keyboard-shortcuts.service';
 import type { Tile } from '../../shared/models/tile.model';
 
 /**
@@ -50,6 +54,7 @@ export class TileManagerComponent implements OnInit {
   private readonly notification = inject(NotificationService);
   private readonly statusBar = inject(StatusBarService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly shortcuts = inject(KeyboardShortcutsService);
 
   /** Reference to the confirm-dialog component for programmatic open/close. */
   private readonly confirmDialog = viewChild.required(ConfirmDialogComponent);
@@ -90,6 +95,10 @@ export class TileManagerComponent implements OnInit {
   };
 
   constructor() {
+    this.shortcuts.shortcuts
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((id) => this.onShortcut(id));
+
     effect(() => {
       const id = this.tileToDelete();
       if (id !== null) {
@@ -118,6 +127,31 @@ export class TileManagerComponent implements OnInit {
         `${selected.name} | ${selected.type} | ${blocking} | ${frameCount} frame${frameCount === 1 ? '' : 's'}`,
       );
     });
+  }
+
+  /**
+   * Handles a global keyboard shortcut.
+   * @param id - The shortcut that was pressed.
+   */
+  onShortcut(id: ShortcutId): void {
+    switch (id) {
+      case 'delete': {
+        const tileId = this.selectedTileId();
+        if (tileId !== null) {
+          this.requestDelete(tileId);
+        }
+        break;
+      }
+      case 'save': {
+        const tile = this.selectedTile();
+        if (tile) {
+          void this.saveTile(tile);
+        }
+        break;
+      }
+      default:
+        break;
+    }
   }
 
   /** Reads the project ID from the parent route and loads tiles + project settings. */
@@ -149,7 +183,9 @@ export class TileManagerComponent implements OnInit {
    */
   async loadProject(): Promise<void> {
     try {
-      const project = await this.projectService.getById(this.projectId());
+      const project =
+        this.projectService.currentProject() ??
+        (await this.projectService.getById(this.projectId()));
       if (project) {
         this.tileSize.set(project.tileSize);
         this.palette.set(project.palette);

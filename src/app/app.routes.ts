@@ -8,6 +8,9 @@ export const routes: Routes = [
   },
   {
     path: 'project/:id',
+    canActivate: [
+      () => import('./features/project/project.guard').then((m) => m.projectExistsGuard),
+    ],
     loadChildren: () => import('./features/project/project.routes').then((m) => m.PROJECT_ROUTES),
   },
   { path: '**', redirectTo: '' },

@@ -1,5 +1,17 @@
 import 'fake-indexeddb/auto';
 import { vi } from 'vitest';
+
+if (!('showModal' in HTMLDialogElement.prototype)) {
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+    value: vi.fn(),
+    writable: true,
+  });
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+    value: vi.fn(),
+    writable: true,
+  });
+}
+
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
@@ -11,6 +23,7 @@ import { StatusBarService } from '../../core/services/status-bar.service';
 import { TileService } from './services/tile.service';
 import { TileSpritesService } from './services/tile-sprites.service';
 import { ProjectService } from '../../features/dashboard/services/project.service';
+import type { Tile } from '../../shared/models/tile.model';
 import { NotificationService } from '../../core/services/notification.service';
 
 describe('TileManagerComponent', () => {
@@ -303,5 +316,35 @@ describe('TileManagerComponent', () => {
 
     expect(warningSpy).toHaveBeenCalledWith('A folder with that name already exists.');
     expect((await db.tiles.get(directId))?.folderPath).toBe('forest');
+  });
+
+  it('requests deletion of the selected tile on Delete', async () => {
+    fixture = TestBed.createComponent(TileManagerComponent);
+    const comp = fixture.componentInstance;
+    comp.selectedTileId.set(7);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', cancelable: true }));
+    fixture.detectChanges();
+    expect(comp.tileToDelete()).toBe(7);
+  });
+
+  it('saves the selected tile on Ctrl+S', async () => {
+    await setupWithProject();
+    const comp = fixture.componentInstance;
+    const tile = {
+      id: 3,
+      projectId: 'test-proj',
+      name: 'Ground',
+      type: 'static' as const,
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false },
+      folderPath: '',
+    } as Tile;
+    comp.selectedTile.set(tile);
+    const saveSpy = vi.spyOn(comp, 'saveTile').mockResolvedValue();
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true }),
+    );
+    expect(saveSpy).toHaveBeenCalledWith(tile);
   });
 });

@@ -8,7 +8,7 @@
     <div class="tw-flex tw-gap-1">
       <button
         type="button"
-        (click)="createGroup.emit()"
+        (click)="startGroupCreate()"
         class="tw-p-1 tw-rounded-sm hover:tw-bg-muted"
         [title]="createGroupLabel()"
       >
@@ -25,6 +25,17 @@
     </div>
   </div>
   <div class="tw-flex-1 tw-overflow-auto tw-p-2">
+    @if (addingGroup()) {
+      <input
+        class="tw-w-full tw-mb-2 tw-px-2 tw-py-1 tw-text-xs tw-bg-background tw-text-foreground tw-border tw-border-border tw-rounded-sm tw-outline-none"
+        placeholder="New folder name"
+        [value]="newGroupName()"
+        (input)="newGroupName.set($any($event.target).value)"
+        (keydown.enter)="commitGroupCreate()"
+        (keydown.escape)="cancelGroupCreate()"
+        (blur)="commitGroupCreate()"
+      />
+    }
     <div cdkDropListGroup>
       @for (group of groups(); track group.key) {
         <div class="tw-mb-3" [style.padding-left.px]="indentGroups() ? group.depth * 16 : 0">

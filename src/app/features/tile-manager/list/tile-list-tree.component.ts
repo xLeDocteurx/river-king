@@ -46,16 +46,4 @@ export class TileListTreeComponent {
   onGroupMove(event: { fromKey: string; toKey: string }): void {
     this.folderMove.emit(event);
   }
-
-  /**
-   * Prompts the user for a folder name and emits it for persistence.
-   * Emits nothing when the prompt is cancelled or the name already exists.
-   */
-  onCreateGroup(): void {
-    const name = window.prompt('Enter folder name:')?.trim();
-    if (!name) return;
-    if (this.folders().includes(name)) return;
-    if (this.tiles().some((t) => t.folderPath === name)) return;
-    this.createFolder.emit(name);
-  }
 }

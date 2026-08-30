@@ -7,10 +7,17 @@ import {
   computed,
   viewChild,
   effect,
+  DestroyRef,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatabaseService } from '../../core/services/database.service';
+import {
+  KeyboardShortcutsService,
+  ShortcutId,
+} from '../../core/services/keyboard-shortcuts.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ProjectService } from '../dashboard/services/project.service';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
 import { UndoService } from '../../core/services/undo.service';
@@ -58,10 +65,13 @@ export class SceneEditorComponent implements OnInit {
   private readonly sceneService = inject(SceneService);
   private readonly db = inject(DatabaseService);
   private readonly notification = inject(NotificationService);
+  private readonly projectService = inject(ProjectService);
   private readonly mapTilesService = inject(MapTilesService);
   private readonly sessions = inject(SessionService);
   private readonly statusBar = inject(StatusBarService);
   private readonly undo = inject(UndoService);
+  private readonly shortcuts = inject(KeyboardShortcutsService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly deleteConfirmDialog = viewChild.required(ConfirmDialogComponent);
   mapCanvasRef = viewChild(MapCanvasComponent);
 
@@ -151,6 +161,12 @@ export class SceneEditorComponent implements OnInit {
     };
   });
 
+  constructor() {
+    this.shortcuts.shortcuts
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((id) => this.onShortcut(id));
+  }
+
   ngOnInit(): void {
     this.route.parent?.params.subscribe((params) => {
       const id = params['id'];
@@ -163,6 +179,53 @@ export class SceneEditorComponent implements OnInit {
         this.loadFolders();
       }
     });
+  }
+
+  /**
+   * Handles a global keyboard shortcut.
+   * @param id - The shortcut that was pressed.
+   */
+  onShortcut(id: ShortcutId): void {
+    switch (id) {
+      case 'undo':
+        this.undo.undo();
+        break;
+      case 'redo':
+        this.undo.redo();
+        break;
+      case 'delete': {
+        const sceneId = this.selectedSceneId();
+        if (sceneId) {
+          this.onDeleteSceneRequest(sceneId);
+        }
+        break;
+      }
+      case 'save':
+        void this.saveCurrentScene();
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * Persists the currently selected scene synchronously through the whole layer stack.
+   */
+  async saveCurrentScene(): Promise<void> {
+    const scene = this.selectedScene();
+    if (!scene) {
+      return;
+    }
+    try {
+      await this.sceneService.updateScene(scene.id, {
+        width: scene.width,
+        height: scene.height,
+        layers: scene.layers,
+      });
+      this.notification.success('Scene saved');
+    } catch {
+      this.notification.error('Failed to save the scene.');
+    }
   }
 
   /**
@@ -182,7 +245,9 @@ export class SceneEditorComponent implements OnInit {
    */
   async loadProjectData(): Promise<void> {
     try {
-      const project = await this.db.projects.get(this.projectId());
+      const project =
+        this.projectService.currentProject() ??
+        (await this.projectService.getById(this.projectId()));
       if (project) {
         this.projectPalette.set(project.palette);
         this.projectTileSize.set(project.tileSize ?? 16);
