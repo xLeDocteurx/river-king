@@ -109,7 +109,7 @@ export class SceneService {
    * @returns The list of persisted folders for this project.
    */
   async getFolders(projectId: string): Promise<Folder[]> {
-    return this.db.folders.where('projectId').equals(projectId).toArray();
+    return this.db.getFoldersByKind(projectId, 'scene');
   }
 
   /**
@@ -121,10 +121,17 @@ export class SceneService {
     const exists = await this.db.folders
       .where('projectId')
       .equals(projectId)
-      .and((f) => f.path === path)
+      .filter((folder) => folder.kind === 'scene' && folder.path === path)
       .count();
     if (exists > 0) return;
-    const folder: Folder = { id: crypto.randomUUID(), projectId, path };
+    const folder: Folder = {
+      id: crypto.randomUUID(),
+      projectId,
+      path,
+      kind: 'scene',
+      collapsed: false,
+      lastOpenedAt: 0,
+    };
     await this.db.folders.add(folder);
   }
 
@@ -136,11 +143,7 @@ export class SceneService {
    * @param path The folder path to delete, including descendant paths.
    */
   async deleteFolder(projectId: string, path: string): Promise<void> {
-    await this.db.folders
-      .where('projectId')
-      .equals(projectId)
-      .filter((f) => f.path === path || f.path.startsWith(path + '/'))
-      .delete();
+    await this.db.deleteFoldersByKind(projectId, 'scene', path);
   }
 
   /**
@@ -152,7 +155,11 @@ export class SceneService {
    */
   async renameFolder(projectId: string, fromPath: string, toPath: string): Promise<void> {
     await this.db.transaction('rw', this.db.folders, this.db.scenes, async () => {
-      const folders = await this.db.folders.where('projectId').equals(projectId).toArray();
+      const folders = await this.db.folders
+        .where('projectId')
+        .equals(projectId)
+        .filter((folder) => folder.kind === 'scene')
+        .toArray();
       for (const folder of folders) {
         const rewritten = rewriteFolderPath(folder.path, fromPath, toPath);
         if (rewritten !== folder.path) {
@@ -167,5 +174,19 @@ export class SceneService {
         }
       }
     });
+  }
+
+  /**
+   * Inserts or updates the persisted state of a scene folder row.
+   * @param projectId The project that owns the folder.
+   * @param path The folder path.
+   * @param changes Fields to persist (collapsed override / lastOpenedAt touch).
+   */
+  async upsertFolderState(
+    projectId: string,
+    path: string,
+    changes: { collapsed?: boolean; lastOpenedAt?: number },
+  ): Promise<void> {
+    await this.db.upsertFolderState(projectId, 'scene', path, changes);
   }
 }

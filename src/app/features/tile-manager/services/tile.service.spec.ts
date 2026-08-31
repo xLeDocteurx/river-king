@@ -16,6 +16,7 @@ describe('TileService', () => {
     await db.tiles.clear();
     await db.sprites.clear();
     await db.sessions.clear();
+    await db.folders.clear();
   });
 
   it('should be created', () => {
@@ -116,5 +117,60 @@ describe('TileService', () => {
 
     expect((await service.getTile(mine.id))?.folderPath).toBe('woods');
     expect((await service.getTile(other.id))?.folderPath).toBe('forest');
+  });
+
+  it('getFolders unions derived tile paths with materialized tile folder rows', async () => {
+    await service.createTile('p1', 'root-tile');
+    const moved = await service.createTile('p1', 'A');
+    await service.updateTileFolder(moved.id, 'UI/Buttons');
+    await service.upsertFolderState('p1', 'UI/Buttons', { collapsed: true });
+    await service.upsertFolderState('p1', 'empty-folder', { lastOpenedAt: 7 });
+
+    const folders = await service.getFolders('p1');
+    expect(folders).toEqual(['', 'empty-folder', 'UI/Buttons']);
+  });
+
+  it('getFolderRows returns materialized tile folder rows only', async () => {
+    await service.upsertFolderState('p1', 'forest', { collapsed: true });
+    const rows = await service.getFolderRows('p1');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].kind).toBe('tile');
+    expect(rows[0].collapsed).toBe(true);
+  });
+
+  it('upsertFolderState persists folded state for a tile folder', async () => {
+    await service.upsertFolderState('p1', 'forest', { collapsed: true, lastOpenedAt: 42 });
+    const [row] = await service.getFolderRows('p1');
+    expect(row.collapsed).toBe(true);
+    expect(row.lastOpenedAt).toBe(42);
+  });
+
+  it('deleteTileFolders removes the tile folder subtree', async () => {
+    await service.upsertFolderState('p1', 'forest', {});
+    await service.upsertFolderState('p1', 'forest/caves', {});
+    await service.deleteTileFolders('p1', 'forest');
+    expect(await service.getFolderRows('p1')).toEqual([]);
+  });
+
+  it('renameFolder rewrites materialized tile folder rows, preserving state', async () => {
+    await service.upsertFolderState('p1', 'forest', { collapsed: true });
+    await service.upsertFolderState('p1', 'forest/caves', {});
+    await service.upsertFolderState('p1', 'town', {});
+
+    await service.renameFolder('p1', 'forest', 'woods');
+
+    const rows = await service.getFolderRows('p1');
+    expect(rows.map((r) => r.path).sort()).toEqual(['town', 'woods', 'woods/caves']);
+    expect(rows.find((r) => r.path === 'woods')?.collapsed).toBe(true);
+  });
+
+  it('rewriteFolderRows rewrites materialized rows for a nesting move', async () => {
+    await service.upsertFolderState('p1', 'forest', {});
+    await service.upsertFolderState('p1', 'forest/caves', {});
+
+    await service.rewriteFolderRows('p1', 'forest', 'town/forest');
+
+    const rows = await service.getFolderRows('p1');
+    expect(rows.map((r) => r.path).sort()).toEqual(['town/forest', 'town/forest/caves']);
   });
 });

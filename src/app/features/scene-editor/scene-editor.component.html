@@ -3,6 +3,7 @@
     class="tw-w-56 tw-shrink-0 tw-bg-card-bg tw-border-r tw-border-border"
     [scenes]="scenes()"
     [folders]="folders()"
+    [collapsedFolders]="collapsedFolders()"
     [selectedSceneId]="selectedSceneId()"
     (sceneSelect)="selectScene($event)"
     (createScene)="onCreateScene()"
@@ -11,6 +12,7 @@
     (folderDelete)="onFolderDeleteRequest($event)"
     (sceneFolderChange)="onSceneFolderChange($event)"
     (folderRename)="onFolderRename($event)"
+    (toggleFolder)="onToggleSceneFolder($event)"
   />
   <div class="tw-flex-1 tw-relative tw-overflow-hidden tw-bg-background">
     <rk-map-canvas

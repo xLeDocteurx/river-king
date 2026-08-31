@@ -134,4 +134,49 @@ describe('TileListTreeComponent', () => {
     expect(createSpy).toHaveBeenCalledWith('mountain');
     expect(compiled.querySelector('input')).toBeNull();
   });
+
+  it('renders children collapsed when collapsedFolders input contains the folder', () => {
+    fixture.componentRef.setInput('tiles', [
+      {
+        id: 1,
+        name: 'Grass',
+        projectId: 'p1',
+        type: 'static',
+        animationSpeed: 1,
+        properties: { blocking: false, interactable: false },
+        spriteIds: [],
+        folderPath: 'forest',
+      },
+    ]);
+    fixture.componentRef.setInput('folders', ['forest']);
+    fixture.componentRef.setInput('collapsedFolders', ['forest']);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Grass');
+  });
+
+  it('emits toggleFolder when a folder header is clicked', () => {
+    const emitSpy = vi.spyOn(component.toggleFolder, 'emit');
+    fixture.componentRef.setInput('tiles', [
+      {
+        id: 1,
+        name: 'Grass',
+        projectId: 'p1',
+        type: 'static',
+        animationSpeed: 1,
+        properties: { blocking: false, interactable: false },
+        spriteIds: [],
+        folderPath: 'forest',
+      },
+    ]);
+    fixture.componentRef.setInput('folders', ['forest']);
+    fixture.detectChanges();
+
+    const headerFor = (path: string) =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) =>
+        b.textContent?.includes(path),
+      ) as HTMLButtonElement;
+    headerFor('forest')!.click();
+    fixture.detectChanges();
+    expect(emitSpy).toHaveBeenCalledWith('forest');
+  });
 });
