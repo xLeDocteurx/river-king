@@ -21,6 +21,9 @@ import type { TileAnimationMeta } from './services/map-tiles.service';
 /** sessionStorage key holding the grid visibility preference for the current session. */
 export const GRID_VISIBLE_STORAGE_KEY = 'rk-scene-editor.show-grid';
 
+/** sessionStorage key holding the collision overlay visibility preference for the current session. */
+export const COLLISION_VISIBLE_STORAGE_KEY = 'rk-scene-editor.show-collision';
+
 /**
  * Canvas-based map renderer for a single scene.
  * Supports panning, zooming, and tile placement via mouse interaction.
@@ -52,6 +55,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   tileSize = input(16);
   /** Grid-cell footprint of each tile id; missing entries mean 1x1. */
   tileFootprints = input<TileFootprintMap>({});
+  /** Whether each tile id blocks movement (`Tile.properties.blocking`). Absent = non-blocking. */
+  tileBlocking = input<Record<number, boolean>>({});
   /** Animation metadata per tile id (absent for static tiles). */
   tileAnimations = input<Record<number, TileAnimationMeta>>({});
   /** Emitted when a tile is placed on the canvas. */
@@ -65,6 +70,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   zoom = signal(1);
   /** Whether the grid overlay is visible (persisted for the current session). */
   showGrid = signal(this.readGridVisibility());
+  /** Whether the collision overlay is visible (persisted for the current session; default OFF). */
+  showCollision = signal(this.readCollisionVisibility());
   /** Current canvas viewport width in CSS pixels. */
   viewportWidth = signal(0);
   /** Current canvas viewport height in CSS pixels. */
@@ -135,6 +142,18 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       sessionStorage.setItem(GRID_VISIBLE_STORAGE_KEY, this.showGrid() ? '1' : '0');
     });
+
+    /** Re-render when the collision overlay inputs or visibility change. */
+    effect(() => {
+      this.tileBlocking();
+      this.showCollision();
+      this.render();
+    });
+
+    /** Persist the collision overlay visibility choice for the current browser session. */
+    effect(() => {
+      sessionStorage.setItem(COLLISION_VISIBLE_STORAGE_KEY, this.showCollision() ? '1' : '0');
+    });
   }
 
   /**
@@ -143,6 +162,14 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
    */
   private readGridVisibility(): boolean {
     return sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY) !== '0';
+  }
+
+  /**
+   * Reads the stored collision overlay visibility for the current session.
+   * @returns True only when the session explicitly stores '1'; missing values default to hidden.
+   */
+  private readCollisionVisibility(): boolean {
+    return sessionStorage.getItem(COLLISION_VISIBLE_STORAGE_KEY) === '1';
   }
 
   /**
@@ -280,6 +307,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       }
     }
 
+    // Collision overlay drawn after tiles (stays on top) and before the grid.
+    if (this.showCollision()) {
+      this.drawCollisionOverlay(ctx, scene, cell);
+    }
+
     // Grid drawn AFTER tiles so cell boundaries stay visible over filled cells.
     // Adaptive spacing (drawGrid) prevents moiré noise, so the grid stays on
     // at any zoom instead of vanishing when zoomed out.
@@ -300,6 +332,36 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     }
 
     ctx.restore();
+  }
+
+  /**
+   * Draws a translucent marker over the full footprint of every blocking tile,
+   * so designers can reason about collisions. Non-destructive; never mutates data.
+   * @param ctx - Active 2D canvas context (already translated/scaled to the camera).
+   * @param scene - The scene being rendered (provides width/height bounds).
+   * @param cell - Grid cell size in pixels.
+   */
+  private drawCollisionOverlay(
+    ctx: CanvasRenderingContext2D,
+    scene: Scene,
+    cell: number,
+  ): void {
+    const color = cssTokenColor(this.canvasRef().nativeElement, '--destructive', '#dc2626');
+    const blocking = this.tileBlocking();
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = color;
+    for (const layer of this.layers()) {
+      if (!layer.visible) continue;
+      for (let y = 0; y < scene.height; y++) {
+        for (let x = 0; x < scene.width; x++) {
+          const tileId = layer.tileData[y]?.[x] ?? -1;
+          if (tileId < 0 || !blocking[tileId]) continue;
+          const { w, h } = getFootprint(tileId, this.tileFootprints());
+          ctx.fillRect(x * cell, y * cell, w * cell, h * cell);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   /**
