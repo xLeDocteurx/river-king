@@ -102,6 +102,8 @@ export class SceneEditorComponent implements OnInit {
   tileAnimations = signal<Record<number, TileAnimationMeta>>({});
   /** Grid-cell footprint of each tile, derived from its first sprite. */
   tileFootprints = signal<TileFootprintMap>({});
+  /** Whether each tile id blocks movement, derived from each tile's properties. */
+  tileBlocking = signal<Record<number, boolean>>({});
   /** Size of one grid cell in pixels, from the project settings. */
   projectTileSize = signal<number>(16);
   /** Id of the scene pending deletion confirmation. */
@@ -271,6 +273,11 @@ export class SceneEditorComponent implements OnInit {
       }
       const tiles = await this.db.tiles.where('projectId').equals(this.projectId()).toArray();
       this.projectTiles.set(tiles);
+      const blocking: Record<number, boolean> = {};
+      for (const tile of tiles) {
+        if (tile.properties.blocking) blocking[tile.id] = true;
+      }
+      this.tileBlocking.set(blocking);
       await this.loadTileVisuals();
     } catch (e) {
       console.error('Failed to load project data:', e);

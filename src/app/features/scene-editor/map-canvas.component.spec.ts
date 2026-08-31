@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MapCanvasComponent, GRID_VISIBLE_STORAGE_KEY } from './map-canvas.component';
+import { MapCanvasComponent, GRID_VISIBLE_STORAGE_KEY, COLLISION_VISIBLE_STORAGE_KEY } from './map-canvas.component';
 import type { Scene, Layer } from '../../shared/models/scene.model';
 
 // jsdom does not implement ResizeObserver (used by MapCanvasComponent)
@@ -198,5 +198,96 @@ describe('MapCanvasComponent', () => {
     instance.showGrid.set(true);
     await new Promise((r) => setTimeout(r, 50));
     expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('1');
+  });
+
+  it('defaults to hiding the collision overlay when no session preference is stored', () => {
+    setup(makeScene(4, 4));
+    expect(fixture.componentInstance.showCollision()).toBe(false);
+  });
+
+  it('restores the collision overlay from the session when enabled', () => {
+    sessionStorage.setItem(COLLISION_VISIBLE_STORAGE_KEY, '1');
+    setup(makeScene(4, 4));
+    expect(fixture.componentInstance.showCollision()).toBe(true);
+  });
+
+  it('persists collision overlay visibility to the session storage', async () => {
+    setup(makeScene(4, 4));
+    const instance = fixture.componentInstance;
+    instance.showCollision.set(true);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(COLLISION_VISIBLE_STORAGE_KEY)).toBe('1');
+    instance.showCollision.set(false);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(COLLISION_VISIBLE_STORAGE_KEY)).toBe('0');
+  });
+
+  it('draws an overlay fill over blocking tile footprints only', () => {
+    const ctx = {
+      fillStyle: '',
+      globalAlpha: 1,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+
+    try {
+      const scene = makeScene(4, 2);
+      scene.layers[0].tileData[0][0] = 1; // blocking tile
+      scene.layers[0].tileData[1][3] = 2; // non-blocking tile
+      setup(scene, { 1: { w: 2, h: 1 } });
+      const instance = fixture.componentInstance;
+      instance.showCollision.set(true);
+      fixture.componentRef.setInput('tileBlocking', { 1: true });
+
+      const before = (ctx.fillRect as unknown as ReturnType<typeof vi.fn>).mock.calls.length;
+      instance['drawCollisionOverlay'](ctx, scene, 16);
+
+      const calls = (ctx.fillRect as unknown as ReturnType<typeof vi.fn>).mock.calls.slice(before);
+      // Only tile id 1 is blocking -> exactly one overlay fill at its 2x1 footprint (x=0,y=0).
+      expect(calls).toEqual([[0, 0, 32, 16]]);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('skips the overlay pass entirely when collision is hidden', () => {
+    const ctx = {
+      fillStyle: '',
+      globalAlpha: 1,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+
+    try {
+      setup(makeScene(2, 2));
+      const instance = fixture.componentInstance;
+      fixture.componentRef.setInput('tileBlocking', { 1: true });
+      instance.showCollision.set(false);
+      const before = (ctx.fillRect as unknown as ReturnType<typeof vi.fn>).mock.calls.length;
+      instance['drawCollisionOverlay'](ctx, makeScene(2, 2), 16);
+      expect((ctx.fillRect as unknown as ReturnType<typeof vi.fn>).mock.calls.slice(before)).toEqual([]);
+    } finally {
+      getContextSpy.mockRestore();
+    }
   });
 });
