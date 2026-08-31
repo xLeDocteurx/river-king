@@ -68,7 +68,7 @@ that flips `mapCanvasRef()?.showCollision`. Use a Material Symbol icon, e.g.
 - Toolbar button: icon + `title` tooltip, `tw-cursor-pointer`, active/hover states
   matching the existing grid button styling.
 - Marker rendering: clearly visible but non-destructive — a translucent fill over
-  the footprint area, drawn *after* tiles (so it stays on top) and *before* the
+  the footprint area, drawn _after_ tiles (so it stays on top) and _before_ the
   grid (so grid cells remain legible). Consider a low-contrast token color so it
   reads as a diagnostic overlay, not content.
 - Default: **OFF** initially (matches the conservative "diagnostic overlay" intent

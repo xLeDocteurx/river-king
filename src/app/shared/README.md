@@ -1,6 +1,6 @@
 # Shared
 
-Ce dossier centralise tout ce qui est **réutilisable** à travers plusieurs features : composants, services d'aide, modèles de données, pipes, directives.
+Ce dossier centralise tout ce qui est **réutilisable** à travers plusieurs features : composants, services d'aide, modèles de données.
 
 ## Sous-dossiers
 
@@ -9,8 +9,6 @@ Ce dossier centralise tout ce qui est **réutilisable** à travers plusieurs fea
 | `components/` | Composants headless / UI réutilisables (ex: Button, Dialog, Input). Doivent être **stateless** et pilotés par `@Input()` / `@Output()`. |
 | `services/`   | Services utilitaires pouvant être injectés n'importe où (ex: DateFormatterService, NotificationService).                                |
 | `models/`     | Interfaces et types TypeScript communs (ex: `User`, `ApiResponse<T>`). Pas de logique métier ici.                                       |
-| `directives/` | Directives d'attribut structurelles ou comportementales (ex: `autofocus`, `clickOutside`).                                              |
-| `pipes/`      | Pipes de transformation de données purs (ex: `fullDate`, `fileSize`).                                                                   |
 
 ## Règles
 

@@ -7,7 +7,6 @@ Dossier réservé aux éléments de l'application qui doivent exister en **singl
 | Dossier         | Contenu                                                            |
 | --------------- | ------------------------------------------------------------------ |
 | `services/`     | Services singleton (ApiService, ThemeService, LoggerService, etc.) |
-| `guards/`       | Route guards (auth, roles, feature flags)                          |
 | `interceptors/` | HTTP interceptors (token, error handling, logging)                 |
 
 ## Règles
