@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
-import { PixelCanvasComponent } from './pixel-canvas.component';
+import { PixelCanvasComponent, GRID_VISIBLE_STORAGE_KEY } from './pixel-canvas.component';
 
 function createMockCanvasContext() {
   return {
@@ -36,6 +36,9 @@ describe('PixelCanvasComponent', () => {
       }
       return null;
     });
+
+    // Isolate grid visibility from any prior test's persisted session value.
+    sessionStorage.clear();
 
     // jsdom does not fire onload for Image elements; resolve immediately.
     vi.stubGlobal(
@@ -281,5 +284,39 @@ describe('PixelCanvasComponent', () => {
     expect(spy).toHaveBeenCalled();
     const emitted = spy.mock.calls[0][0] as number[][];
     expect(emitted[3][2]).toBe(1);
+  });
+
+  it('defaults to showing the grid when no session preference is stored', () => {
+    setupInputs([[0]]);
+    expect(fixture.componentInstance.showGrid()).toBe(true);
+  });
+
+  it('restores the grid visibility from the session when hidden', () => {
+    sessionStorage.setItem(GRID_VISIBLE_STORAGE_KEY, '0');
+    fixture.destroy();
+    fixture = TestBed.createComponent(PixelCanvasComponent);
+    setupInputs([[0]]);
+    expect(fixture.componentInstance.showGrid()).toBe(false);
+  });
+
+  it('persists grid visibility changes to the session storage', async () => {
+    setupInputs([[0]]);
+    const instance = fixture.componentInstance;
+    instance.showGrid.set(false);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('0');
+    instance.showGrid.set(true);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('1');
+  });
+
+  it('toggleGrid flips the showGrid signal and persists it', async () => {
+    setupInputs([[0]]);
+    const instance = fixture.componentInstance;
+    expect(instance.showGrid()).toBe(true);
+    instance.toggleGrid();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(instance.showGrid()).toBe(false);
+    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('0');
   });
 });
