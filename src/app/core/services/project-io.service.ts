@@ -302,9 +302,7 @@ export class ProjectIoService {
     if (archive.sprites.some((s) => !tileSourceIds.has(s.tileSourceId))) {
       throw new ProjectImportError('This file references a missing tile.');
     }
-    if (
-      archive.tiles.some((t) => t.spriteIds.some((id) => !spriteSourceIds.has(id)))
-    ) {
+    if (archive.tiles.some((t) => t.spriteIds.some((id) => !spriteSourceIds.has(id)))) {
       throw new ProjectImportError('This file references a missing frame.');
     }
     if (

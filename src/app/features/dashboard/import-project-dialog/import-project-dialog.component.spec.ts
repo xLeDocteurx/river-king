@@ -26,7 +26,13 @@ describe('ImportProjectDialogComponent', () => {
       format: 'river-king-project',
       formatVersion: 1,
       exportedAt: 0,
-      project: { name: 'Heroes', palette: ['#ff0000', '#00ff00'], tileSize: 16, mapWidth: 40, mapHeight: 30 },
+      project: {
+        name: 'Heroes',
+        palette: ['#ff0000', '#00ff00'],
+        tileSize: 16,
+        mapWidth: 40,
+        mapHeight: 30,
+      },
       tiles: [
         {
           sourceId: 1,
@@ -98,7 +104,10 @@ describe('ImportProjectDialogComponent', () => {
 
     fixture = TestBed.createComponent(ImportProjectDialogComponent);
     fixture.componentRef.setInput('archive', makeArchive());
-    fixture.componentRef.setInput('projects', [makeProject('p1', 'Alpha'), makeProject('p2', 'Beta')]);
+    fixture.componentRef.setInput('projects', [
+      makeProject('p1', 'Alpha'),
+      makeProject('p2', 'Beta'),
+    ]);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.componentInstance.open();

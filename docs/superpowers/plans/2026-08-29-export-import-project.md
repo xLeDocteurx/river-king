@@ -24,6 +24,7 @@
 ## File Structure
 
 **Créés :**
+
 - `src/app/shared/models/project-archive.model.ts` — DTO `ProjectArchive` + constantes de format/version + item types.
 - `src/app/shared/models/project-archive.model.spec.ts` — sanity des constantes.
 - `src/app/core/services/project-io.service.ts` — `ProjectIoService`, `ImportMode`, `ImportResult`, `ProjectImportError`, helpers privés.
@@ -31,16 +32,19 @@
 - `src/app/features/dashboard/import-project-dialog/import-project-dialog.component.ts|html|scss|spec.ts` — dialog d'import.
 
 **Modifiés :**
+
 - `src/app/features/dashboard/project-card.component.ts|html|spec.ts` — bouton Export + téléchargement.
 - `src/app/features/dashboard/dashboard.component.ts|html|spec.ts` — bouton Import, file picker, orchestration du dialog.
 
 ## Task 1: DTO `ProjectArchive` + constantes
 
 **Files:**
+
 - Create: `src/app/shared/models/project-archive.model.ts`
 - Test: `src/app/shared/models/project-archive.model.spec.ts`
 
 **Interfaces:**
+
 - Produces: `PROJECT_ARCHIVE_FORMAT` (le littéral `'river-king-project'`), `PROJECT_ARCHIVE_VERSION` (`1`), interfaces `ProjectArchive`, `ProjectArchiveProjectData`, `TileArchiveItem`, `SpriteArchiveItem`, `SceneArchiveItem`. Ces noms sont consommés par Task 2-5 et par le dialog.
 
 - [ ] **Step 1: Write the failing test**
@@ -320,10 +324,12 @@ git commit -m "feature-2: add project archive model (ProjectArchive DTO)"
 ## Task 2: Service — `exportProject`
 
 **Files:**
+
 - Create: `src/app/core/services/project-io.service.ts`
 - Test: `src/app/core/services/project-io.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `DatabaseService` tables `projects`/`tiles`/`sprites`/`scenes`/`folders`/`sessions`; `ProjectArchive`+ item types + constants (Task 1).
 - Produces: `ProjectIoService.exportProject(projectId: string): Promise<string>`; also declares (implemented in Task 3-4): `importProject(fileText: string, mode: ImportMode): Promise<ImportResult>`, `parsePreview(fileText: string): ProjectArchive`, et les types `ImportMode`, `ImportResult`, la classe `ProjectImportError`.
 
@@ -666,10 +672,12 @@ git commit -m "feature-2: add ProjectIoService with project export"
 ## Task 3: Import as new project (atomic remap)
 
 **Files:**
+
 - Modify: `src/app/core/services/project-io.service.ts`
 - Test: `src/app/core/services/project-io.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `importProject(fileText, mode)`, `ImportMode`/`ImportResult`, `parsePreview` surface from Task 2.
 - Produces: full working `importProject` for `{kind: 'new'}`; the private helpers `validate()` (structural part without cross-reference checks — added in Task 4) and `purgeProject(projectId)` (used here and by Task 5), plus a working `parsePreview`.
 
@@ -768,7 +776,9 @@ it('imports as a new project with remapped ids and preserved content', async () 
 });
 
 it('supports importing the same file twice as two distinct projects', async () => {
-  const { json } = (async () => ({ json: await service.exportProject((await seedProject()).projectId) }))() as unknown as { json: string };
+  const { json } = (async () => ({
+    json: await service.exportProject((await seedProject()).projectId),
+  }))() as unknown as { json: string };
   await db.projects.clear();
   await db.scenes.clear();
   await db.tiles.clear();
@@ -976,10 +986,12 @@ git commit -m "feature-2: implement project import as new project with id remap"
 ## Task 4: Validation strictes (structure + intégrité des références)
 
 **Files:**
+
 - Modify: `src/app/core/services/project-io.service.ts` (extend `validate`)
 - Test: `src/app/core/services/project-io.service.spec.ts`
 
 **Interfaces:**
+
 - Produces: `validate()` now also checks tile/sprite/scene item shapes and cross-reference integrity (unknown `tileSourceId`, unknown `spriteIds`, unknown `tileData`); `importProject` and `parsePreview` reject such files.
 
 - [ ] **Step 1: Write the failing tests**
@@ -1057,7 +1069,10 @@ it('rejects files that are not valid JSON', async () => {
 });
 
 it('rejects files that are not river king exports', async () => {
-  await expectImportRejected(JSON.stringify({ hello: 'world' }), 'This file is not a River King project export.');
+  await expectImportRejected(
+    JSON.stringify({ hello: 'world' }),
+    'This file is not a River King project export.',
+  );
 });
 
 it('rejects unsupported format versions', async () => {
@@ -1066,7 +1081,9 @@ it('rejects unsupported format versions', async () => {
 });
 
 it('rejects archives missing required data', async () => {
-  const noName = validJsonOverrides({ project: { palette: [], tileSize: 16, mapWidth: 40, mapHeight: 30 } });
+  const noName = validJsonOverrides({
+    project: { palette: [], tileSize: 16, mapWidth: 40, mapHeight: 30 },
+  });
   await expectImportRejected(noName, 'This file is missing required data.');
 
   const noTiles = validJsonOverrides({ tiles: undefined });
@@ -1150,71 +1167,71 @@ Expected: the new strict tests FAIL (structural validation currently passes them
 After the existing `return raw as unknown as ProjectArchive;` line, replace it with shape validation + cross-reference integrity before returning:
 
 ```ts
-    const archive = raw as unknown as ProjectArchive;
-    for (const t of archive.tiles) {
-      if (
-        typeof t.sourceId !== 'number' ||
-        typeof t.name !== 'string' ||
-        (t.type !== 'static' && t.type !== 'animated') ||
-        !Array.isArray(t.spriteIds) ||
-        t.spriteIds.some((id) => typeof id !== 'number') ||
-        typeof t.animationSpeed !== 'number' ||
-        !isRecord(t.properties) ||
-        typeof t.folderPath !== 'string'
-      ) {
-        throw new ProjectImportError('This file is missing required data.');
-      }
+const archive = raw as unknown as ProjectArchive;
+for (const t of archive.tiles) {
+  if (
+    typeof t.sourceId !== 'number' ||
+    typeof t.name !== 'string' ||
+    (t.type !== 'static' && t.type !== 'animated') ||
+    !Array.isArray(t.spriteIds) ||
+    t.spriteIds.some((id) => typeof id !== 'number') ||
+    typeof t.animationSpeed !== 'number' ||
+    !isRecord(t.properties) ||
+    typeof t.folderPath !== 'string'
+  ) {
+    throw new ProjectImportError('This file is missing required data.');
+  }
+}
+for (const s of archive.sprites) {
+  if (
+    typeof s.sourceId !== 'number' ||
+    typeof s.tileSourceId !== 'number' ||
+    typeof s.name !== 'string' ||
+    typeof s.width !== 'number' ||
+    typeof s.height !== 'number' ||
+    typeof s.pixelData !== 'string'
+  ) {
+    throw new ProjectImportError('This file is missing required data.');
+  }
+}
+for (const sc of archive.scenes) {
+  if (
+    typeof sc.name !== 'string' ||
+    typeof sc.folderPath !== 'string' ||
+    typeof sc.width !== 'number' ||
+    typeof sc.height !== 'number' ||
+    !Array.isArray(sc.layers) ||
+    sc.layers.some((l) => !Array.isArray(l.tileData))
+  ) {
+    throw new ProjectImportError('This file is missing required data.');
+  }
+}
+const tileIds = new Set(archive.tiles.map((t) => t.sourceId));
+const spriteIds = new Set(archive.sprites.map((s) => s.sourceId));
+for (const s of archive.sprites) {
+  if (!tileIds.has(s.tileSourceId)) {
+    throw new ProjectImportError('This file references a missing tile.');
+  }
+}
+for (const t of archive.tiles) {
+  for (const sid of t.spriteIds) {
+    if (!spriteIds.has(sid)) {
+      throw new ProjectImportError('This file references a missing frame.');
     }
-    for (const s of archive.sprites) {
-      if (
-        typeof s.sourceId !== 'number' ||
-        typeof s.tileSourceId !== 'number' ||
-        typeof s.name !== 'string' ||
-        typeof s.width !== 'number' ||
-        typeof s.height !== 'number' ||
-        typeof s.pixelData !== 'string'
-      ) {
-        throw new ProjectImportError('This file is missing required data.');
-      }
-    }
-    for (const sc of archive.scenes) {
-      if (
-        typeof sc.name !== 'string' ||
-        typeof sc.folderPath !== 'string' ||
-        typeof sc.width !== 'number' ||
-        typeof sc.height !== 'number' ||
-        !Array.isArray(sc.layers) ||
-        sc.layers.some((l) => !Array.isArray(l.tileData))
-      ) {
-        throw new ProjectImportError('This file is missing required data.');
-      }
-    }
-    const tileIds = new Set(archive.tiles.map((t) => t.sourceId));
-    const spriteIds = new Set(archive.sprites.map((s) => s.sourceId));
-    for (const s of archive.sprites) {
-      if (!tileIds.has(s.tileSourceId)) {
-        throw new ProjectImportError('This file references a missing tile.');
-      }
-    }
-    for (const t of archive.tiles) {
-      for (const sid of t.spriteIds) {
-        if (!spriteIds.has(sid)) {
-          throw new ProjectImportError('This file references a missing frame.');
+  }
+}
+for (const sc of archive.scenes) {
+  for (const layer of sc.layers) {
+    for (const row of layer.tileData) {
+      for (const tid of row) {
+        if (tid >= 0 && !tileIds.has(tid)) {
+          throw new ProjectImportError('This file references a missing tile.');
         }
       }
     }
-    for (const sc of archive.scenes) {
-      for (const layer of sc.layers) {
-        for (const row of layer.tileData) {
-          for (const tid of row) {
-            if (tid >= 0 && !tileIds.has(tid)) {
-              throw new ProjectImportError('This file references a missing tile.');
-            }
-          }
-        }
-      }
-    }
-    return archive;
+  }
+}
+return archive;
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -1232,10 +1249,12 @@ git commit -m "feature-2: validate archive structure and reference integrity on 
 ## Task 5: Import replace mode + rollback safety
 
 **Files:**
+
 - Modify: `src/app/core/services/project-io.service.ts` (already imports `purgeProject`)
 - Test: `src/app/core/services/project-io.service.spec.ts`
 
 **Interfaces:**
+
 - Produces: `importProject(…, { kind: 'replace', targetProjectId })` → purges target content first, imports remapped content under the same `projectId`, replaces name/dates from the archive. Atomic via the existing single transaction.
 
 - [ ] **Step 1: Write the failing tests**
@@ -1285,7 +1304,10 @@ it('replaces an existing project, keeping its id and dropping its old content', 
   expect(project?.name).toBe('Heroes');
 
   const tiles = await db.tiles.where('projectId').equals(targetId).toArray();
-  expect(tiles.map((t: Tile) => t.name)).toEqual([expect.stringContaining('Ground'), expect.stringContaining('Water')]);
+  expect(tiles.map((t: Tile) => t.name)).toEqual([
+    expect.stringContaining('Ground'),
+    expect.stringContaining('Water'),
+  ]);
   expect(tiles.some((t: Tile) => t.name === 'OldTile')).toBe(false);
 
   const sprites = await db.sprites.where('projectId').equals(targetId).toArray();
@@ -1407,11 +1429,13 @@ git commit -m "feature-2: cover replace import and transaction rollback safety"
 ## Task 6: Project card export button
 
 **Files:**
+
 - Modify: `src/app/features/dashboard/project-card.component.ts`
 - Modify: `src/app/features/dashboard/project-card.component.html`
 - Test: `src/app/features/dashboard/project-card.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `ProjectIoService.exportProject(projectId)` (Task 2), `NotificationService.error(message)`.
 - Produces: `ProjectCardComponent.onExport(event: Event): Promise<void>` (injects `ProjectIoService`, calls `exportProject`, downloads a `river-king-<slug>.rkproj` Blob, notification on failure). Template gains an Export button (`title="Export"`, `aria-label="Export project"`).
 
@@ -1427,62 +1451,62 @@ import { NotificationService } from '../../core/services/notification.service';
 and inside `describe('ProjectCardComponent', () => { … })`:
 
 ```ts
-  it('exports the project as a downloadable rkproj file', async () => {
-    const projectIo = TestBed.inject(ProjectIoService);
-    const exportSpy = vi
-      .spyOn(projectIo, 'exportProject')
-      .mockResolvedValue('{"format":"river-king-project"}');
+it('exports the project as a downloadable rkproj file', async () => {
+  const projectIo = TestBed.inject(ProjectIoService);
+  const exportSpy = vi
+    .spyOn(projectIo, 'exportProject')
+    .mockResolvedValue('{"format":"river-king-project"}');
 
-    const createObjectURL = vi.fn(() => 'blob:mock-url');
-    const revokeObjectURL = vi.fn();
-    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click');
-    try {
-      const fixture = TestBed.createComponent(ProjectCardComponent);
-      fixture.componentRef.setInput(
-        'project',
-        createMockProject({ id: 'project-42', name: 'My Hero Game' }),
-      );
-      await fixture.whenStable();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement as HTMLElement;
-      const exportButton = compiled.querySelector<HTMLButtonElement>('button[title="Export"]');
-      expect(exportButton).toBeTruthy();
-      expect(exportButton!.getAttribute('aria-label')).toBe('Export project');
-
-      exportButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      await new Promise((r) => setTimeout(r, 50));
-
-      expect(exportSpy).toHaveBeenCalledWith('project-42');
-      expect(createObjectURL).toHaveBeenCalledTimes(1);
-      expect(clickSpy).toHaveBeenCalledTimes(1);
-      const anchors = document.body.querySelectorAll('a');
-      const lastAnchor = anchors[anchors.length - 1] as HTMLAnchorElement;
-      expect(lastAnchor.getAttribute('download')).toBe('river-king-my-hero-game.rkproj');
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it('notifies the user when the export fails', async () => {
-    const projectIo = TestBed.inject(ProjectIoService);
-    vi.spyOn(projectIo, 'exportProject').mockRejectedValue(new Error('boom'));
-    const notification = TestBed.inject(NotificationService);
-    const errorSpy = vi.spyOn(notification, 'error');
-
+  const createObjectURL = vi.fn(() => 'blob:mock-url');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+  const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click');
+  try {
     const fixture = TestBed.createComponent(ProjectCardComponent);
-    fixture.componentRef.setInput('project', createMockProject({ id: 'project-1' }));
+    fixture.componentRef.setInput(
+      'project',
+      createMockProject({ id: 'project-42', name: 'My Hero Game' }),
+    );
     await fixture.whenStable();
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
     const exportButton = compiled.querySelector<HTMLButtonElement>('button[title="Export"]');
+    expect(exportButton).toBeTruthy();
+    expect(exportButton!.getAttribute('aria-label')).toBe('Export project');
+
     exportButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(errorSpy).toHaveBeenCalledWith('Failed to export project');
-  });
+    expect(exportSpy).toHaveBeenCalledWith('project-42');
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    const anchors = document.body.querySelectorAll('a');
+    const lastAnchor = anchors[anchors.length - 1] as HTMLAnchorElement;
+    expect(lastAnchor.getAttribute('download')).toBe('river-king-my-hero-game.rkproj');
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it('notifies the user when the export fails', async () => {
+  const projectIo = TestBed.inject(ProjectIoService);
+  vi.spyOn(projectIo, 'exportProject').mockRejectedValue(new Error('boom'));
+  const notification = TestBed.inject(NotificationService);
+  const errorSpy = vi.spyOn(notification, 'error');
+
+  const fixture = TestBed.createComponent(ProjectCardComponent);
+  fixture.componentRef.setInput('project', createMockProject({ id: 'project-1' }));
+  await fixture.whenStable();
+  fixture.detectChanges();
+
+  const compiled = fixture.nativeElement as HTMLElement;
+  const exportButton = compiled.querySelector<HTMLButtonElement>('button[title="Export"]');
+  exportButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 50));
+
+  expect(errorSpy).toHaveBeenCalledWith('Failed to export project');
+});
 ```
 
 Note: the existing spec clears DB tables in `beforeEach` — `TestBed.inject(ProjectIoService)` and `NotificationService` are provided by root, fine. `vi.stubGlobal('URL', …)` covers the global; the component calls `URL.createObjectURL` directly.
@@ -1559,16 +1583,16 @@ Add to the class (class JSDoc already exists; extend it with the export duty):
 `src/app/features/dashboard/project-card.component.html` — add the Export button next to the delete button (inside the `<div class="tw-flex tw-items-start tw-justify-between …">`):
 
 ```html
-    <button
-      type="button"
-      (click)="onExport($event)"
-      (keydown)="$event.stopPropagation()"
-      title="Export"
-      aria-label="Export project"
-      class="tw-p-1 tw-rounded-sm tw-opacity-0 group-hover:tw-opacity-100 focus-visible:tw-opacity-100 tw-text-muted-foreground hover:tw-bg-accent/10 tw-transition"
-    >
-      <span class="material-symbols tw-text-sm" aria-hidden="true">download</span>
-    </button>
+<button
+  type="button"
+  (click)="onExport($event)"
+  (keydown)="$event.stopPropagation()"
+  title="Export"
+  aria-label="Export project"
+  class="tw-p-1 tw-rounded-sm tw-opacity-0 group-hover:tw-opacity-100 focus-visible:tw-opacity-100 tw-text-muted-foreground hover:tw-bg-accent/10 tw-transition"
+>
+  <span class="material-symbols tw-text-sm" aria-hidden="true">download</span>
+</button>
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -1586,12 +1610,14 @@ git commit -m "feature-2: add export button to project cards"
 ## Task 7: Import project dialog
 
 **Files:**
+
 - Create: `src/app/features/dashboard/import-project-dialog/import-project-dialog.component.ts`
 - Create: `src/app/features/dashboard/import-project-dialog/import-project-dialog.component.html`
 - Create: `src/app/features/dashboard/import-project-dialog/import-project-dialog.component.scss`
 - Test: `src/app/features/dashboard/import-project-dialog/import-project-dialog.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `ProjectArchive` (Task 1), `Project` (`shared/models/project.model`), `ImportMode` (Task 2), `DialogComponent`.
 - Produces: `ImportProjectDialogComponent` with inputs `archive: input<ProjectArchive | null>(null)`, `projects: input<Project[]>([])`, outputs `confirmed: output<ImportMode>()`, `cancelled: output<void>()`, and public `open(): void`. Summary computed: tile count, frame count, scene count, palette count. Selector `rk-import-project-dialog`. `canConfirm` computed: true when `replaceMode()? selectedProjectId() is one of projects() : archive() != null`.
 
@@ -1627,7 +1653,13 @@ function makeArchive(): ProjectArchive {
     format: 'river-king-project',
     formatVersion: 1,
     exportedAt: 0,
-    project: { name: 'Heroes', palette: ['#ff0000', '#00ff00'], tileSize: 16, mapWidth: 40, mapHeight: 30 },
+    project: {
+      name: 'Heroes',
+      palette: ['#ff0000', '#00ff00'],
+      tileSize: 16,
+      mapWidth: 40,
+      mapHeight: 30,
+    },
     tiles: [
       {
         sourceId: 1,
@@ -1653,13 +1685,30 @@ function makeArchive(): ProjectArchive {
       { sourceId: 12, tileSourceId: 2, name: 'f2', width: 16, height: 16, pixelData: 'b' },
       { sourceId: 13, tileSourceId: 2, name: 'f3', width: 16, height: 16, pixelData: 'c' },
     ],
-    scenes: [{ name: 'Level 1', folderPath: '', width: 10, height: 10, layers: [{ id: 'l1', name: 'B', visible: true, opacity: 1, tileData: [[1]] }] }],
+    scenes: [
+      {
+        name: 'Level 1',
+        folderPath: '',
+        width: 10,
+        height: 10,
+        layers: [{ id: 'l1', name: 'B', visible: true, opacity: 1, tileData: [[1]] }],
+      },
+    ],
     folders: ['nature'],
   };
 }
 
 function makeProject(id: string, name: string): Project {
-  return { id, name, createdAt: 0, updatedAt: 0, palette: ['#000000'], tileSize: 16, mapWidth: 40, mapHeight: 30 };
+  return {
+    id,
+    name,
+    createdAt: 0,
+    updatedAt: 0,
+    palette: ['#000000'],
+    tileSize: 16,
+    mapWidth: 40,
+    mapHeight: 30,
+  };
 }
 
 describe('ImportProjectDialogComponent', () => {
@@ -1671,7 +1720,10 @@ describe('ImportProjectDialogComponent', () => {
     }).compileComponents();
     fixture = TestBed.createComponent(ImportProjectDialogComponent);
     fixture.componentRef.setInput('archive', makeArchive());
-    fixture.componentRef.setInput('projects', [makeProject('p1', 'Alpha'), makeProject('p2', 'Beta')]);
+    fixture.componentRef.setInput('projects', [
+      makeProject('p1', 'Alpha'),
+      makeProject('p2', 'Beta'),
+    ]);
     await fixture.whenStable();
     fixture.detectChanges();
     fixture.componentInstance.open();
@@ -1704,12 +1756,16 @@ describe('ImportProjectDialogComponent', () => {
     const spy = vi.fn();
     fixture.componentInstance.confirmed.subscribe(spy);
 
-    const select = fixture.nativeElement.querySelector('select[aria-label="Project to replace"]') as HTMLSelectElement;
+    const select = fixture.nativeElement.querySelector(
+      'select[aria-label="Project to replace"]',
+    ) as HTMLSelectElement;
     select.value = 'p2';
     select.dispatchEvent(new Event('change'));
     fixture.detectChanges();
 
-    const replaceRadio = [...buttons()].find((b) => b.textContent?.includes('Replace an existing project'))!;
+    const replaceRadio = [...buttons()].find((b) =>
+      b.textContent?.includes('Replace an existing project'),
+    )!;
     replaceRadio.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     fixture.detectChanges();
 
@@ -1720,11 +1776,15 @@ describe('ImportProjectDialogComponent', () => {
   });
 
   it('disables confirm when replace mode has no target selected', () => {
-    const replaceRadio = [...buttons()].find((b) => b.textContent?.includes('Replace an existing project'))!;
+    const replaceRadio = [...buttons()].find((b) =>
+      b.textContent?.includes('Replace an existing project'),
+    )!;
     replaceRadio.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     fixture.detectChanges();
 
-    const importedBtn = [...buttons()].find((b) => b.textContent?.includes('Import')) as HTMLButtonElement;
+    const importedBtn = [...buttons()].find((b) =>
+      b.textContent?.includes('Import'),
+    ) as HTMLButtonElement;
     expect(importedBtn.disabled).toBe(true);
   });
 
@@ -1751,7 +1811,16 @@ Expected: FAIL — component not found.
 `src/app/features/dashboard/import-project-dialog/import-project-dialog.component.ts` :
 
 ```ts
-import { Component, ChangeDetectionStrategy, computed, inject, input, output, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { DialogComponent } from '../../../shared/components/dialog/dialog.component';
 import type { Project } from '../../../shared/models/project.model';
 import type { ProjectArchive } from '../../../shared/models/project-archive.model';
@@ -1919,7 +1988,7 @@ export class ImportProjectDialogComponent {
         >
           <option value="">Select a project…</option>
           @for (p of projects(); track p.id) {
-            <option [value]="p.id">{{ p.name }}</option>
+          <option [value]="p.id">{{ p.name }}</option>
           }
         </select>
       </div>
@@ -1962,11 +2031,13 @@ git commit -m "feature-2: add import project dialog (new vs replace)"
 ## Task 8: Dashboard wiring (Import button, file picker, orchestration)
 
 **Files:**
+
 - Modify: `src/app/features/dashboard/dashboard.component.ts`
 - Modify: `src/app/features/dashboard/dashboard.component.html`
 - Test: `src/app/features/dashboard/dashboard.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `ImportProjectDialogComponent` (Task 7), `ProjectIoService` (`importProject`, `parsePreview`), `ProjectImportError`, `NotificationService`, `ElementRef`/`viewChild` for the hidden file input.
 - Produces: `DashboardComponent` gains `openImportPicker(): void`, `onFileSelected(event: Event): Promise<void>`, `importProjectFromFile(mode: ImportMode): Promise<void>`, `clearPendingImport(): void`; signal `pendingImport`. Template gains an Import button + hidden file input + the `rk-import-project-dialog`.
 
@@ -1983,84 +2054,84 @@ import { NotificationService } from '../../core/services/notification.service';
 Inside the describe:
 
 ```ts
-  const minimalArchiveJson = JSON.stringify({
-    format: 'river-king-project',
-    formatVersion: 1,
-    exportedAt: 0,
-    project: { name: 'Imported', palette: ['#000000'], tileSize: 16, mapWidth: 40, mapHeight: 30 },
-    tiles: [],
-    sprites: [],
-    scenes: [],
-    folders: [],
-  });
+const minimalArchiveJson = JSON.stringify({
+  format: 'river-king-project',
+  formatVersion: 1,
+  exportedAt: 0,
+  project: { name: 'Imported', palette: ['#000000'], tileSize: 16, mapWidth: 40, mapHeight: 30 },
+  tiles: [],
+  sprites: [],
+  scenes: [],
+  folders: [],
+});
 
-  function selectFile(compiled: HTMLElement, content: string, name = 'proj.rkproj'): void {
-    const input = compiled.querySelector<HTMLInputElement>('input[type="file"]');
-    const file = new File([content], name, { type: 'application/json' });
-    Object.defineProperty(input!, 'files', { value: [file], configurable: true });
-    input!.dispatchEvent(new Event('change'));
-  }
+function selectFile(compiled: HTMLElement, content: string, name = 'proj.rkproj'): void {
+  const input = compiled.querySelector<HTMLInputElement>('input[type="file"]');
+  const file = new File([content], name, { type: 'application/json' });
+  Object.defineProperty(input!, 'files', { value: [file], configurable: true });
+  input!.dispatchEvent(new Event('change'));
+}
 
-  it('renders an import button in the header', async () => {
-    await mountWithProjects([]);
-    const compiled = fixture.nativeElement as HTMLElement;
-    const importButton = compiled.querySelector<HTMLElement>('[data-testid="import-project"]');
-    expect(importButton).toBeTruthy();
-    expect(compiled.textContent).toContain('Import');
-  });
+it('renders an import button in the header', async () => {
+  await mountWithProjects([]);
+  const compiled = fixture.nativeElement as HTMLElement;
+  const importButton = compiled.querySelector<HTMLElement>('[data-testid="import-project"]');
+  expect(importButton).toBeTruthy();
+  expect(compiled.textContent).toContain('Import');
+});
 
-  it('opens the import dialog for a valid file', async () => {
-    await mountWithProjects([]);
+it('opens the import dialog for a valid file', async () => {
+  await mountWithProjects([]);
+  const dialog = fixture.debugElement.query(By.directive(ImportProjectDialogComponent))
+    .componentInstance as ImportProjectDialogComponent;
+  const openSpy = vi.spyOn(dialog, 'open');
+
+  selectFile(fixture.nativeElement as HTMLElement, minimalArchiveJson);
+  await new Promise((r) => setTimeout(r, 50));
+  fixture.detectChanges();
+
+  expect(openSpy).toHaveBeenCalledTimes(1);
+  expect(fixture.componentInstance.pendingImport()).not.toBeNull();
+});
+
+it('shows an error notification for an invalid file', async () => {
+  await mountWithProjects([]);
+  const notification = TestBed.inject(NotificationService);
+  const errorSpy = vi.spyOn(notification, 'error');
+  const dialogOpenSpy = (() => {
     const dialog = fixture.debugElement.query(By.directive(ImportProjectDialogComponent))
       .componentInstance as ImportProjectDialogComponent;
-    const openSpy = vi.spyOn(dialog, 'open');
+    return vi.spyOn(dialog, 'open');
+  })();
 
-    selectFile(fixture.nativeElement as HTMLElement, minimalArchiveJson);
-    await new Promise((r) => setTimeout(r, 50));
-    fixture.detectChanges();
+  selectFile(fixture.nativeElement as HTMLElement, '{not json');
+  await new Promise((r) => setTimeout(r, 50));
 
-    expect(openSpy).toHaveBeenCalledTimes(1);
-    expect(fixture.componentInstance.pendingImport()).not.toBeNull();
-  });
+  expect(errorSpy).toHaveBeenCalledWith('This file is not a valid project file.');
+  expect(dialogOpenSpy).not.toHaveBeenCalled();
+});
 
-  it('shows an error notification for an invalid file', async () => {
-    await mountWithProjects([]);
-    const notification = TestBed.inject(NotificationService);
-    const errorSpy = vi.spyOn(notification, 'error');
-    const dialogOpenSpy = (() => {
-      const dialog = fixture.debugElement.query(By.directive(ImportProjectDialogComponent))
-        .componentInstance as ImportProjectDialogComponent;
-      return vi.spyOn(dialog, 'open');
-    })();
+it('runs the import on confirm and navigates to the new project', async () => {
+  await mountWithProjects([]);
+  const projectIo = TestBed.inject(ProjectIoService);
+  const importSpy = vi
+    .spyOn(projectIo, 'importProject')
+    .mockResolvedValue({ projectId: 'fresh-1', kind: 'new' });
+  const successSpy = vi.spyOn(TestBed.inject(NotificationService), 'success');
+  const navigateSpy = vi.spyOn(fixture.componentInstance['router'], 'navigate');
+  navigateSpy.mockResolvedValue(true);
 
-    selectFile(fixture.nativeElement as HTMLElement, '{not json');
-    await new Promise((r) => setTimeout(r, 50));
+  selectFile(fixture.nativeElement as HTMLElement, minimalArchiveJson);
+  await new Promise((r) => setTimeout(r, 50));
+  fixture.detectChanges();
+  await fixture.componentInstance.importProjectFromFile({ kind: 'new' });
+  await new Promise((r) => setTimeout(r, 50));
 
-    expect(errorSpy).toHaveBeenCalledWith('This file is not a valid project file.');
-    expect(dialogOpenSpy).not.toHaveBeenCalled();
-  });
-
-  it('runs the import on confirm and navigates to the new project', async () => {
-    await mountWithProjects([]);
-    const projectIo = TestBed.inject(ProjectIoService);
-    const importSpy = vi
-      .spyOn(projectIo, 'importProject')
-      .mockResolvedValue({ projectId: 'fresh-1', kind: 'new' });
-    const successSpy = vi.spyOn(TestBed.inject(NotificationService), 'success');
-    const navigateSpy = vi.spyOn(fixture.componentInstance['router'], 'navigate');
-    navigateSpy.mockResolvedValue(true);
-
-    selectFile(fixture.nativeElement as HTMLElement, minimalArchiveJson);
-    await new Promise((r) => setTimeout(r, 50));
-    fixture.detectChanges();
-    await fixture.componentInstance.importProjectFromFile({ kind: 'new' });
-    await new Promise((r) => setTimeout(r, 50));
-
-    expect(importSpy).toHaveBeenCalledWith(minimalArchiveJson, { kind: 'new' });
-    expect(successSpy).toHaveBeenCalledWith('Project imported');
-    expect(navigateSpy).toHaveBeenCalledWith(['/project', 'fresh-1']);
-    expect(fixture.componentInstance.pendingImport()).toBeNull();
-  });
+  expect(importSpy).toHaveBeenCalledWith(minimalArchiveJson, { kind: 'new' });
+  expect(successSpy).toHaveBeenCalledWith('Project imported');
+  expect(navigateSpy).toHaveBeenCalledWith(['/project', 'fresh-1']);
+  expect(fixture.componentInstance.pendingImport()).toBeNull();
+});
 ```
 
 Note: accessing `fixture.componentInstance['router']` is brittle (private field). Prefer asserting navigation indirectly: mock `Router` provider — simpler to spy via `TestBed.inject(Router)`: since the component injected the same root router instance, `vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true)` and assert on it. Use that form instead.
@@ -2075,18 +2146,33 @@ Expected: FAIL — `data-testid="import-project"` missing, `importProjectFromFil
 `src/app/features/dashboard/dashboard.component.ts` — extend imports and class:
 
 ```ts
-import { Component, inject, signal, ChangeDetectionStrategy, viewChild, effect, ElementRef } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+  viewChild,
+  effect,
+  ElementRef,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { ProjectService } from './services/project.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { ProjectIoService, ProjectImportError, type ImportMode } from '../../core/services/project-io.service';
+import {
+  ProjectIoService,
+  ProjectImportError,
+  type ImportMode,
+} from '../../core/services/project-io.service';
 import type { Project } from '../../shared/models/project.model';
 import type { ProjectArchive } from '../../shared/models/project-archive.model';
 import { ProjectCardComponent } from './project-card.component';
 import { ProjectCreateDialogComponent } from './project-create-dialog.component';
 import { ImportProjectDialogComponent } from './import-project-dialog/import-project-dialog.component';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
 ```
 
 Add members:
@@ -2106,11 +2192,11 @@ Add members:
 Constructor — add the third effect:
 
 ```ts
-    effect(() => {
-      if (this.pendingImport()) {
-        this.importDialog().open();
-      }
-    });
+effect(() => {
+  if (this.pendingImport()) {
+    this.importDialog().open();
+  }
+});
 ```
 
 Add methods (JSDoc required):
@@ -2178,52 +2264,52 @@ Add methods (JSDoc required):
 `src/app/features/dashboard/dashboard.component.html` — header buttons become a group, add the hidden input, and mount the dialog:
 
 ```html
-  <header class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-3">
-    <h1
-      data-testid="dashboard-title"
-      class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+<header class="tw-flex tw-items-center tw-justify-between tw-px-4 tw-py-3">
+  <h1
+    data-testid="dashboard-title"
+    class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
+  >
+    My Projects
+  </h1>
+  <div class="tw-flex tw-items-center tw-gap-2">
+    <button
+      type="button"
+      data-testid="import-project"
+      (click)="openImportPicker()"
+      class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-xs tw-text-foreground hover:tw-bg-muted tw-transition"
     >
-      My Projects
-    </h1>
-    <div class="tw-flex tw-items-center tw-gap-2">
-      <button
-        type="button"
-        data-testid="import-project"
-        (click)="openImportPicker()"
-        class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-text-xs tw-text-foreground hover:tw-bg-muted tw-transition"
-      >
-        <span class="material-symbols tw-text-sm" aria-hidden="true">upload_file</span>
-        Import
-      </button>
-      <button
-        type="button"
-        (click)="createDialog.open()"
-        class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-sm tw-bg-primary tw-text-primary-foreground tw-text-xs tw-transition hover:tw-opacity-90"
-      >
-        <span class="material-symbols tw-text-sm" aria-hidden="true">add</span>
-        New Project
-      </button>
-      <input
-        #fileInput
-        type="file"
-        accept=".rkproj,application/json"
-        class="tw-hidden"
-        (change)="onFileSelected($event)"
-      />
-    </div>
-  </header>
+      <span class="material-symbols tw-text-sm" aria-hidden="true">upload_file</span>
+      Import
+    </button>
+    <button
+      type="button"
+      (click)="createDialog.open()"
+      class="tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-rounded-sm tw-bg-primary tw-text-primary-foreground tw-text-xs tw-transition hover:tw-opacity-90"
+    >
+      <span class="material-symbols tw-text-sm" aria-hidden="true">add</span>
+      New Project
+    </button>
+    <input
+      #fileInput
+      type="file"
+      accept=".rkproj,application/json"
+      class="tw-hidden"
+      (change)="onFileSelected($event)"
+    />
+  </div>
+</header>
 ```
 
 And before the closing `</div>` (after the `rk-confirm-dialog`) add:
 
 ```html
-  <rk-import-project-dialog
-    #importDialog
-    [archive]="pendingImport()?.archive ?? null"
-    [projects]="projects()"
-    (confirmed)="importProjectFromFile($event)"
-    (cancelled)="clearPendingImport()"
-  />
+<rk-import-project-dialog
+  #importDialog
+  [archive]="pendingImport()?.archive ?? null"
+  [projects]="projects()"
+  (confirmed)="importProjectFromFile($event)"
+  (cancelled)="clearPendingImport()"
+/>
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -2241,14 +2327,17 @@ git commit -m "feature-2: wire import flow into the dashboard"
 ## Task 9: Global verification + final commit
 
 **Files:**
+
 - All of the above.
 
 **Interfaces:**
+
 - Produces: a green feature branch ready for PR.
 
 - [ ] **Step 1: Run all new unit suites**
 
 Run:
+
 ```
 devbox run npx ng test --watch=false --include='src/app/shared/models/project-archive.model.spec.ts'
 devbox run npx ng test --watch=false --include='src/app/core/services/project-io.service.spec.ts'
@@ -2256,6 +2345,7 @@ devbox run npx ng test --watch=false --include='src/app/features/dashboard/proje
 devbox run npx ng test --watch=false --include='src/app/features/dashboard/import-project-dialog/import-project-dialog.component.spec.ts'
 devbox run npx ng test --watch=false --include='src/app/features/dashboard/dashboard.component.spec.ts'
 ```
+
 Expected: each suite green. (Run them individually; `--include` takes one file.)
 
 - [ ] **Step 2: Run the full test suite**
@@ -2275,10 +2365,12 @@ Run the five new suites again (Step 1). If any test fails only on a second run, 
 - [ ] **Step 5: Commit any verification fallout**
 
 If Step 4 produced fixes, commit them:
+
 ```bash
 git add -A
 git commit -m "feature-2: stabilize export/import tests"
 ```
+
 Otherwise, nothing to commit.
 
 - [ ] **Step 6: Final commit check + push**
@@ -2286,6 +2378,7 @@ Otherwise, nothing to commit.
 Run: `git status --short` — expect only the spec + plan docs uncommitted (checked in Task-less docs flow) or nothing.
 
 Push the branch:
+
 ```bash
 git push -u origin feature-2
 ```

@@ -280,7 +280,10 @@ describe('ProjectIoService', () => {
       folderPath: '',
     } as Tile);
 
-    const result = await service.importProject(json, { kind: 'replace', targetProjectId: targetId });
+    const result = await service.importProject(json, {
+      kind: 'replace',
+      targetProjectId: targetId,
+    });
     expect(result).toEqual({ projectId: targetId, kind: 'replace' });
 
     const project = await db.projects.get(targetId);

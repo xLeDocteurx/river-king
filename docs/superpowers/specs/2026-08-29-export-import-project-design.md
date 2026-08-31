@@ -31,12 +31,12 @@ export const PROJECT_ARCHIVE_FORMAT = 'river-king-project';
 export const PROJECT_ARCHIVE_VERSION = 1;
 
 export interface ProjectArchive {
-  format: typeof PROJECT_ARCHIVE_FORMAT;   // 'river-king-project'
-  formatVersion: number;                   // 1
-  exportedAt: number;                      // epoch ms
+  format: typeof PROJECT_ARCHIVE_FORMAT; // 'river-king-project'
+  formatVersion: number; // 1
+  exportedAt: number; // epoch ms
   project: {
     name: string;
-    palette: string[];                     // hex '#rrggbb'
+    palette: string[]; // hex '#rrggbb'
     tileSize: number;
     mapWidth: number;
     mapHeight: number;
@@ -44,35 +44,35 @@ export interface ProjectArchive {
   tiles: TileArchiveItem[];
   sprites: SpriteArchiveItem[];
   scenes: SceneArchiveItem[];
-  folders: string[];                       // chemins de dossiers de scènes
+  folders: string[]; // chemins de dossiers de scènes
 }
 
 export interface TileArchiveItem {
-  sourceId: number;                        // db.tiles.id à l'export
+  sourceId: number; // db.tiles.id à l'export
   name: string;
   type: 'static' | 'animated';
-  spriteIds: number[];                     // sourceIds de sprites, ordre = ordre frames
+  spriteIds: number[]; // sourceIds de sprites, ordre = ordre frames
   animationSpeed: number;
   properties: TileProperties;
-  folderPath: string;                      // '' = racine
+  folderPath: string; // '' = racine
 }
 
 export interface SpriteArchiveItem {
-  sourceId: number;                        // db.sprites.id à l'export
-  tileSourceId: number;                    // db.sprites.tileId à l'export
+  sourceId: number; // db.sprites.id à l'export
+  tileSourceId: number; // db.sprites.tileId à l'export
   name: string;
   width: number;
   height: number;
-  pixelData: string;                       // data URI PNG base64, inchangée
-  paletteIndices?: number[][];             // grille d'indices, inchangée
+  pixelData: string; // data URI PNG base64, inchangée
+  paletteIndices?: number[][]; // grille d'indices, inchangée
 }
 
 export interface SceneArchiveItem {
   name: string;
-  folderPath: string;                      // '' = racine
+  folderPath: string; // '' = racine
   width: number;
   height: number;
-  layers: Layer[];                         // tileData = sourceIds de tiles
+  layers: Layer[]; // tileData = sourceIds de tiles
 }
 ```
 
@@ -90,9 +90,7 @@ Utilise `DatabaseService` directement (verrou core indépendant respecté). Aucu
 importation depuis `features/`.
 
 ```ts
-export type ImportMode =
-  | { kind: 'new' }
-  | { kind: 'replace'; targetProjectId: string };
+export type ImportMode = { kind: 'new' } | { kind: 'replace'; targetProjectId: string };
 
 export interface ImportResult {
   projectId: string;
@@ -100,7 +98,7 @@ export interface ImportResult {
 }
 
 export class ProjectIoService {
-  exportProject(projectId: string): Promise<string>;   // JSON string
+  exportProject(projectId: string): Promise<string>; // JSON string
   importProject(fileText: string, mode: ImportMode): Promise<ImportResult>;
 }
 ```
@@ -196,10 +194,10 @@ test dédié le vérifie (import remplaçant défaillant ne touche pas le projet
   dans `features/dashboard/import-project-dialog/`) qui affiche :
   - le nom du projet importé + résumé (N tiles, M frames, S scènes, palette) ;
   - un radio « Create a new project » (défaut) / « Replace an existing project »
-    + `<select>` alimenté par la liste des projets courants ;
+    - `<select>` alimenté par la liste des projets courants ;
   - Confirm → `importProject(fileText, mode)` ; succès → `notification.success`
-    + rafraîchissement de la liste (émission vers le dashboard parent, qui
-    recharge).
+    - rafraîchissement de la liste (émission vers le dashboard parent, qui
+      recharge).
 - `rk-dialog` natif (`<dialog>`) pour le modale, `rk-confirm-dialog` **non**
   requis ici (le mode replace est déjà confirmé par le choix explicite dans le
   dialog d'import).
@@ -215,6 +213,7 @@ test dédié le vérifie (import remplaçant défaillant ne touche pas le projet
 ## Tests prévus
 
 ### `project-io.service.spec.ts` (fake-indexeddb, pas de DOM)
+
 1. **Round-trip export** : seed 1 projet (palette 4, tileSize 16, 40×30) + 2 tiles
    (static/en-tête animé) + 3 sprites (dont multi-frame) + 2 scènes (layers avec
    tileData réels + -1/0) + 2 dossiers → `exportProject` → parse JSON : `format`,
@@ -240,15 +239,18 @@ test dédié le vérifie (import remplaçant défaillant ne touche pas le projet
    chacun lève `ProjectImportError` avec message attendu.
 
 ### `import-project-dialog.component.spec.ts`
+
 - Affiche nom + résumé ; radio « new » par défaut ; switch replace active le select ;
 - Confirm émet/mode attendu ; sélection vide → confirm désactivée.
 
 ### `project-card.component.spec.ts`
+
 - Le bouton Export est présent au survol ; clic → `exportProject` appelé avec
   l'id ; téléchargement déclenché (spy sur `URL.createObjectURL` + clic ancre).
 - En cas d'erreur export → `NotificationService.error` (spy).
 
 ### `dashboard.component.spec.ts`
+
 - Bouton Import présent ; clique → ouvre le file picker (spy) ; sélection d'un
   fichier valide → le dialog s'ouvre ; import confirmé → liste rafraîchie.
 
