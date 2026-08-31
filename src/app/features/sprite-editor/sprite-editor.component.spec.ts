@@ -648,4 +648,59 @@ describe('SpriteEditorComponent', () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(successSpy).toHaveBeenCalledWith('Sprite saved');
   });
+
+  it('closes the onion panel when switching to another sprite', async () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.sprites.set([
+      { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
+      { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
+    ]);
+    component.tiles.set([
+      { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
+    ]);
+    component.selectedTileId.set(10);
+    component.selectedSpriteId.set(1);
+    component.onionPanelOpen.set(true);
+    await component.selectSprite(2);
+    fixture.detectChanges();
+    expect(component.onionPanelOpen()).toBe(false);
+  });
+
+  it('closes the onion panel when switching to another tile', async () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.sprites.set([
+      { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
+      { id: 2, pixelData: 'B', tileId: 20 } as Sprite,
+    ]);
+    component.tiles.set([
+      { id: 10, name: 'T1', spriteIds: [1], type: 'animated' } as Tile,
+      { id: 20, name: 'T2', spriteIds: [2], type: 'animated' } as Tile,
+    ]);
+    component.selectedTileId.set(10);
+    component.selectedSpriteId.set(1);
+    component.onionPanelOpen.set(true);
+    await component.selectTile(20);
+    fixture.detectChanges();
+    expect(component.onionPanelOpen()).toBe(false);
+  });
+
+  it('toggleOnionPanel flips the onion panel open state', () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    expect(component.onionPanelOpen()).toBe(false);
+    component.toggleOnionPanel();
+    expect(component.onionPanelOpen()).toBe(true);
+    component.toggleOnionPanel();
+    expect(component.onionPanelOpen()).toBe(false);
+  });
+
+  it('closeOnionPanel sets the onion panel closed', () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.onionPanelOpen.set(true);
+    component.closeOnionPanel();
+    expect(component.onionPanelOpen()).toBe(false);
+  });
 });

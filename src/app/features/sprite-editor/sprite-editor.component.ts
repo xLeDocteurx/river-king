@@ -148,6 +148,9 @@ export class SpriteEditorComponent implements OnInit {
   /** Opacity of the next-frame onion skin (0–1). */
   readonly onionSkinNextOpacity = signal(0.35);
 
+  /** Whether the onion-skin controls popover is currently open. */
+  readonly onionPanelOpen = signal(false);
+
   /** Computed pixel data for the previous frame onion skin, or null. */
   readonly onionSkinPrevData = computed(() => {
     const frames = this.currentFrames();
@@ -178,6 +181,16 @@ export class SpriteEditorComponent implements OnInit {
     const selectedId = this.selectedSpriteId();
     const idx = frames.findIndex((f) => f.id === selectedId);
     return idx >= 0 && idx < frames.length - 1;
+  }
+
+  /** Opens or closes the onion-skin controls popover. */
+  toggleOnionPanel(): void {
+    this.onionPanelOpen.update((v) => !v);
+  }
+
+  /** Closes the onion-skin controls popover. */
+  closeOnionPanel(): void {
+    this.onionPanelOpen.set(false);
   }
 
   /** Whether the animation preview is playing. */
@@ -326,6 +339,7 @@ export class SpriteEditorComponent implements OnInit {
    */
   async selectTile(tileId: number): Promise<void> {
     this.stopPlayback();
+    this.onionPanelOpen.set(false);
     this.selectedTileId.set(tileId);
     const tile = this.tiles().find((t) => t.id === tileId);
     if (tile && tile.spriteIds.length > 0) {
@@ -345,6 +359,7 @@ export class SpriteEditorComponent implements OnInit {
   async selectSprite(spriteId: number) {
     try {
       await this.flushPersist();
+      this.onionPanelOpen.set(false);
       this.selectedSpriteId.set(spriteId);
       const sprite = await this.spriteService.getSprite(spriteId);
       this.selectedSprite.set(sprite ?? null);
