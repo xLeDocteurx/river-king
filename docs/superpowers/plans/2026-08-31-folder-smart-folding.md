@@ -25,10 +25,12 @@
 ### Task 1: Folder model — `FolderKind`, new fields, threshold constant, `computeCollapsedKeys`
 
 **Files:**
+
 - Modify: `src/app/shared/models/folder.model.ts`
 - Test: `src/app/shared/models/folder.model.spec.ts` (new)
 
 **Interfaces:**
+
 - Produces (consumed by every later task):
   - `export type FolderKind = 'scene' | 'tile';`
   - `export interface Folder { id: string; projectId: string; path: string; kind: FolderKind; collapsed: boolean; lastOpenedAt: number; }`
@@ -192,10 +194,12 @@ git commit -m "feature-17: add Folder kind/collapsed/lastOpenedAt fields and com
 ### Task 2: DatabaseService — schema v6 migration + kind-scoped folder row operations
 
 **Files:**
+
 - Modify: `src/app/core/services/database.service.ts`
 - Modify: `src/app/core/services/database.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `Folder`, `FolderKind` from `shared/models/folder.model` (type-only).
 - Produces (consumed by Tasks 3 and 4):
   - `async getFoldersByKind(projectId: string, kind: FolderKind): Promise<Folder[]>`
@@ -252,8 +256,12 @@ describe('DatabaseService v6 migration', () => {
     legacy.version(4).stores({ scenes: 'id, projectId, name, folderPath' });
     legacy.version(5).stores({ tiles: '++id, projectId, folderPath' });
     await legacy.open();
-    await (legacy.table('folders') as Dexie.Table<{ id: string; projectId: string; path: string }, string>)
-      .add({ id: 'f1', projectId: 'p1', path: 'forest' });
+    await (
+      legacy.table('folders') as Dexie.Table<
+        { id: string; projectId: string; path: string },
+        string
+      >
+    ).add({ id: 'f1', projectId: 'p1', path: 'forest' });
     await legacy.close();
 
     const db = new DatabaseService();
@@ -355,20 +363,20 @@ import type { Folder, FolderKind } from '../../shared/models/folder.model';
 b) Append the v6 version block right after the v5 block (after line 110):
 
 ```ts
-    this.version(6)
-      .stores({
-        folders: 'id, projectId, path, kind',
-      })
-      .upgrade(async (tx) => {
-        await tx
-          .table('folders')
-          .toCollection()
-          .modify((folder: Record<string, unknown>) => {
-            folder.kind = 'scene';
-            folder.collapsed = false;
-            folder.lastOpenedAt = 0;
-          });
+this.version(6)
+  .stores({
+    folders: 'id, projectId, path, kind',
+  })
+  .upgrade(async (tx) => {
+    await tx
+      .table('folders')
+      .toCollection()
+      .modify((folder: Record<string, unknown>) => {
+        folder.kind = 'scene';
+        folder.collapsed = false;
+        folder.lastOpenedAt = 0;
       });
+  });
 ```
 
 c) Add four methods at the end of the class (after the constructor, still inside the braces):
@@ -484,10 +492,12 @@ git commit -m "feature-17: schema v6 and kind-scoped folder row operations"
 ### Task 3: SceneService — kind-scoped folders + folder state upsert
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/services/scene.service.ts`
 - Modify: `src/app/features/scene-editor/services/scene.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `DatabaseService.getFoldersByKind / upsertFolderState / deleteFoldersByKind` (Task 2).
 - Produces (consumed by Task 6):
   - `async getFolders(projectId: string): Promise<Folder[]>` — now kind=`'scene'` only.
@@ -501,41 +511,41 @@ git commit -m "feature-17: schema v6 and kind-scoped folder row operations"
 Append to `src/app/features/scene-editor/services/scene.service.spec.ts`:
 
 ```ts
-  it('createFolder persists a kind=scene row with default folding state', async () => {
-    await service.createFolder('proj-1', 'forest');
-    const [folder] = await service.getFolders('proj-1');
-    expect(folder.kind).toBe('scene');
-    expect(folder.collapsed).toBe(false);
-    expect(folder.lastOpenedAt).toBe(0);
-  });
+it('createFolder persists a kind=scene row with default folding state', async () => {
+  await service.createFolder('proj-1', 'forest');
+  const [folder] = await service.getFolders('proj-1');
+  expect(folder.kind).toBe('scene');
+  expect(folder.collapsed).toBe(false);
+  expect(folder.lastOpenedAt).toBe(0);
+});
 
-  it('upsertFolderState updates the existing scene folder row in place', async () => {
-    await service.createFolder('proj-1', 'forest');
-    await service.upsertFolderState('proj-1', 'forest', { collapsed: true, lastOpenedAt: 42 });
+it('upsertFolderState updates the existing scene folder row in place', async () => {
+  await service.createFolder('proj-1', 'forest');
+  await service.upsertFolderState('proj-1', 'forest', { collapsed: true, lastOpenedAt: 42 });
 
-    const folders = await service.getFolders('proj-1');
-    expect(folders).toHaveLength(1);
-    expect(folders[0].collapsed).toBe(true);
-    expect(folders[0].lastOpenedAt).toBe(42);
-  });
+  const folders = await service.getFolders('proj-1');
+  expect(folders).toHaveLength(1);
+  expect(folders[0].collapsed).toBe(true);
+  expect(folders[0].lastOpenedAt).toBe(42);
+});
 
-  it('upsertFolderState inserts a row for a path that has no folder row yet', async () => {
-    await service.upsertFolderState('proj-1', 'forest', { lastOpenedAt: 7 });
-    const [folder] = await service.getFolders('proj-1');
-    expect(folder.path).toBe('forest');
-    expect(folder.kind).toBe('scene');
-    expect(folder.lastOpenedAt).toBe(7);
-  });
+it('upsertFolderState inserts a row for a path that has no folder row yet', async () => {
+  await service.upsertFolderState('proj-1', 'forest', { lastOpenedAt: 7 });
+  const [folder] = await service.getFolders('proj-1');
+  expect(folder.path).toBe('forest');
+  expect(folder.kind).toBe('scene');
+  expect(folder.lastOpenedAt).toBe(7);
+});
 
-  it('getFolders ignores tile-kind folder rows sharing the same path', async () => {
-    await service.createFolder('proj-1', 'forest');
-    const db = TestBed.inject(DatabaseService);
-    await db.upsertFolderState('proj-1', 'tile', 'forest', { collapsed: true });
+it('getFolders ignores tile-kind folder rows sharing the same path', async () => {
+  await service.createFolder('proj-1', 'forest');
+  const db = TestBed.inject(DatabaseService);
+  await db.upsertFolderState('proj-1', 'tile', 'forest', { collapsed: true });
 
-    const folders = await service.getFolders('proj-1');
-    expect(folders).toHaveLength(1);
-    expect(folders[0].kind).toBe('scene');
-  });
+  const folders = await service.getFolders('proj-1');
+  expect(folders).toHaveLength(1);
+  expect(folders[0].kind).toBe('scene');
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -638,10 +648,12 @@ git commit -m "feature-17: kind-scope scene folder rows and add folder state ups
 ### Task 4: TileService — materialized tile folder rows
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/services/tile.service.ts`
 - Modify: `src/app/features/tile-manager/services/tile.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `DatabaseService` folder row operations (Task 2).
 - Produces (consumed by Task 8):
   - `async getFolders(projectId: string): Promise<string[]>` — now unions derived paths with materialized `kind='tile'` rows.
@@ -656,59 +668,59 @@ git commit -m "feature-17: kind-scope scene folder rows and add folder state ups
 Append to `src/app/features/tile-manager/services/tile.service.spec.ts`:
 
 ```ts
-  it('getFolders unions derived tile paths with materialized tile folder rows', async () => {
-    const t1 = await service.createTile('p1', 'A');
-    await service.updateTileFolder(t1.id, 'UI/Buttons');
-    await service.upsertFolderState('p1', 'UI/Buttons', { collapsed: true });
-    await service.upsertFolderState('p1', 'empty-folder', { lastOpenedAt: 7 });
+it('getFolders unions derived tile paths with materialized tile folder rows', async () => {
+  const t1 = await service.createTile('p1', 'A');
+  await service.updateTileFolder(t1.id, 'UI/Buttons');
+  await service.upsertFolderState('p1', 'UI/Buttons', { collapsed: true });
+  await service.upsertFolderState('p1', 'empty-folder', { lastOpenedAt: 7 });
 
-    const folders = await service.getFolders('p1');
-    expect(folders).toEqual(['', 'UI/Buttons', 'empty-folder']);
-  });
+  const folders = await service.getFolders('p1');
+  expect(folders).toEqual(['', 'UI/Buttons', 'empty-folder']);
+});
 
-  it('getFolderRows returns materialized tile folder rows only', async () => {
-    await service.upsertFolderState('p1', 'forest', { collapsed: true });
-    const rows = await service.getFolderRows('p1');
-    expect(rows).toHaveLength(1);
-    expect(rows[0].kind).toBe('tile');
-    expect(rows[0].collapsed).toBe(true);
-  });
+it('getFolderRows returns materialized tile folder rows only', async () => {
+  await service.upsertFolderState('p1', 'forest', { collapsed: true });
+  const rows = await service.getFolderRows('p1');
+  expect(rows).toHaveLength(1);
+  expect(rows[0].kind).toBe('tile');
+  expect(rows[0].collapsed).toBe(true);
+});
 
-  it('upsertFolderState persists folded state for a tile folder', async () => {
-    await service.upsertFolderState('p1', 'forest', { collapsed: true, lastOpenedAt: 42 });
-    const [row] = await service.getFolderRows('p1');
-    expect(row.collapsed).toBe(true);
-    expect(row.lastOpenedAt).toBe(42);
-  });
+it('upsertFolderState persists folded state for a tile folder', async () => {
+  await service.upsertFolderState('p1', 'forest', { collapsed: true, lastOpenedAt: 42 });
+  const [row] = await service.getFolderRows('p1');
+  expect(row.collapsed).toBe(true);
+  expect(row.lastOpenedAt).toBe(42);
+});
 
-  it('deleteTileFolders removes the tile folder subtree', async () => {
-    await service.upsertFolderState('p1', 'forest', {});
-    await service.upsertFolderState('p1', 'forest/caves', {});
-    await service.deleteTileFolders('p1', 'forest');
-    expect(await service.getFolderRows('p1')).toEqual([]);
-  });
+it('deleteTileFolders removes the tile folder subtree', async () => {
+  await service.upsertFolderState('p1', 'forest', {});
+  await service.upsertFolderState('p1', 'forest/caves', {});
+  await service.deleteTileFolders('p1', 'forest');
+  expect(await service.getFolderRows('p1')).toEqual([]);
+});
 
-  it('renameFolder rewrites materialized tile folder rows, preserving state', async () => {
-    await service.upsertFolderState('p1', 'forest', { collapsed: true });
-    await service.upsertFolderState('p1', 'forest/caves', {});
-    await service.upsertFolderState('p1', 'town', {});
+it('renameFolder rewrites materialized tile folder rows, preserving state', async () => {
+  await service.upsertFolderState('p1', 'forest', { collapsed: true });
+  await service.upsertFolderState('p1', 'forest/caves', {});
+  await service.upsertFolderState('p1', 'town', {});
 
-    await service.renameFolder('p1', 'forest', 'woods');
+  await service.renameFolder('p1', 'forest', 'woods');
 
-    const rows = await service.getFolderRows('p1');
-    expect(rows.map((r) => r.path).sort()).toEqual(['town', 'woods', 'woods/caves']);
-    expect(rows.find((r) => r.path === 'woods')?.collapsed).toBe(true);
-  });
+  const rows = await service.getFolderRows('p1');
+  expect(rows.map((r) => r.path).sort()).toEqual(['town', 'woods', 'woods/caves']);
+  expect(rows.find((r) => r.path === 'woods')?.collapsed).toBe(true);
+});
 
-  it('rewriteFolderRows rewrites materialized rows for a nesting move', async () => {
-    await service.upsertFolderState('p1', 'forest', {});
-    await service.upsertFolderState('p1', 'forest/caves', {});
+it('rewriteFolderRows rewrites materialized rows for a nesting move', async () => {
+  await service.upsertFolderState('p1', 'forest', {});
+  await service.upsertFolderState('p1', 'forest/caves', {});
 
-    await service.rewriteFolderRows('p1', 'forest', 'town/forest');
+  await service.rewriteFolderRows('p1', 'forest', 'town/forest');
 
-    const rows = await service.getFolderRows('p1');
-    expect(rows.map((r) => r.path).sort()).toEqual(['town/forest', 'town/forest/caves']);
-  });
+  const rows = await service.getFolderRows('p1');
+  expect(rows.map((r) => r.path).sort()).toEqual(['town/forest', 'town/forest/caves']);
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -821,11 +833,13 @@ git commit -m "feature-17: lazy materialization of tile folder rows and state up
 ### Task 5: SceneListComponent — collapsed state becomes an input, toggle becomes an output
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/scene-list.component.ts`
 - Modify: `src/app/features/scene-editor/scene-list.component.spec.ts`
 - (Template `scene-list.component.html` is unchanged — it already binds `collapsedFolders()` and `(toggleGroup)="onToggleGroup($event)"`.)
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces (consumed by Task 6):
   - `collapsedFolders = input<string[]>([])` — replaces the local signal.
@@ -837,49 +851,49 @@ git commit -m "feature-17: lazy materialization of tile folder rows and state up
 Replace the collapse test in `src/app/features/scene-editor/scene-list.component.spec.ts` (existing lines 74–98) with:
 
 ```ts
-  it('renders folders collapsed when the collapsedFolders input contains them', () => {
-    const scenes: Scene[] = [
-      makeScene('s1', 'Forest 1', 'forest'),
-      makeScene('s2', 'Cave 1', 'caves'),
-    ];
-    fixture.componentRef.setInput('scenes', scenes);
-    fixture.componentRef.setInput('collapsedFolders', ['forest']);
-    fixture.detectChanges();
+it('renders folders collapsed when the collapsedFolders input contains them', () => {
+  const scenes: Scene[] = [
+    makeScene('s1', 'Forest 1', 'forest'),
+    makeScene('s2', 'Cave 1', 'caves'),
+  ];
+  fixture.componentRef.setInput('scenes', scenes);
+  fixture.componentRef.setInput('collapsedFolders', ['forest']);
+  fixture.detectChanges();
 
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).not.toContain('Forest 1');
-    expect(compiled.textContent).toContain('Cave 1');
-    expect(compiled.querySelectorAll('[cdkDropList]').length).toBe(1);
-  });
+  const compiled = fixture.nativeElement as HTMLElement;
+  expect(compiled.textContent).not.toContain('Forest 1');
+  expect(compiled.textContent).toContain('Cave 1');
+  expect(compiled.querySelectorAll('[cdkDropList]').length).toBe(1);
+});
 
-  it('renders folders expanded when absent from the collapsedFolders input', () => {
-    const scenes: Scene[] = [
-      makeScene('s1', 'Forest 1', 'forest'),
-      makeScene('s2', 'Cave 1', 'caves'),
-    ];
-    fixture.componentRef.setInput('scenes', scenes);
-    fixture.componentRef.setInput('collapsedFolders', []);
-    fixture.detectChanges();
+it('renders folders expanded when absent from the collapsedFolders input', () => {
+  const scenes: Scene[] = [
+    makeScene('s1', 'Forest 1', 'forest'),
+    makeScene('s2', 'Cave 1', 'caves'),
+  ];
+  fixture.componentRef.setInput('scenes', scenes);
+  fixture.componentRef.setInput('collapsedFolders', []);
+  fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Forest 1');
-    expect(fixture.nativeElement.querySelectorAll('[cdkDropList]').length).toBe(2);
-  });
+  expect(fixture.nativeElement.textContent).toContain('Forest 1');
+  expect(fixture.nativeElement.querySelectorAll('[cdkDropList]').length).toBe(2);
+});
 
-  it('emits toggleFolder when a folder header is clicked', () => {
-    const scenes: Scene[] = [makeScene('s1', 'Forest 1', 'forest')];
-    fixture.componentRef.setInput('scenes', scenes);
-    fixture.detectChanges();
+it('emits toggleFolder when a folder header is clicked', () => {
+  const scenes: Scene[] = [makeScene('s1', 'Forest 1', 'forest')];
+  fixture.componentRef.setInput('scenes', scenes);
+  fixture.detectChanges();
 
-    const headerFor = (path: string) =>
-      Array.from(fixture.nativeElement.querySelectorAll('button')).find((b) =>
-        b.textContent?.includes(path),
-      ) as HTMLButtonElement;
+  const headerFor = (path: string) =>
+    Array.from(fixture.nativeElement.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes(path),
+    ) as HTMLButtonElement;
 
-    const emitSpy = vi.spyOn(component.toggleFolder, 'emit');
-    headerFor('forest')!.click();
-    fixture.detectChanges();
-    expect(emitSpy).toHaveBeenCalledWith('forest');
-  });
+  const emitSpy = vi.spyOn(component.toggleFolder, 'emit');
+  headerFor('forest')!.click();
+  fixture.detectChanges();
+  expect(emitSpy).toHaveBeenCalledWith('forest');
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -967,11 +981,13 @@ git commit -m "feature-17: scene list collapses flow through input/output instea
 ### Task 6: SceneEditorComponent — own the folding state
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/scene-editor.component.ts`
 - Modify: `src/app/features/scene-editor/scene-editor.component.html`
 - Modify: `src/app/features/scene-editor/scene-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `computeCollapsedKeys`, `type Folder` (Task 1); `SceneService.getFolders` (scene-kind) + `upsertFolderState` (Task 3).
 - Produces: nothing new for later tasks.
 - Internal surface (used by tests):
@@ -985,56 +1001,56 @@ git commit -m "feature-17: scene list collapses flow through input/output instea
 Append to `src/app/features/scene-editor/scene-editor.component.spec.ts` (the existing `describe` block; helpers `component`, `sceneService`, `db`, and the folder tests setup already exist):
 
 ```ts
-  it('loadFolders captures folder rows and computes the collapsed set', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    for (let i = 0; i < 7; i++) await component.onCreateFolder(`f${i}`);
-    await component.loadFolders();
-    expect(component.folderRows()).toHaveLength(7);
-    // 7 top-level folders > threshold 6 -> everything default-collapses
-    expect(component.collapsedFolders().sort()).toEqual(['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6']);
-  });
+it('loadFolders captures folder rows and computes the collapsed set', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  for (let i = 0; i < 7; i++) await component.onCreateFolder(`f${i}`);
+  await component.loadFolders();
+  expect(component.folderRows()).toHaveLength(7);
+  // 7 top-level folders > threshold 6 -> everything default-collapses
+  expect(component.collapsedFolders().sort()).toEqual(['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6']);
+});
 
-  it('touching a folder keeps it expanded above the threshold', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    for (let i = 0; i < 7; i++) await component.onCreateFolder(`f${i}`);
-    await component.loadFolders();
+it('touching a folder keeps it expanded above the threshold', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  for (let i = 0; i < 7; i++) await component.onCreateFolder(`f${i}`);
+  await component.loadFolders();
 
-    await component.onToggleSceneFolder('f0'); // expands -> writes collapsed=false + lastOpenedAt=now
+  await component.onToggleSceneFolder('f0'); // expands -> writes collapsed=false + lastOpenedAt=now
 
-    expect(component.collapsedFolders()).not.toContain('f0');
-    expect(component.collapsedFolders()).toContain('f1');
-    const row = (await db.folders.toArray()).find((r) => r.path === 'f0');
-    expect(row?.collapsed).toBe(false);
-    expect(row?.lastOpenedAt).toBeGreaterThan(0);
-  });
+  expect(component.collapsedFolders()).not.toContain('f0');
+  expect(component.collapsedFolders()).toContain('f1');
+  const row = (await db.folders.toArray()).find((r) => r.path === 'f0');
+  expect(row?.collapsed).toBe(false);
+  expect(row?.lastOpenedAt).toBeGreaterThan(0);
+});
 
-  it('collapsing a folder above the threshold persists collapsed=true', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    for (let i = 0; i < 7; i++) await component.onCreateFolder(`f${i}`);
-    await component.loadFolders();
+it('collapsing a folder above the threshold persists collapsed=true', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  for (let i = 0; i < 7; i++) await component.onCreateFolder(`f${i}`);
+  await component.loadFolders();
 
-    await component.onFolderRename({ fromKey: 'f6', toKey: 'f6x' }); // no-op rename guard test is elsewhere
-    await component.onToggleSceneFolder('f6'); // re-collapse an already-collapsed folder -> collapsed=true stays
+  await component.onFolderRename({ fromKey: 'f6', toKey: 'f6x' }); // no-op rename guard test is elsewhere
+  await component.onToggleSceneFolder('f6'); // re-collapse an already-collapsed folder -> collapsed=true stays
 
-    const row = (await db.folders.toArray()).find((r) => r.path === 'f6');
-    expect(row?.collapsed).toBe(true);
-  });
+  const row = (await db.folders.toArray()).find((r) => r.path === 'f6');
+  expect(row?.collapsed).toBe(true);
+});
 
-  it('selectScene bumps lastOpenedAt of the selected scene folder', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    await component.onCreateFolder('forest');
-    const scene = await sceneService.createScene('p1', 'Forest 1', 10, 10);
-    await sceneService.updateSceneFolder(scene.id, 'forest');
+it('selectScene bumps lastOpenedAt of the selected scene folder', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  await component.onCreateFolder('forest');
+  const scene = await sceneService.createScene('p1', 'Forest 1', 10, 10);
+  await sceneService.updateSceneFolder(scene.id, 'forest');
 
-    await component.selectScene(scene.id);
+  await component.selectScene(scene.id);
 
-    const row = (await db.folders.toArray()).find((r) => r.path === 'forest');
-    expect(row?.lastOpenedAt).toBeGreaterThan(0);
-  });
+  const row = (await db.folders.toArray()).find((r) => r.path === 'forest');
+  expect(row?.lastOpenedAt).toBeGreaterThan(0);
+});
 ```
 
 Note: `onCreateFolder` in the spec's existing tests is awaited directly (line 118), so the new tests can await it too. Each `onCreateFolder` also calls `loadFolders()` internally, but the explicit `await component.loadFolders()` keeps the rows signal fresh before asserting.
@@ -1057,10 +1073,10 @@ import { computeCollapsedKeys, type Folder } from '../../shared/models/folder.mo
 b) After the `folders` signal declaration (line 90), add:
 
 ```ts
-  /** Persisted scene folder rows for the current project (kind='scene'). */
-  folderRows = signal<Folder[]>([]);
-  /** Folder paths that render collapsed, derived from persisted folder state. */
-  collapsedFolders = computed(() => computeCollapsedKeys(this.folderRows(), this.folders()));
+/** Persisted scene folder rows for the current project (kind='scene'). */
+folderRows = signal<Folder[]>([]);
+/** Folder paths that render collapsed, derived from persisted folder state. */
+collapsedFolders = computed(() => computeCollapsedKeys(this.folderRows(), this.folders()));
 ```
 
 c) Replace `loadFolders` (lines 320–328):
@@ -1081,12 +1097,12 @@ c) Replace `loadFolders` (lines 320–328):
 d) In `selectScene` (lines 334–355), insert the touch block right after the `activeLayerId` if/else (after line 343), before `void this.sessions.updateSession(...)`:
 
 ```ts
-      if (scene?.folderPath) {
-        await this.sceneService.upsertFolderState(this.projectId(), scene.folderPath, {
-          lastOpenedAt: Date.now(),
-        });
-        await this.loadFolders();
-      }
+if (scene?.folderPath) {
+  await this.sceneService.upsertFolderState(this.projectId(), scene.folderPath, {
+    lastOpenedAt: Date.now(),
+  });
+  await this.loadFolders();
+}
 ```
 
 e) Add a new method after `selectScene` (after line 355):
@@ -1114,11 +1130,13 @@ e) Add a new method after `selectScene` (after line 355):
 f) Modify `src/app/features/scene-editor/scene-editor.component.html` — add two lines to the `rk-scene-list` element (after the `[folders]` line, keep existing outputs):
 
 ```html
-    [collapsedFolders]="collapsedFolders()"
+[collapsedFolders]="collapsedFolders()"
 ```
+
 and
+
 ```html
-    (toggleFolder)="onToggleSceneFolder($event)"
+(toggleFolder)="onToggleSceneFolder($event)"
 ```
 
 - [ ] **Step 4: Run the tests to verify they pass**
@@ -1138,10 +1156,12 @@ git commit -m "feature-17: scene editor owns and persists folder folding state"
 ### Task 7: TileListTreeComponent — collapsed-state tests
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/list/tile-list-tree.component.spec.ts`
 - (No component source change: `TileListTreeComponent` already exposes `collapsedFolders` input and `toggleFolder` output, and its template already binds both.)
 
 **Interfaces:**
+
 - Consumes: existing `collapsedFolders` input + `toggleFolder` output.
 - Produces: nothing new.
 
@@ -1150,50 +1170,50 @@ git commit -m "feature-17: scene editor owns and persists folder folding state"
 Append to `src/app/features/tile-manager/list/tile-list-tree.component.spec.ts`:
 
 ```ts
-  it('renders children collapsed when collapsedFolders input contains the folder', () => {
-    fixture.componentRef.setInput('tiles', [
-      {
-        id: 1,
-        name: 'Grass',
-        projectId: 'p1',
-        type: 'static',
-        animationSpeed: 1,
-        properties: { blocking: false, interactable: false },
-        spriteIds: [],
-        folderPath: 'forest',
-      },
-    ]);
-    fixture.componentRef.setInput('folders', ['forest']);
-    fixture.componentRef.setInput('collapsedFolders', ['forest']);
-    fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Grass');
-  });
+it('renders children collapsed when collapsedFolders input contains the folder', () => {
+  fixture.componentRef.setInput('tiles', [
+    {
+      id: 1,
+      name: 'Grass',
+      projectId: 'p1',
+      type: 'static',
+      animationSpeed: 1,
+      properties: { blocking: false, interactable: false },
+      spriteIds: [],
+      folderPath: 'forest',
+    },
+  ]);
+  fixture.componentRef.setInput('folders', ['forest']);
+  fixture.componentRef.setInput('collapsedFolders', ['forest']);
+  fixture.detectChanges();
+  expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Grass');
+});
 
-  it('emits toggleFolder when a folder header is clicked', () => {
-    const emitSpy = vi.spyOn(component.toggleFolder, 'emit');
-    fixture.componentRef.setInput('tiles', [
-      {
-        id: 1,
-        name: 'Grass',
-        projectId: 'p1',
-        type: 'static',
-        animationSpeed: 1,
-        properties: { blocking: false, interactable: false },
-        spriteIds: [],
-        folderPath: 'forest',
-      },
-    ]);
-    fixture.componentRef.setInput('folders', ['forest']);
-    fixture.detectChanges();
+it('emits toggleFolder when a folder header is clicked', () => {
+  const emitSpy = vi.spyOn(component.toggleFolder, 'emit');
+  fixture.componentRef.setInput('tiles', [
+    {
+      id: 1,
+      name: 'Grass',
+      projectId: 'p1',
+      type: 'static',
+      animationSpeed: 1,
+      properties: { blocking: false, interactable: false },
+      spriteIds: [],
+      folderPath: 'forest',
+    },
+  ]);
+  fixture.componentRef.setInput('folders', ['forest']);
+  fixture.detectChanges();
 
-    const headerFor = (path: string) =>
-      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) =>
-        b.textContent?.includes(path),
-      ) as HTMLButtonElement;
-    headerFor('forest')!.click();
-    fixture.detectChanges();
-    expect(emitSpy).toHaveBeenCalledWith('forest');
-  });
+  const headerFor = (path: string) =>
+    Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) =>
+      b.textContent?.includes(path),
+    ) as HTMLButtonElement;
+  headerFor('forest')!.click();
+  fixture.detectChanges();
+  expect(emitSpy).toHaveBeenCalledWith('forest');
+});
 ```
 
 - [ ] **Step 2: Run the test**
@@ -1213,10 +1233,12 @@ git commit -m "feature-17: cover tile tree collapse input and toggle output"
 ### Task 8: TileManagerComponent — own the folding state and materialize tile rows
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/tile-manager.component.ts`
 - Modify: `src/app/features/tile-manager/tile-manager.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `computeCollapsedKeys`, `type Folder` (Task 1); `TileService.getFolderRows / upsertFolderState / deleteTileFolders / rewriteFolderRows` (Task 4).
 - Produces: nothing new for later tasks.
 - Internal surface (used by tests):
@@ -1234,43 +1256,43 @@ Modify `src/app/features/tile-manager/tile-manager.component.spec.ts`:
 a) Add a folders cleanup inside the existing `beforeEach` (after `await db.sessions.clear();`, lines 62–66):
 
 ```ts
-    await db.folders.clear();
+await db.folders.clear();
 ```
 
 b) Replace the three folder tests at lines 130–155 with async versions (they now write real rows):
 
 ```ts
-  it('deletes an empty folder from the folder list after confirmation', async () => {
-    await setupWithProject();
-    const comp = fixture.componentInstance;
-    const db = TestBed.inject(DatabaseService);
-    await comp.onCreateFolder('mountain');
-    await new Promise((r) => setTimeout(r, 50));
-    expect(comp.folders()).toContain('mountain');
+it('deletes an empty folder from the folder list after confirmation', async () => {
+  await setupWithProject();
+  const comp = fixture.componentInstance;
+  const db = TestBed.inject(DatabaseService);
+  await comp.onCreateFolder('mountain');
+  await new Promise((r) => setTimeout(r, 50));
+  expect(comp.folders()).toContain('mountain');
 
-    comp.onFolderDeleteRequest('mountain');
-    expect(comp.pendingDeleteFolderPath()).toBe('mountain');
+  comp.onFolderDeleteRequest('mountain');
+  expect(comp.pendingDeleteFolderPath()).toBe('mountain');
 
-    await comp.onConfirmFolderDelete();
-    expect(comp.folders()).not.toContain('mountain');
-    expect((await db.folders.toArray()).filter((f) => f.path === 'mountain')).toEqual([]);
-  });
+  await comp.onConfirmFolderDelete();
+  expect(comp.folders()).not.toContain('mountain');
+  expect((await db.folders.toArray()).filter((f) => f.path === 'mountain')).toEqual([]);
+});
 
-  it('removes empty descendant folders together with the deleted folder', async () => {
-    await setupWithProject();
-    const comp = fixture.componentInstance;
-    const db = TestBed.inject(DatabaseService);
-    await comp.onCreateFolder('forest');
-    await comp.onCreateFolder('forest/caves');
-    await new Promise((r) => setTimeout(r, 50));
+it('removes empty descendant folders together with the deleted folder', async () => {
+  await setupWithProject();
+  const comp = fixture.componentInstance;
+  const db = TestBed.inject(DatabaseService);
+  await comp.onCreateFolder('forest');
+  await comp.onCreateFolder('forest/caves');
+  await new Promise((r) => setTimeout(r, 50));
 
-    comp.onFolderDeleteRequest('forest');
-    await comp.onConfirmFolderDelete();
+  comp.onFolderDeleteRequest('forest');
+  await comp.onConfirmFolderDelete();
 
-    expect(comp.folders()).not.toContain('forest');
-    expect(comp.folders()).not.toContain('forest/caves');
-    expect(await db.folders.toArray()).toEqual([]);
-  });
+  expect(comp.folders()).not.toContain('forest');
+  expect(comp.folders()).not.toContain('forest/caves');
+  expect(await db.folders.toArray()).toEqual([]);
+});
 ```
 
 The cluster test at lines 157–173 (`blocks deletion of a folder that still contains tiles`) is unchanged — it mutates `comp.folders` directly (`update(...)`), which still works because `folders` remains a writable signal.
@@ -1278,35 +1300,35 @@ The cluster test at lines 157–173 (`blocks deletion of a folder that still con
 c) Append new tests at the end of the `describe` block:
 
 ```ts
-  it('toggleFolder persists folded state and materializes a tile folder row', async () => {
-    await setupWithProject();
-    const comp = fixture.componentInstance;
-    const db = TestBed.inject(DatabaseService);
+it('toggleFolder persists folded state and materializes a tile folder row', async () => {
+  await setupWithProject();
+  const comp = fixture.componentInstance;
+  const db = TestBed.inject(DatabaseService);
 
-    await comp.toggleFolder('mountain');
+  await comp.toggleFolder('mountain');
 
-    const rows = await db.getFoldersByKind('test-proj', 'tile');
-    expect(rows).toHaveLength(1);
-    expect(rows[0].path).toBe('mountain');
-    expect(rows[0].collapsed).toBe(true);
-    expect(comp.collapsedFolders()).toContain('mountain');
-  });
+  const rows = await db.getFoldersByKind('test-proj', 'tile');
+  expect(rows).toHaveLength(1);
+  expect(rows[0].path).toBe('mountain');
+  expect(rows[0].collapsed).toBe(true);
+  expect(comp.collapsedFolders()).toContain('mountain');
+});
 
-  it('selecting a tile touches its folder row', async () => {
-    await setupWithProject();
-    const comp = fixture.componentInstance;
-    const db = TestBed.inject(DatabaseService);
-    const tileId = await addSeedTile();
-    await db.tiles.update(tileId, { folderPath: 'mountain' });
-    await comp.loadTiles();
+it('selecting a tile touches its folder row', async () => {
+  await setupWithProject();
+  const comp = fixture.componentInstance;
+  const db = TestBed.inject(DatabaseService);
+  const tileId = await addSeedTile();
+  await db.tiles.update(tileId, { folderPath: 'mountain' });
+  await comp.loadTiles();
 
-    await comp.selectTile(tileId);
+  await comp.selectTile(tileId);
 
-    const rows = await db.getFoldersByKind('test-proj', 'tile');
-    expect(rows).toHaveLength(1);
-    expect(rows[0].path).toBe('mountain');
-    expect(rows[0].lastOpenedAt).toBeGreaterThan(0);
-  });
+  const rows = await db.getFoldersByKind('test-proj', 'tile');
+  expect(rows).toHaveLength(1);
+  expect(rows[0].path).toBe('mountain');
+  expect(rows[0].lastOpenedAt).toBeGreaterThan(0);
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -1327,14 +1349,14 @@ import { computeCollapsedKeys, type Folder } from '../../shared/models/folder.mo
 b) Replace the `folders`/`collapsedFolders` signal pair (lines 94–98):
 
 ```ts
-  /** Distinct folder paths for the current project (derived + materialized rows). */
-  folders = signal<string[]>([]);
+/** Distinct folder paths for the current project (derived + materialized rows). */
+folders = signal<string[]>([]);
 
-  /** Materialized tile folder rows (kind='tile') for the current project. */
-  folderRows = signal<Folder[]>([]);
+/** Materialized tile folder rows (kind='tile') for the current project. */
+folderRows = signal<Folder[]>([]);
 
-  /** Collapsed folder paths, derived from persisted folder state. */
-  collapsedFolders = computed(() => computeCollapsedKeys(this.folderRows(), this.folders()));
+/** Collapsed folder paths, derived from persisted folder state. */
+collapsedFolders = computed(() => computeCollapsedKeys(this.folderRows(), this.folders()));
 ```
 
 c) Replace `loadFolders` (lines 240–248):
@@ -1418,30 +1440,30 @@ g) In `onFolderMove` (lines 375–425), compute a move target once (add after li
 After the existing line `const newPrefix = to ? to + '/' + from : from;` add nothing new (that IS the move target) — reuse it. Inside the `try` block, after the `for (const tile of tilesToUpdate) { … }` loop and before `await this.loadTiles();`, insert:
 
 ```ts
-      await this.tileService.rewriteFolderRows(this.projectId(), from, newPrefix);
+await this.tileService.rewriteFolderRows(this.projectId(), from, newPrefix);
 ```
 
 Inside the `execute` closure (after its tile loop) add:
 
 ```ts
-            await this.tileService.rewriteFolderRows(this.projectId(), from, newPrefix);
+await this.tileService.rewriteFolderRows(this.projectId(), from, newPrefix);
 ```
 
 and inside the `undo` closure (after its tile loop) add:
 
 ```ts
-            await this.tileService.rewriteFolderRows(this.projectId(), newPrefix, from);
+await this.tileService.rewriteFolderRows(this.projectId(), newPrefix, from);
 ```
 
 h) In `selectTile` (lines 432–446), insert after `this.selectedTile.set(tile ?? null);`:
 
 ```ts
-      if (tile?.folderPath) {
-        await this.tileService.upsertFolderState(this.projectId(), tile.folderPath, {
-          lastOpenedAt: Date.now(),
-        });
-        await this.loadFolders();
-      }
+if (tile?.folderPath) {
+  await this.tileService.upsertFolderState(this.projectId(), tile.folderPath, {
+    lastOpenedAt: Date.now(),
+  });
+  await this.loadFolders();
+}
 ```
 
 (Note: `toggleFolder` is declared later in the file than `loadFolders`, but method order in a class is irrelevant to the compiler.)
@@ -1489,6 +1511,7 @@ Expected: build succeeds within the bundle/style budgets.
 ```bash
 git add -A && git commit -m "feature-17: format and lint fixes"
 ```
+
 (Only if Step 1–3 changed files.)
 
 ---
