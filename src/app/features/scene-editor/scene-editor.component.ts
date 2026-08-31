@@ -115,6 +115,10 @@ export class SceneEditorComponent implements OnInit {
   pendingDeleteFolderPath = signal<string | null>(null);
   /** Id of the currently active layer for tile placement. */
   activeLayerId = signal<string | null>(null);
+  /** Whether the left scene list panel is visible (mobile-only toggle; not persisted). */
+  readonly leftPanelOpen = signal(true);
+  /** Whether the right minimap/layers/palette panel is visible (mobile-only toggle; not persisted). */
+  readonly rightPanelOpen = signal(true);
 
   /** The layers of the currently selected scene. */
   readonly sceneLayers = computed(() => this.selectedScene()?.layers ?? []);

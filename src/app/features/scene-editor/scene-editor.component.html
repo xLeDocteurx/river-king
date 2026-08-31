@@ -1,19 +1,32 @@
 <div class="tw-flex tw-h-full">
-  <rk-scene-list
-    class="tw-w-56 tw-shrink-0 tw-bg-card-bg tw-border-r tw-border-border"
-    [scenes]="scenes()"
-    [folders]="folders()"
-    [collapsedFolders]="collapsedFolders()"
-    [selectedSceneId]="selectedSceneId()"
-    (sceneSelect)="selectScene($event)"
-    (createScene)="onCreateScene()"
-    (sceneDelete)="onDeleteSceneRequest($event)"
-    (createFolder)="onCreateFolder($event)"
-    (folderDelete)="onFolderDeleteRequest($event)"
-    (sceneFolderChange)="onSceneFolderChange($event)"
-    (folderRename)="onFolderRename($event)"
-    (toggleFolder)="onToggleSceneFolder($event)"
-  />
+  <div
+    [class.tw-hidden]="!leftPanelOpen()"
+    class="md:tw-block tw-w-56 tw-shrink-0 tw-bg-card-bg tw-border-r tw-border-border"
+  >
+    <rk-scene-list
+      [scenes]="scenes()"
+      [folders]="folders()"
+      [collapsedFolders]="collapsedFolders()"
+      [selectedSceneId]="selectedSceneId()"
+      (sceneSelect)="selectScene($event)"
+      (createScene)="onCreateScene()"
+      (sceneDelete)="onDeleteSceneRequest($event)"
+      (createFolder)="onCreateFolder($event)"
+      (folderDelete)="onFolderDeleteRequest($event)"
+      (sceneFolderChange)="onSceneFolderChange($event)"
+      (folderRename)="onFolderRename($event)"
+      (toggleFolder)="onToggleSceneFolder($event)"
+    />
+  </div>
+  <button
+    type="button"
+    (click)="leftPanelOpen.update((v) => !v)"
+    [attr.aria-label]="leftPanelOpen() ? 'Hide scene list' : 'Show scene list'"
+    title="Toggle scene list"
+    class="md:tw-hidden tw-inline-flex tw-items-center tw-justify-center tw-w-8 tw-shrink-0 tw-bg-card-bg tw-text-muted-foreground hover:tw-text-foreground hover:tw-bg-muted tw-transition tw-cursor-pointer"
+  >
+    <span class="material-symbols" aria-hidden="true">chevron_left</span>
+  </button>
   <div class="tw-flex-1 tw-relative tw-overflow-hidden tw-bg-background">
     <rk-map-canvas
       [scene]="selectedScene()"
@@ -35,7 +48,10 @@
       <span class="material-symbols" aria-hidden="true">grid_on</span>
     </button>
   </div>
-  <div class="tw-w-52 tw-shrink-0 tw-bg-card-bg tw-border-l tw-border-border tw-flex tw-flex-col">
+  <div
+    [class.tw-hidden]="!rightPanelOpen()"
+    class="md:tw-block tw-w-52 tw-shrink-0 tw-bg-card-bg tw-border-l tw-border-border tw-flex tw-flex-col"
+  >
     @if (selectedScene(); as scene) {
       <rk-scene-minimap
         [scene]="scene"
@@ -72,6 +88,15 @@
       (tileSelect)="selectedTileId.set($event)"
     />
   </div>
+  <button
+    type="button"
+    (click)="rightPanelOpen.update((v) => !v)"
+    [attr.aria-label]="rightPanelOpen() ? 'Hide inspector panel' : 'Show inspector panel'"
+    title="Toggle inspector panel"
+    class="md:tw-hidden tw-inline-flex tw-items-center tw-justify-center tw-w-8 tw-shrink-0 tw-bg-card-bg tw-text-muted-foreground hover:tw-text-foreground hover:tw-bg-muted tw-transition tw-cursor-pointer"
+  >
+    <span class="material-symbols" aria-hidden="true">chevron_right</span>
+  </button>
 </div>
 
 <rk-confirm-dialog [data]="deleteDialogData()" (confirmed)="onConfirmDelete()" />

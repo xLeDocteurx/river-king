@@ -9,17 +9,19 @@
         class="tw-flex tw-items-center tw-gap-2 hover:tw-opacity-80 tw-transition"
       >
         <span class="tw-block tw-w-2.5 tw-h-2.5 tw-bg-accent" aria-hidden="true"></span>
-        <span class="tw-text-sm tw-font-semibold">River King Engine</span>
+        <span class="tw-text-sm tw-font-semibold tw-hidden sm:tw-inline">River King Engine</span>
       </a>
 
       <!-- Project navigation (visible only when inside a project) -->
       @if (isProjectRoute()) {
-        <nav class="tw-flex tw-items-stretch tw-self-stretch tw-border-l tw-border-border tw-pl-4">
+        <nav
+          class="tw-flex tw-flex-1 tw-min-w-0 tw-items-stretch tw-self-stretch tw-overflow-x-auto tw-border-l tw-border-border tw-pl-4"
+        >
           <a
             [routerLink]="['/project', projectId(), 'scenes']"
             routerLinkActive="tw-text-foreground tw-border-accent"
             ariaCurrentWhenActive="page"
-            class="nav-tab tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
+            class="nav-tab tw-flex tw-shrink-0 tw-whitespace-nowrap tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
           >
             Scenes
           </a>
@@ -27,7 +29,7 @@
             [routerLink]="['/project', projectId(), 'tiles']"
             routerLinkActive="tw-text-foreground tw-border-accent"
             ariaCurrentWhenActive="page"
-            class="nav-tab tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
+            class="nav-tab tw-flex tw-shrink-0 tw-whitespace-nowrap tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
           >
             Tiles
           </a>
@@ -35,7 +37,7 @@
             [routerLink]="['/project', projectId(), 'sprites']"
             routerLinkActive="tw-text-foreground tw-border-accent"
             ariaCurrentWhenActive="page"
-            class="nav-tab tw-flex tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
+            class="nav-tab tw-flex tw-shrink-0 tw-whitespace-nowrap tw-items-center tw-px-2.5 tw-text-xs tw-font-medium tw-text-muted-foreground tw-border-b tw-border-transparent hover:tw-text-foreground tw-transition"
           >
             Sprites
           </a>

@@ -156,6 +156,10 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Whether the onion-skin controls popover is currently open. */
   readonly onionPanelOpen = signal(false);
+  /** Whether the left tile list panel is visible (mobile-only toggle; not persisted). */
+  readonly leftPanelOpen = signal(true);
+  /** Whether the right palette/tools panel is visible (mobile-only toggle; not persisted). */
+  readonly rightPanelOpen = signal(true);
 
   /** Computed pixel data for the previous frame onion skin, or null. */
   readonly onionSkinPrevData = computed(() => {
