@@ -7,6 +7,9 @@ import {
   OnInit,
   ChangeDetectionStrategy,
   computed,
+  ElementRef,
+  HostListener,
+  ViewChild,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -66,6 +69,9 @@ export class SpriteEditorComponent implements OnInit {
   private readonly undo = inject(UndoService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly shortcuts = inject(KeyboardShortcutsService);
+
+  /** Reference to the wrapper anchoring the onion popover (button + panel). */
+  @ViewChild('onionAnchor', { static: false }) onionAnchor?: ElementRef<HTMLElement>;
 
   /** Reactive signal holding the current project ID. */
   projectId = signal<string>('');
@@ -191,6 +197,25 @@ export class SpriteEditorComponent implements OnInit {
   /** Closes the onion-skin controls popover. */
   closeOnionPanel(): void {
     this.onionPanelOpen.set(false);
+  }
+
+  /**
+   * Closes the onion popover when a click lands outside the button + panel.
+   * @param event - The document-level mouse click event.
+   */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.onionPanelOpen()) return;
+    const anchor = this.onionAnchor?.nativeElement;
+    if (!anchor?.contains(event.target as Node)) {
+      this.closeOnionPanel();
+    }
+  }
+
+  /** Closes the onion popover when the user presses Escape. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeOnionPanel();
   }
 
   /** Whether the animation preview is playing. */

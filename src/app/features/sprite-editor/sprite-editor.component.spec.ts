@@ -703,4 +703,136 @@ describe('SpriteEditorComponent', () => {
     component.closeOnionPanel();
     expect(component.onionPanelOpen()).toBe(false);
   });
+
+  it('renders the onion floating button for an animated multi-frame tile and no inline Onion row', () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.sprites.set([
+      { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
+      { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
+    ]);
+    component.tiles.set([
+      { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
+    ]);
+    component.selectedTileId.set(10);
+    component.selectedSpriteId.set(1);
+    component.selectedSprite.set(component.sprites()[0]);
+    component.paletteIndices.set([
+      [0, 0],
+      [0, 0],
+    ]);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const onionButton = compiled.querySelector('button[aria-label="Onion skin controls"]');
+    expect(onionButton).toBeTruthy();
+    expect(compiled.textContent).not.toContain('Onion');
+  });
+
+  it('does not render the onion button for a static or single-frame tile', () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.sprites.set([{ id: 1, pixelData: 'A', tileId: 10 } as Sprite]);
+    component.tiles.set([
+      { id: 10, name: 'Static', spriteIds: [1], type: 'static' } as Tile,
+    ]);
+    component.selectedTileId.set(10);
+    component.selectedSpriteId.set(1);
+    component.selectedSprite.set(component.sprites()[0]);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('button[aria-label="Onion skin controls"]')).toBeNull();
+  });
+
+  it('opens the popover on button click and closes on re-click', () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.sprites.set([
+      { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
+      { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
+    ]);
+    component.tiles.set([
+      { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
+    ]);
+    component.selectedTileId.set(10);
+    component.selectedSpriteId.set(1);
+    component.selectedSprite.set(component.sprites()[0]);
+    component.paletteIndices.set([
+      [0, 0],
+      [0, 0],
+    ]);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const onionButton = compiled.querySelector(
+      'button[aria-label="Onion skin controls"]',
+    ) as HTMLButtonElement;
+    onionButton.click();
+    fixture.detectChanges();
+    expect(component.onionPanelOpen()).toBe(true);
+    expect(compiled.textContent).toContain('skip_previous');
+
+    onionButton.click();
+    fixture.detectChanges();
+    expect(component.onionPanelOpen()).toBe(false);
+  });
+
+  it('closes the popover when clicking outside the anchor', () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.sprites.set([
+      { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
+      { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
+    ]);
+    component.tiles.set([
+      { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
+    ]);
+    component.selectedTileId.set(10);
+    component.selectedSpriteId.set(1);
+    component.selectedSprite.set(component.sprites()[0]);
+    fixture.detectChanges();
+    component.onionPanelOpen.set(true);
+    fixture.detectChanges();
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(component.onionPanelOpen()).toBe(false);
+  });
+
+  it('closes the popover when pressing Escape', () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.onionPanelOpen.set(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+    expect(component.onionPanelOpen()).toBe(false);
+  });
+
+  it('prev/next toggles and opacity sliders in the popover keep working', () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    const component = fixture.componentInstance;
+    component.sprites.set([
+      { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
+      { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
+      { id: 3, pixelData: 'C', tileId: 10 } as Sprite,
+    ]);
+    component.tiles.set([
+      { id: 10, name: 'Test', spriteIds: [1, 2, 3], type: 'animated' } as Tile,
+    ]);
+    component.selectedTileId.set(10);
+    component.selectedSpriteId.set(2);
+    component.selectedSprite.set(component.sprites()[1]);
+    component.onionPanelOpen.set(true);
+    component.paletteIndices.set([
+      [0, 0],
+      [0, 0],
+    ]);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const prevToggle = compiled.querySelector(
+      'button[title="Previous frame"]',
+    ) as HTMLButtonElement;
+    prevToggle.click();
+    fixture.detectChanges();
+    expect(component.onionSkinPrevEnabled()).toBe(true);
+    const nextToggle = compiled.querySelector('button[title="Next frame"]') as HTMLButtonElement;
+    nextToggle.click();
+    fixture.detectChanges();
+    expect(component.onionSkinNextEnabled()).toBe(true);
+  });
 });
