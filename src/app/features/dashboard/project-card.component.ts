@@ -1,8 +1,11 @@
-import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
 import type { Project } from '../../shared/models/project.model';
+import { ProjectIoService } from '../../core/services/project-io.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 /**
- * Displays a single project as a clickable editor-style card: name, meta line, palette preview, and a hover delete action.
+ * Displays a single project as a clickable editor-style card: name, meta line,
+ * palette preview, and hover actions to export or delete.
  */
 @Component({
   selector: 'rk-project-card',
@@ -12,6 +15,9 @@ import type { Project } from '../../shared/models/project.model';
   styleUrl: './project-card.component.scss',
 })
 export class ProjectCardComponent {
+  private readonly projectIo = inject(ProjectIoService);
+  private readonly notification = inject(NotificationService);
+
   /** Required project data input. */
   project = input.required<Project>();
 
@@ -44,5 +50,51 @@ export class ProjectCardComponent {
   onDelete(event: Event): void {
     event.stopPropagation();
     this.delete.emit(this.project().id);
+  }
+
+  /**
+   * Exports the project to a downloadable `.rkproj` file without opening it.
+   * @param event - DOM click event, stopped so it does not bubble to the card root.
+   */
+  async onExport(event: Event): Promise<void> {
+    event.stopPropagation();
+    const project = this.project();
+    try {
+      const json = await this.projectIo.exportProject(project.id);
+      this.download(json, project.name);
+    } catch (error) {
+      console.error('Failed to export project:', error);
+      this.notification.error('Failed to export project');
+    }
+  }
+
+  /**
+   * Triggers a browser download of the archive JSON.
+   * @param json - The archive serialization.
+   * @param name - Project name used for the file slug.
+   */
+  private download(json: string, name: string): void {
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `river-king-${this.slugify(name)}.rkproj`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Lowercases a name and collapses non-alphanumeric runs into dashes.
+   * @param name - Raw name.
+   * @returns URL-safe slug, never empty.
+   */
+  private slugify(name: string): string {
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return slug || 'project';
   }
 }
