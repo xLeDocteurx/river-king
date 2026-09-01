@@ -656,9 +656,7 @@ describe('SpriteEditorComponent', () => {
       { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
       { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
     ]);
-    component.tiles.set([
-      { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
-    ]);
+    component.tiles.set([{ id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile]);
     component.selectedTileId.set(10);
     component.selectedSpriteId.set(1);
     component.onionPanelOpen.set(true);
@@ -711,9 +709,7 @@ describe('SpriteEditorComponent', () => {
       { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
       { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
     ]);
-    component.tiles.set([
-      { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
-    ]);
+    component.tiles.set([{ id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile]);
     component.selectedTileId.set(10);
     component.selectedSpriteId.set(1);
     component.selectedSprite.set(component.sprites()[0]);
@@ -732,9 +728,7 @@ describe('SpriteEditorComponent', () => {
     fixture = TestBed.createComponent(SpriteEditorComponent);
     const component = fixture.componentInstance;
     component.sprites.set([{ id: 1, pixelData: 'A', tileId: 10 } as Sprite]);
-    component.tiles.set([
-      { id: 10, name: 'Static', spriteIds: [1], type: 'static' } as Tile,
-    ]);
+    component.tiles.set([{ id: 10, name: 'Static', spriteIds: [1], type: 'static' } as Tile]);
     component.selectedTileId.set(10);
     component.selectedSpriteId.set(1);
     component.selectedSprite.set(component.sprites()[0]);
@@ -750,9 +744,7 @@ describe('SpriteEditorComponent', () => {
       { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
       { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
     ]);
-    component.tiles.set([
-      { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
-    ]);
+    component.tiles.set([{ id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile]);
     component.selectedTileId.set(10);
     component.selectedSpriteId.set(1);
     component.selectedSprite.set(component.sprites()[0]);
@@ -782,9 +774,7 @@ describe('SpriteEditorComponent', () => {
       { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
       { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
     ]);
-    component.tiles.set([
-      { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
-    ]);
+    component.tiles.set([{ id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile]);
     component.selectedTileId.set(10);
     component.selectedSpriteId.set(1);
     component.selectedSprite.set(component.sprites()[0]);
@@ -811,9 +801,7 @@ describe('SpriteEditorComponent', () => {
       { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
       { id: 3, pixelData: 'C', tileId: 10 } as Sprite,
     ]);
-    component.tiles.set([
-      { id: 10, name: 'Test', spriteIds: [1, 2, 3], type: 'animated' } as Tile,
-    ]);
+    component.tiles.set([{ id: 10, name: 'Test', spriteIds: [1, 2, 3], type: 'animated' } as Tile]);
     component.selectedTileId.set(10);
     component.selectedSpriteId.set(2);
     component.selectedSprite.set(component.sprites()[1]);

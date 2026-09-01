@@ -26,10 +26,12 @@
 ### Task 1: Onion panel open state + close behaviors (signals and handlers)
 
 **Files:**
+
 - Modify: `src/app/features/sprite-editor/sprite-editor.component.ts`
 - Test: `src/app/features/sprite-editor/sprite-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: existing `@HostListener`-compatible host element (component already root-rendered by the test harness); no `ViewChild` yet (added in Task 2).
 - Produces: `onionPanelOpen: Signal<boolean>`, `toggleOnionPanel(): void`, `closeOnionPanel(): void`. `selectSprite` and `selectTile` close the panel on switch. The `@HostListener('document:click')` handler is added in Task 2 (needs the wrapper element ref).
 
@@ -45,9 +47,7 @@ it('closes the onion panel when switching to another sprite', async () => {
     { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
     { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
   ]);
-  component.tiles.set([
-    { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
-  ]);
+  component.tiles.set([{ id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile]);
   component.selectedTileId.set(10);
   component.selectedSpriteId.set(1);
   component.onionPanelOpen.set(true);
@@ -163,11 +163,13 @@ git commit -m "feature-41: add onion popover open state and close-on-select beha
 ### Task 2: Floating button + popover panel in the template
 
 **Files:**
+
 - Modify: `src/app/features/sprite-editor/sprite-editor.component.ts`
 - Modify: `src/app/features/sprite-editor/sprite-editor.component.html`
 - Test: `src/app/features/sprite-editor/sprite-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `onionPanelOpen`, `toggleOnionPanel`, `closeOnionPanel`, `onionSkinPrevEnabled/NextEnabled`, `onionSkinPrevOpacity/NextOpacity`, `hasPrevFrame()`, `hasNextFrame()`, `currentTile()`, `currentFrames()` from Task 1 / existing code.
 - Produces: a `@ViewChild('onionAnchor')` element ref used by the outside-click host listener so the panel closes only when clicking outside the button+panel.
 
@@ -183,9 +185,7 @@ it('renders the onion floating button for an animated multi-frame tile and no in
     { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
     { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
   ]);
-  component.tiles.set([
-    { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
-  ]);
+  component.tiles.set([{ id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile]);
   component.selectedTileId.set(10);
   component.selectedSpriteId.set(1);
   component.selectedSprite.set(component.sprites()[0]);
@@ -200,9 +200,7 @@ it('does not render the onion button for a static or single-frame tile', () => {
   fixture = TestBed.createComponent(SpriteEditorComponent);
   const component = fixture.componentInstance;
   component.sprites.set([{ id: 1, pixelData: 'A', tileId: 10 } as Sprite]);
-  component.tiles.set([
-    { id: 10, name: 'Static', spriteIds: [1], type: 'static' } as Tile,
-  ]);
+  component.tiles.set([{ id: 10, name: 'Static', spriteIds: [1], type: 'static' } as Tile]);
   component.selectedTileId.set(10);
   component.selectedSpriteId.set(1);
   component.selectedSprite.set(component.sprites()[0]);
@@ -218,9 +216,7 @@ it('opens the popover on button click and closes on re-click', () => {
     { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
     { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
   ]);
-  component.tiles.set([
-    { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
-  ]);
+  component.tiles.set([{ id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile]);
   component.selectedTileId.set(10);
   component.selectedSpriteId.set(1);
   component.selectedSprite.set(component.sprites()[0]);
@@ -246,9 +242,7 @@ it('closes the popover when clicking outside the anchor', () => {
     { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
     { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
   ]);
-  component.tiles.set([
-    { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
-  ]);
+  component.tiles.set([{ id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile]);
   component.selectedTileId.set(10);
   component.selectedSpriteId.set(1);
   component.selectedSprite.set(component.sprites()[0]);
@@ -274,18 +268,14 @@ it('prev/next toggles and opacity sliders in the popover keep working', () => {
     { id: 1, pixelData: 'A', tileId: 10 } as Sprite,
     { id: 2, pixelData: 'B', tileId: 10 } as Sprite,
   ]);
-  component.tiles.set([
-    { id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile,
-  ]);
+  component.tiles.set([{ id: 10, name: 'Test', spriteIds: [1, 2], type: 'animated' } as Tile]);
   component.selectedTileId.set(10);
   component.selectedSpriteId.set(2);
   component.selectedSprite.set(component.sprites()[1]);
   component.onionPanelOpen.set(true);
   fixture.detectChanges();
   const compiled = fixture.nativeElement as HTMLElement;
-  const prevToggle = compiled.querySelector(
-    'button[title="Previous frame"]',
-  ) as HTMLButtonElement;
+  const prevToggle = compiled.querySelector('button[title="Previous frame"]') as HTMLButtonElement;
   prevToggle.click();
   fixture.detectChanges();
   expect(component.onionSkinPrevEnabled()).toBe(true);
@@ -322,73 +312,78 @@ Expected: FAIL — no `button[aria-label="Onion skin controls"]` exists yet.
     (zoomChange)="zoomLevel.set($event)"
   />
   @if (currentTile()?.type === 'animated' && currentFrames().length > 1) {
-    <button
-      type="button"
-      (click)="toggleOnionPanel()"
-      [attr.aria-label]="'Onion skin controls'"
-      [attr.aria-expanded]="onionPanelOpen()"
-      [title]="onionPanelOpen() ? 'Close onion skin controls' : 'Onion skin controls'"
-      class="tw-absolute tw-bottom-1 tw-left-1 tw-z-10 tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
-    >
-      <span class="material-symbols tw-text-sm" aria-hidden="true">invert_colors</span>
-    </button>
-    @if (onionPanelOpen()) {
-      <div
-        class="tw-absolute tw-bottom-9 tw-left-0 tw-z-10 tw-flex tw-flex-col tw-gap-1 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-px-3 tw-py-2 tw-shadow-md"
+  <button
+    type="button"
+    (click)="toggleOnionPanel()"
+    [attr.aria-label]="'Onion skin controls'"
+    [attr.aria-expanded]="onionPanelOpen()"
+    [title]="onionPanelOpen() ? 'Close onion skin controls' : 'Onion skin controls'"
+    class="tw-absolute tw-bottom-1 tw-left-1 tw-z-10 tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+  >
+    <span class="material-symbols tw-text-sm" aria-hidden="true">invert_colors</span>
+  </button>
+  @if (onionPanelOpen()) {
+  <div
+    class="tw-absolute tw-bottom-9 tw-left-0 tw-z-10 tw-flex tw-flex-col tw-gap-1 tw-rounded-sm tw-border tw-border-border tw-bg-background tw-px-3 tw-py-2 tw-shadow-md"
+  >
+    <div class="tw-flex tw-items-center tw-gap-2">
+      <span
+        class="tw-text-[10px] tw-text-muted-foreground tw-uppercase tw-tracking-wider tw-font-semibold"
+        >Prev</span
       >
-        <div class="tw-flex tw-items-center tw-gap-2">
-          <span class="tw-text-[10px] tw-text-muted-foreground tw-uppercase tw-tracking-wider tw-font-semibold">Prev</span>
-          <button
-            type="button"
-            (click)="onionSkinPrevEnabled.update((v) => !v)"
-            [disabled]="!hasPrevFrame()"
-            [class.tw-text-accent]="onionSkinPrevEnabled()"
-            [class.tw-text-muted-foreground]="!onionSkinPrevEnabled()"
-            class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition-colors disabled:tw-opacity-30"
-            title="Previous frame"
-          >
-            <span class="material-symbols" aria-hidden="true">skip_previous</span>
-          </button>
-          @if (onionSkinPrevEnabled()) {
-            <input
-              type="range"
-              min="0"
-              max="100"
-              [value]="onionSkinPrevOpacity() * 100"
-              (input)="onionSkinPrevOpacity.set($any($event.target).valueAsNumber / 100)"
-              class="tw-w-16 tw-h-1 tw-appearance-none tw-bg-muted tw-rounded-full"
-              title="Previous frame opacity"
-            />
-          }
-        </div>
-        <div class="tw-flex tw-items-center tw-gap-2">
-          <span class="tw-text-[10px] tw-text-muted-foreground tw-uppercase tw-tracking-wider tw-font-semibold">Next</span>
-          <button
-            type="button"
-            (click)="onionSkinNextEnabled.update((v) => !v)"
-            [disabled]="!hasNextFrame()"
-            [class.tw-text-accent]="onionSkinNextEnabled()"
-            [class.tw-text-muted-foreground]="!onionSkinNextEnabled()"
-            class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition-colors disabled:tw-opacity-30"
-            title="Next frame"
-          >
-            <span class="material-symbols" aria-hidden="true">skip_next</span>
-          </button>
-          @if (onionSkinNextEnabled()) {
-            <input
-              type="range"
-              min="0"
-              max="100"
-              [value]="onionSkinNextOpacity() * 100"
-              (input)="onionSkinNextOpacity.set($any($event.target).valueAsNumber / 100)"
-              class="tw-w-16 tw-h-1 tw-appearance-none tw-bg-muted tw-rounded-full"
-              title="Next frame opacity"
-            />
-          }
-        </div>
-      </div>
-    }
-  }
+      <button
+        type="button"
+        (click)="onionSkinPrevEnabled.update((v) => !v)"
+        [disabled]="!hasPrevFrame()"
+        [class.tw-text-accent]="onionSkinPrevEnabled()"
+        [class.tw-text-muted-foreground]="!onionSkinPrevEnabled()"
+        class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition-colors disabled:tw-opacity-30"
+        title="Previous frame"
+      >
+        <span class="material-symbols" aria-hidden="true">skip_previous</span>
+      </button>
+      @if (onionSkinPrevEnabled()) {
+      <input
+        type="range"
+        min="0"
+        max="100"
+        [value]="onionSkinPrevOpacity() * 100"
+        (input)="onionSkinPrevOpacity.set($any($event.target).valueAsNumber / 100)"
+        class="tw-w-16 tw-h-1 tw-appearance-none tw-bg-muted tw-rounded-full"
+        title="Previous frame opacity"
+      />
+      }
+    </div>
+    <div class="tw-flex tw-items-center tw-gap-2">
+      <span
+        class="tw-text-[10px] tw-text-muted-foreground tw-uppercase tw-tracking-wider tw-font-semibold"
+        >Next</span
+      >
+      <button
+        type="button"
+        (click)="onionSkinNextEnabled.update((v) => !v)"
+        [disabled]="!hasNextFrame()"
+        [class.tw-text-accent]="onionSkinNextEnabled()"
+        [class.tw-text-muted-foreground]="!onionSkinNextEnabled()"
+        class="tw-p-1 tw-rounded-sm hover:tw-bg-muted tw-transition-colors disabled:tw-opacity-30"
+        title="Next frame"
+      >
+        <span class="material-symbols" aria-hidden="true">skip_next</span>
+      </button>
+      @if (onionSkinNextEnabled()) {
+      <input
+        type="range"
+        min="0"
+        max="100"
+        [value]="onionSkinNextOpacity() * 100"
+        (input)="onionSkinNextOpacity.set($any($event.target).valueAsNumber / 100)"
+        class="tw-w-16 tw-h-1 tw-appearance-none tw-bg-muted tw-rounded-full"
+        title="Next frame opacity"
+      />
+      }
+    </div>
+  </div>
+  } }
 </div>
 ```
 

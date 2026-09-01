@@ -29,10 +29,10 @@ floating button over the canvas.
 
 - **Control location:** the onion button floats over the pixel canvas in the sprite
   editor, at the **bottom-left** corner of the canvas (`tw-absolute tw-bottom-1
-  tw-left-1`). The grid toggle occupies the top-right corner, so the two never
+tw-left-1`). The grid toggle occupies the top-right corner, so the two never
   overlap.
 - **Panel placement:** the popover opens **above** the button (`tw-absolute
-  tw-bottom-9 tw-left-0`), since the button sits at the bottom of the canvas.
+tw-bottom-9 tw-left-0`), since the button sits at the bottom of the canvas.
 - **Non-modal popover:** uses the floating-panel styling precedent from
   `rk-searchable-select` (`searchable-select.component.html:25`:
   `tw-absolute tw-z-10 tw-border tw-border-border tw-bg-background tw-rounded-sm`).
@@ -84,9 +84,9 @@ listeners. No change to onion value state or to what is passed to the canvas.
 - **Floating button** — mirrors the grid button: `tw-absolute` + Material Symbol icon
   `style` (e.g. `layer` / `invert_colors`), 6x6 (w-6 h-6)
   `tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground
-  tw-cursor-pointer hover:tw-bg-accent`, `[title]` tooltip and `[attr.aria-label]`.
+tw-cursor-pointer hover:tw-bg-accent`, `[title]` tooltip and `[attr.aria-label]`.
 - **Popover panel** — `tw-absolute tw-z-10 tw-rounded-sm tw-border tw-border-border
-  tw-bg-background tw-shadow` with the prev/next buttons and sliders laid out as in the
+tw-bg-background tw-shadow` with the prev/next buttons and sliders laid out as in the
   old row.
 - All styling uses design-system tokens (`tw-*` prefix); no hardcoded colors.
 
