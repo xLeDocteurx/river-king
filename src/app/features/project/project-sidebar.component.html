@@ -1,33 +1,45 @@
-<nav
-  class="tw-w-64 tw-h-full tw-border-r tw-border-border tw-bg-card-bg tw-p-4 tw-flex tw-flex-col tw-gap-1"
->
-  <div class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-mb-2">
-    <span class="material-symbols tw-text-primary" aria-hidden="true">construction</span>
-    <span class="tw-font-semibold tw-text-foreground">Workspace</span>
-  </div>
+<div class="tw-flex tw-h-full">
+  <button
+    type="button"
+    (click)="toggle()"
+    [attr.aria-label]="collapsed() ? 'Show project navigation' : 'Hide project navigation'"
+    title="Toggle project navigation"
+    class="md:tw-hidden tw-inline-flex tw-items-center tw-justify-center tw-w-8 tw-shrink-0 tw-border-r tw-border-border tw-bg-card-bg tw-text-muted-foreground hover:tw-text-foreground hover:tw-bg-muted tw-transition tw-cursor-pointer"
+  >
+    <span class="material-symbols" aria-hidden="true">menu_open</span>
+  </button>
+  <nav
+    [class.tw-hidden]="collapsed()"
+    class="md:tw-block tw-w-64 tw-h-full tw-border-r tw-border-border tw-bg-card-bg tw-p-4 tw-flex tw-flex-col tw-gap-1"
+  >
+    <div class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-mb-2">
+      <span class="material-symbols tw-text-primary" aria-hidden="true">construction</span>
+      <span class="tw-font-semibold tw-text-foreground">Workspace</span>
+    </div>
 
-  <a
-    [routerLink]="['scenes']"
-    routerLinkActive="tw-bg-primary/10 tw-text-primary tw-border-l-2 tw-border-primary"
-    class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-sm tw-transition hover:tw-bg-muted tw-text-muted-foreground"
-  >
-    <span class="material-symbols" aria-hidden="true">map</span>
-    Scenes
-  </a>
-  <a
-    [routerLink]="['tiles']"
-    routerLinkActive="tw-bg-primary/10 tw-text-primary tw-border-l-2 tw-border-primary"
-    class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-sm tw-transition hover:tw-bg-muted tw-text-muted-foreground"
-  >
-    <span class="material-symbols" aria-hidden="true">grid_view</span>
-    Tiles
-  </a>
-  <a
-    [routerLink]="['sprites']"
-    routerLinkActive="tw-bg-primary/10 tw-text-primary tw-border-l-2 tw-border-primary"
-    class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-sm tw-transition hover:tw-bg-muted tw-text-muted-foreground"
-  >
-    <span class="material-symbols" aria-hidden="true">brush</span>
-    Sprites
-  </a>
-</nav>
+    <a
+      [routerLink]="['scenes']"
+      routerLinkActive="tw-bg-primary/10 tw-text-primary tw-border-l-2 tw-border-primary"
+      class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-sm tw-transition hover:tw-bg-muted tw-text-muted-foreground"
+    >
+      <span class="material-symbols" aria-hidden="true">map</span>
+      Scenes
+    </a>
+    <a
+      [routerLink]="['tiles']"
+      routerLinkActive="tw-bg-primary/10 tw-text-primary tw-border-l-2 tw-border-primary"
+      class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-sm tw-transition hover:tw-bg-muted tw-text-muted-foreground"
+    >
+      <span class="material-symbols" aria-hidden="true">grid_view</span>
+      Tiles
+    </a>
+    <a
+      [routerLink]="['sprites']"
+      routerLinkActive="tw-bg-primary/10 tw-text-primary tw-border-l-2 tw-border-primary"
+      class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-2 tw-rounded-sm tw-transition hover:tw-bg-muted tw-text-muted-foreground"
+    >
+      <span class="material-symbols" aria-hidden="true">brush</span>
+      Sprites
+    </a>
+  </nav>
+</div>

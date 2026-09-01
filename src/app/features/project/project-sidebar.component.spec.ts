@@ -44,7 +44,7 @@ describe('ProjectSidebarComponent', () => {
     fixture.detectChanges();
 
     const icons = fixture.nativeElement.querySelectorAll('.material-symbols');
-    // Workspace icon + 3 nav icons = 4 total
-    expect(icons.length).toBe(4);
+    // Workspace icon + 3 nav icons + mobile toggle icon = 5 total
+    expect(icons.length).toBe(5);
   });
 });

@@ -100,6 +100,8 @@ export class TileManagerComponent implements OnInit {
 
   /** Collapsed folder paths, derived from persisted folder state. */
   collapsedFolders = computed(() => computeCollapsedKeys(this.folderRows(), this.folders()));
+  /** Whether the left tile/folder tree is visible (mobile-only toggle; not persisted). */
+  readonly leftPanelOpen = signal(true);
 
   /** Static configuration data passed to the confirmation dialog. */
   readonly deleteDialogData: ConfirmDialogData = {

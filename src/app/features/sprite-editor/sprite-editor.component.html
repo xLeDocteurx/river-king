@@ -1,6 +1,9 @@
 <div class="tw-flex tw-h-full">
   <!-- Left: Tile List -->
-  <div class="tw-w-56 tw-shrink-0 tw-border-r tw-border-border tw-bg-card-bg tw-flex tw-flex-col">
+  <div
+    [class.tw-hidden]="!leftPanelOpen()"
+    class="md:tw-block tw-w-56 tw-shrink-0 tw-border-r tw-border-border tw-bg-card-bg tw-flex tw-flex-col"
+  >
     <div class="tw-px-3 tw-py-2 tw-border-b tw-border-border">
       <h3
         class="tw-text-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-muted-foreground"
@@ -31,6 +34,15 @@
       }
     </div>
   </div>
+  <button
+    type="button"
+    (click)="leftPanelOpen.update((v) => !v)"
+    [attr.aria-label]="leftPanelOpen() ? 'Hide tile list' : 'Show tile list'"
+    title="Toggle tile list"
+    class="md:tw-hidden tw-inline-flex tw-items-center tw-justify-center tw-w-8 tw-shrink-0 tw-bg-card-bg tw-text-muted-foreground hover:tw-text-foreground hover:tw-bg-muted tw-transition tw-cursor-pointer"
+  >
+    <span class="material-symbols" aria-hidden="true">chevron_left</span>
+  </button>
 
   <!-- Center: Canvas + Frame Strip -->
   <div
@@ -177,7 +189,8 @@
 
   <!-- Right: Tools -->
   <div
-    class="tw-w-52 tw-shrink-0 tw-border-l tw-border-border tw-bg-card-bg tw-p-3 tw-flex tw-flex-col tw-gap-4"
+    [class.tw-hidden]="!rightPanelOpen()"
+    class="md:tw-block tw-w-52 tw-shrink-0 tw-border-l tw-border-border tw-bg-card-bg tw-p-3 tw-flex tw-flex-col tw-gap-4"
   >
     <rk-palette-manager
       [palette]="projectPalette()"
@@ -186,4 +199,13 @@
     />
     <rk-drawing-tools [tool]="selectedTool()" (toolChange)="selectedTool.set($event)" />
   </div>
+  <button
+    type="button"
+    (click)="rightPanelOpen.update((v) => !v)"
+    [attr.aria-label]="rightPanelOpen() ? 'Hide tools panel' : 'Show tools panel'"
+    title="Toggle tools panel"
+    class="md:tw-hidden tw-inline-flex tw-items-center tw-justify-center tw-w-8 tw-shrink-0 tw-bg-card-bg tw-text-muted-foreground hover:tw-text-foreground hover:tw-bg-muted tw-transition tw-cursor-pointer"
+  >
+    <span class="material-symbols" aria-hidden="true">chevron_right</span>
+  </button>
 </div>
