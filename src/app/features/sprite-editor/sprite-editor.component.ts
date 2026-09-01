@@ -7,6 +7,9 @@ import {
   OnInit,
   ChangeDetectionStrategy,
   computed,
+  ElementRef,
+  HostListener,
+  ViewChild,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -66,6 +69,9 @@ export class SpriteEditorComponent implements OnInit {
   private readonly undo = inject(UndoService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly shortcuts = inject(KeyboardShortcutsService);
+
+  /** Reference to the wrapper anchoring the onion popover (button + panel). */
+  @ViewChild('onionAnchor', { static: false }) onionAnchor?: ElementRef<HTMLElement>;
 
   /** Reactive signal holding the current project ID. */
   projectId = signal<string>('');
@@ -148,6 +154,9 @@ export class SpriteEditorComponent implements OnInit {
   /** Opacity of the next-frame onion skin (0–1). */
   readonly onionSkinNextOpacity = signal(0.35);
 
+  /** Whether the onion-skin controls popover is currently open. */
+  readonly onionPanelOpen = signal(false);
+
   /** Computed pixel data for the previous frame onion skin, or null. */
   readonly onionSkinPrevData = computed(() => {
     const frames = this.currentFrames();
@@ -178,6 +187,35 @@ export class SpriteEditorComponent implements OnInit {
     const selectedId = this.selectedSpriteId();
     const idx = frames.findIndex((f) => f.id === selectedId);
     return idx >= 0 && idx < frames.length - 1;
+  }
+
+  /** Opens or closes the onion-skin controls popover. */
+  toggleOnionPanel(): void {
+    this.onionPanelOpen.update((v) => !v);
+  }
+
+  /** Closes the onion-skin controls popover. */
+  closeOnionPanel(): void {
+    this.onionPanelOpen.set(false);
+  }
+
+  /**
+   * Closes the onion popover when a click lands outside the button + panel.
+   * @param event - The document-level mouse click event.
+   */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.onionPanelOpen()) return;
+    const anchor = this.onionAnchor?.nativeElement;
+    if (!anchor?.contains(event.target as Node)) {
+      this.closeOnionPanel();
+    }
+  }
+
+  /** Closes the onion popover when the user presses Escape. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeOnionPanel();
   }
 
   /** Whether the animation preview is playing. */
@@ -326,6 +364,7 @@ export class SpriteEditorComponent implements OnInit {
    */
   async selectTile(tileId: number): Promise<void> {
     this.stopPlayback();
+    this.onionPanelOpen.set(false);
     this.selectedTileId.set(tileId);
     const tile = this.tiles().find((t) => t.id === tileId);
     if (tile && tile.spriteIds.length > 0) {
@@ -345,6 +384,7 @@ export class SpriteEditorComponent implements OnInit {
   async selectSprite(spriteId: number) {
     try {
       await this.flushPersist();
+      this.onionPanelOpen.set(false);
       this.selectedSpriteId.set(spriteId);
       const sprite = await this.spriteService.getSprite(spriteId);
       this.selectedSprite.set(sprite ?? null);
