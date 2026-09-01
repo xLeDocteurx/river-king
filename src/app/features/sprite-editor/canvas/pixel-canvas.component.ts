@@ -11,6 +11,9 @@ import {
   effect,
 } from '@angular/core';
 
+/** Session storage key used to persist the sprite canvas grid visibility. */
+export const GRID_VISIBLE_STORAGE_KEY = 'rk-sprite-editor.show-grid';
+
 /**
  * Pixel canvas component for drawing and editing sprite pixel data.
  *
@@ -80,6 +83,9 @@ export class PixelCanvasComponent implements AfterViewInit {
   /** Current zoom factor (1 = 100%). Controlled via mouse wheel. */
   readonly zoom = signal(1);
 
+  /** Whether the pixel grid is drawn over the sprite. Defaults to on (visible). */
+  readonly showGrid = signal(this.readGridVisibility());
+
   /** Device pixels per grid cell; adapts to keep the canvas near 256px. */
   readonly cellScale = computed(() =>
     Math.max(4, Math.floor(256 / Math.max(this.gridRows(), this.gridCols(), 1))),
@@ -121,6 +127,11 @@ export class PixelCanvasComponent implements AfterViewInit {
 
       this.render();
     });
+
+    /** Persist the grid visibility choice for the current browser session. */
+    effect(() => {
+      sessionStorage.setItem(GRID_VISIBLE_STORAGE_KEY, this.showGrid() ? '1' : '0');
+    });
   }
 
   /** Lifecycle hook called after view initialization. */
@@ -157,6 +168,20 @@ export class PixelCanvasComponent implements AfterViewInit {
     ]);
     this.onionSkinImages.set({ prev: prevImg, next: nextImg });
     this.render();
+  }
+
+  /** Toggles whether the pixel grid is drawn over the sprite. */
+  toggleGrid(): void {
+    this.showGrid.update((v) => !v);
+    this.render();
+  }
+
+  /**
+   * Reads the stored grid visibility for the current session.
+   * @returns True unless the session explicitly stores '0'; missing values default to visible.
+   */
+  private readGridVisibility(): boolean {
+    return sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY) !== '0';
   }
 
   /** @internal Renders the background, pixel data, then the grid on top so cell boundaries stay visible. */
@@ -218,7 +243,7 @@ export class PixelCanvasComponent implements AfterViewInit {
     // Draw grid LAST so it stays visible over painted pixels.
     // Skip when zoomed out far enough that lines would create moiré
     // (threshold: rendered cell < 8 screen pixels).
-    if (zoom * scale >= 8) {
+    if (this.showGrid() && zoom * scale >= 8) {
       ctx.strokeStyle = '#333';
       ctx.lineWidth = 1;
       for (let x = 0; x <= cols; x++) {

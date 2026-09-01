@@ -1,9 +1,22 @@
-<canvas
-  #canvas
-  class="tw-cursor-crosshair"
-  (mousedown)="onMouseDown($event)"
-  (mousemove)="onMouseMove($event)"
-  (mouseup)="onMouseUp()"
-  (mouseleave)="onMouseLeave()"
-  (wheel)="onWheel($event)"
-></canvas>
+<div class="tw-relative tw-inline-block">
+  <canvas
+    #canvas
+    class="tw-cursor-crosshair tw-block"
+    (mousedown)="onMouseDown($event)"
+    (mousemove)="onMouseMove($event)"
+    (mouseup)="onMouseUp()"
+    (mouseleave)="onMouseLeave()"
+    (wheel)="onWheel($event)"
+  ></canvas>
+  <button
+    type="button"
+    (click)="toggleGrid()"
+    [attr.aria-label]="showGrid() ? 'Hide grid' : 'Show grid'"
+    [title]="showGrid() ? 'Hide grid' : 'Show grid'"
+    class="tw-absolute tw-top-1 tw-right-1 tw-z-10 tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+  >
+    <span class="material-symbols tw-text-sm" aria-hidden="true">{{
+      showGrid() ? 'grid_on' : 'grid_off'
+    }}</span>
+  </button>
+</div>

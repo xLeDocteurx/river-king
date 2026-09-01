@@ -21,6 +21,8 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 - [x] **Folder : renommage** — Double-click sur le titre d'un groupe pour renommer le dossier sans tout redéplacer. → [#16](https://github.com/xLeDocteurx/river-king/issues/16)
 - [x] **Folders premium folding** — Fermer certains dossiers par défaut quand la liste est longue, pour une navigation plus rapide. → [#17](https://github.com/xLeDocteurx/river-king/issues/17)
 - [x] **UI : création de dossier** — Remplacer `window.prompt()` par un petit inline input dans `grouped-list` pour une création de dossier plus propre et cohérente. → [#18](https://github.com/xLeDocteurx/river-king/issues/18)
+- [ ] **Sprite editor : grid visibility** — Un bouton de visibilité de la grille de pixels sur l'écran tiles (comme celui de l'éditeur de scène), pour masquer/afficher le quadrillage du pixel canvas. → [#40](https://github.com/xLeDocteurx/river-king/issues/40)
+- [ ] **Sprite editor : onion dans un popover** — Remplacer la ligne inline "Onion" par un bouton (icône façon grid visibility) qui ouvre un petit panneau flottant avec les contrôles onion (prev/next + opacités). → [#41](https://github.com/xLeDocteurx/river-king/issues/41)
 
 ## Lower Priority
 
