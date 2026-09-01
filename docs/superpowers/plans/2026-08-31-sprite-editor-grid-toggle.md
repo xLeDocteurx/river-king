@@ -25,10 +25,12 @@
 ### Task 1: Grid visibility signal + persistence + render gate
 
 **Files:**
+
 - Modify: `src/app/features/sprite-editor/canvas/pixel-canvas.component.ts` (signal + export near top, persistence effect in constructor, render gate around grid draw at line ~221)
 - Test: `src/app/features/sprite-editor/canvas/pixel-canvas.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces:
   - `export const GRID_VISIBLE_STORAGE_KEY = 'rk-sprite-editor.show-grid';`
@@ -157,11 +159,13 @@ git commit -m "feature-40: add grid visibility signal + session persistence to p
 ### Task 2: Floating grid toggle button over the canvas
 
 **Files:**
+
 - Modify: `src/app/features/sprite-editor/canvas/pixel-canvas.component.html` (wrap canvas in a relative container, add floating button)
 - Modify: `src/app/features/sprite-editor/canvas/pixel-canvas.component.scss` (nothing required; inline Tailwind used — verify existing SCSS)
 - Test: `src/app/features/sprite-editor/canvas/pixel-canvas.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `GRID_VISIBLE_STORAGE_KEY` and `showGrid`/`toggleGrid` from Task 1.
 - Produces: a rendered `button[aria-label]` in the component template wired to `toggleGrid()`.
 
@@ -214,9 +218,9 @@ Replace the entire contents of `pixel-canvas.component.html` with:
     [title]="showGrid() ? 'Hide grid' : 'Show grid'"
     class="tw-absolute tw-top-1 tw-right-1 tw-z-10 tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
   >
-    <span class="material-symbols tw-text-sm" aria-hidden="true">{{
-      showGrid() ? 'grid_on' : 'grid_off'
-    }}</span>
+    <span class="material-symbols tw-text-sm" aria-hidden="true"
+      >{{ showGrid() ? 'grid_on' : 'grid_off' }}</span
+    >
   </button>
 </div>
 ```
