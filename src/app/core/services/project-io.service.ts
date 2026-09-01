@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from './database.service';
 import type { Tile } from '../../shared/models/tile.model';
 import type { Sprite } from '../../shared/models/sprite.model';
+import type { FolderKind } from '../../shared/models/folder.model';
 import {
   PROJECT_ARCHIVE_FORMAT,
   PROJECT_ARCHIVE_VERSION,
@@ -223,12 +224,23 @@ export class ProjectIoService {
             })),
           });
         }
+        const scenePaths = new Set(archive.scenes.map((sc) => sc.folderPath));
+        const tilePaths = new Set(archive.tiles.map((t) => t.folderPath));
         for (const path of archive.folders) {
-          await this.db.folders.add({
-            id: crypto.randomUUID(),
-            projectId,
-            path,
-          });
+          const kinds: FolderKind[] = [];
+          if (scenePaths.has(path)) kinds.push('scene');
+          if (tilePaths.has(path)) kinds.push('tile');
+          if (kinds.length === 0) kinds.push('scene');
+          for (const kind of kinds) {
+            await this.db.folders.add({
+              id: crypto.randomUUID(),
+              projectId,
+              path,
+              kind,
+              collapsed: false,
+              lastOpenedAt: 0,
+            });
+          }
         }
         await this.db.projects.delete(projectId);
         await this.db.projects.add(projectRow);

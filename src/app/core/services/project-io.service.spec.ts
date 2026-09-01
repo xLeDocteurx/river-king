@@ -91,7 +91,14 @@ describe('ProjectIoService', () => {
     } as Sprite);
     await db.tiles.update(groundId, { spriteIds: [groundSpriteId] });
     await db.tiles.update(waterId, { spriteIds: [water1, water2] });
-    await db.folders.add({ id: 'f-1', projectId, path: 'nature' });
+    await db.folders.add({
+      id: 'f-1',
+      projectId,
+      path: 'nature',
+      kind: 'tile',
+      collapsed: false,
+      lastOpenedAt: 0,
+    });
     await db.scenes.add({
       id: 's-1',
       projectId,
