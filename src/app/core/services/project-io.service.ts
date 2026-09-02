@@ -111,6 +111,7 @@ export class ProjectIoService {
       scenes: scenes.map((sc): SceneArchiveItem => ({
         name: sc.name,
         folderPath: sc.folderPath,
+        spawnPoint: sc.spawnPoint ?? null,
         width: sc.width,
         height: sc.height,
         layers: sc.layers.map((l) => ({
@@ -211,6 +212,7 @@ export class ProjectIoService {
             projectId,
             name: sc.name,
             folderPath: sc.folderPath,
+            spawnPoint: sc.spawnPoint ?? null,
             width: sc.width,
             height: sc.height,
             layers: sc.layers.map((l) => ({

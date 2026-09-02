@@ -545,6 +545,7 @@ describe('SceneEditorComponent', () => {
       projectId: 'p1',
       name: 'Resumed',
       folderPath: '',
+      spawnPoint: null,
       width: 8,
       height: 8,
       layers: [],

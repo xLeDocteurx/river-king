@@ -31,6 +31,7 @@ function makeScene(width = 4, height = 4): Scene {
     projectId: 'proj-1',
     name: 'S',
     folderPath: '',
+    spawnPoint: null,
     width,
     height,
     layers: [makeDefaultLayer(width, height)],
