@@ -40,3 +40,44 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 - [x] **About du repo + lien live** — L'About GitHub est vide (description, homepage, topics). Le site GitHub Pages est déjà déployé (https://xledocteurx.github.io/river-king/) mais le lien n'apparaît nulle part. Remplir l'About du repo (description punchy, homepage → site Pages, topics découvrables) et ajouter un badge "Live demo" cliquable dans le README. → [#33](https://github.com/xLeDocteurx/river-king/issues/33)
 - [x] **Supprimer la branche après merge** — Ne pas polluer le repo avec les branches `feature-*` une fois leur PR mergée. Activer l'option native "auto-delete head branches" + documenter. → [#34](https://github.com/xLeDocteurx/river-king/issues/34)
 - [x] **Contenu GitHub en anglais** — Tout le contenu visible sur GitHub (About, README, PR, rapports, issues, commentaires) doit être en anglais. Traduction rétroactive des sections "Design (groomed...)" en français ajoutées aux corps d'issues + commentaires FR. → [#35](https://github.com/xLeDocteurx/river-king/issues/35)
+
+---
+
+## 4 Directions futures (brainstorming 2026-09)
+
+> Session brainstorming — vision : **outil de level design d'abord, puis mini game engine**.
+> Choix retenu : **Direction A** (donner vie aux données déjà éditées). Les autres directions restent au backlog d'idées.
+
+### Direction A — Jouer ses scènes (mini game engine)
+
+Le chaînon manquant : le modèle a déjà `blocking` + `interactable` + `actionId` référencés mais **inutilisés**. C'est LE truc qui transforme l'outil en "Engine".
+
+- [ ] **A1. Mode Play** — Toggle Play/Edit dans le scene editor : un player parcourt la map, collisions avec les tiles `blocking`, la caméra suit le personnage. WASD/arrows. 🔴 Lourd — priorité ⭐⭐⭐
+- [ ] **A2. Player controller** — Sprite player, animations de marche, les tiles `interactable` déclenchent des actions à l'approche. 🟠 Moyen — ⭐⭐⭐
+- [ ] **A3. Interactions réelles** — Donner vie au `actionId` : dialogues, portes/objets, téléport entre scènes, changement de tile. 🟠 Moyen — ⭐⭐
+- [ ] **A4. Preview projet** — Bouton "Jouer" global qui lance le player dans la scène active (relié au SessionService). 🟢 Léger — ⭐⭐
+- [ ] **A5. Fullscreen/game mode** — Mode plein écran sans chrome UI. 🟢 Léger — ⭐
+
+### Direction B — Enrichir le level design
+
+- [ ] **B1. Auto-tile** — Pinceau "terrain" qui choisit corner/edge tiles selon les voisins. 🔴 Lourd — ⭐⭐⭐
+- [ ] **B2. Sélection & copier/coller** — Sélection rectangulaire de tiles, copier/couper/coller entre scènes et layers. 🟠 Moyen — ⭐⭐⭐
+- [ ] **B3. Outils ligne/oval/fill** — Remplir rectangle/ellipse, tracer une ligne. 🟠 Moyen — ⭐⭐
+- [ ] **B4. Bucket fill scène** — Remplissage de zone contiguë au niveau scène multi-layer. 🟢 Léger — ⭐⭐
+- [ ] **B5. Tile rotation/miroir** — Appliquer rotations/reflets aux tiles placées. 🟢 Léger — ⭐
+- [ ] **B6. Pinceau "stamp" multi-tiles** — Composer un motif et le poser d'un clic. 🟢 Léger — ⭐
+
+### Direction C — Pipeline data → game
+
+- [ ] **C1. Event triggers** — Tile qui déclenche une action quand le player marche dessus. 🟠 Moyen — ⭐⭐
+- [ ] **C2. Portails** — Tile "portal" qui téléporte vers une autre scène/position. 🟠 Moyen — ⭐⭐
+- [ ] **C3. Export tilemap standard** — Export Tiled/LPC/Godot compatible (pas seulement le JSON interne). 🟠 Moyen — ⭐⭐
+- [ ] **C4. Variables d'état par projet** — Switchs/keys/items persistants entre scènes (prépare des quêtes simples). 🔴 Lourd — ⭐
+
+### Direction D — Robustesse & partage
+
+- [ ] **D1. Versioning / autosave** — Historique de versions + autosave périodique. 🟠 Moyen — ⭐⭐⭐
+- [ ] **D2. Import d'images** — Importer un PNG comme sprite + détection de tileset. 🟠 Moyen — ⭐⭐⭐
+- [ ] **D3. Export atlas/PNG de la map** — Exporter la scène en image PNG. 🟢 Léger — ⭐⭐
+- [ ] **D4. Templates de projet** — Nouveau projet pré-rempli (taille, palette, exemple de scène). 🟢 Léger — ⭐
+- [ ] **D5. Vrai cloud sync** — Synchro multi-appareils via un service. 🔴 Lourd — ⭐
