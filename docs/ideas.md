@@ -57,6 +57,7 @@ Le chaînon manquant : le modèle a déjà `blocking` + `interactable` + `action
 - [ ] **A3. Interactions réelles** — Donner vie au `actionId` : dialogues, portes/objets, téléport entre scènes, changement de tile. 🟠 Moyen — ⭐⭐
 - [ ] **A4. Preview projet** — Bouton "Jouer" global qui lance le player dans la scène active (relié au SessionService). 🟢 Léger — ⭐⭐
 - [ ] **A5. Fullscreen/game mode** — Mode plein écran sans chrome UI. 🟢 Léger — ⭐
+- [ ] **A6. Rendu "devant/derrière" du player (tri Y, Y-sorting)** — Besoin né du design de #49 : les tiles débordantes (canopée d'arbre, herbe haute, buisson) doivent se rendre devant ou derrière le player selon la position du player sur l'axe Y. Nécessite un attribut tile (ancrage "pied" / marquage "débordant") + un mécanisme de rendu par profondeur. **Player v1 = rendu au-dessus de tout** ; le tri Y est un chantier séparé à part entière (voir US). 🟠 Moyen—Lourd — ⭐⭐⭐
 
 ### Direction B — Enrichir le level design
 
