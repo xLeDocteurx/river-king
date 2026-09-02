@@ -261,6 +261,9 @@ The project uses a 3-layer pipeline to track feature ideas and bugs:
 
 Workflow: **oral idea → append to `docs/ideas.md` → clarify → GitHub issue → kanban card → groom → spec → plan → implement → PR with `Closes #N`**.
 
+- **Prefer decomposition over big US** — the user prefers many small, focused user stories
+  (one issue per independently shippable piece, cross-linked) to one large US with heavy
+  context. Split whenever an idea has several meaningful units.
 - Kanban = GitHub Projects **#6** "@xLeDocteurx's River King Kanban". Owner: `xLeDocteurx`.
 - Status transitions: `Backlog → Ready → In progress → In review → Done`. Use `gh project item-edit 6 --owner xLeDocteurx --field "Status" --value "<option>"`.
 - Add cards with `gh project item-add 6 --owner xLeDocteurx --url <issue-url>`.

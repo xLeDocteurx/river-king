@@ -7,6 +7,15 @@ description: Use when capturing new feature ideas or bugs, triaging them into Gi
 
 Manage the idea → issue → kanban pipeline for the River King engine.
 
+## Decomposition over big US (user preference)
+
+The user **prefers to decompose a task into smaller user stories rather than carry one
+large US with a heavy context**. If an idea naturally contains several independently
+valuable/shippable pieces, split them into **one issue per piece** and cross-link them
+(`Related to #N`, or parent in the issue body). Keep each US small, focused, and
+independently completable. Only keep an idea as a single US when it genuinely cannot be
+split into meaningful units. When in doubt, split.
+
 ## The 3-layer model
 
 | Layer       | Where                                | Purpose                                                                            |
