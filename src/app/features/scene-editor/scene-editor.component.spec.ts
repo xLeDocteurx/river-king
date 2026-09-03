@@ -14,6 +14,7 @@ import { StatusBarService } from '../../core/services/status-bar.service';
 import { UndoService } from '../../core/services/undo.service';
 import { createEmptySession } from '../../shared/models/session.model';
 import type { Scene } from '../../shared/models/scene.model';
+import { PlayerController } from './services/play-controller';
 
 // jsdom does not implement HTMLDialogElement methods
 const dialogProto = HTMLDialogElement.prototype as unknown as Record<string, unknown>;
@@ -545,6 +546,7 @@ describe('SceneEditorComponent', () => {
       projectId: 'p1',
       name: 'Resumed',
       folderPath: '',
+      spawnPoint: null,
       width: 8,
       height: 8,
       layers: [],
@@ -697,5 +699,122 @@ describe('SceneEditorComponent', () => {
 
     const row = (await db.folders.toArray()).find((r) => r.path === 'forest');
     expect(row?.lastOpenedAt).toBeGreaterThan(0);
+  });
+
+  it('enters Play mode starting the player at the scene center', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+    await component.selectScene(scene.id);
+    const player = fixture.debugElement.injector.get(PlayerController);
+    const startSpy = vi.spyOn(player, 'start');
+
+    component.enterPlay();
+
+    expect(startSpy).toHaveBeenCalledWith(scene, { x: 4, y: 3 });
+    expect(component.playMode()).toBe(true);
+    expect(component.placeSpawnMode()).toBe(false);
+  });
+
+  it('enters Play mode at an explicit stored spawn point', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+    await sceneService.updateScene(scene.id, { spawnPoint: { x: 1, y: 2 } });
+    const stored = (await sceneService.getScene(scene.id)) as Scene;
+    await component.selectScene(scene.id);
+    const player = fixture.debugElement.injector.get(PlayerController);
+    const startSpy = vi.spyOn(player, 'start');
+
+    component.enterPlay();
+
+    expect(startSpy).toHaveBeenCalledWith(stored, { x: 1, y: 2 });
+  });
+
+  it('exits Play mode and stops the player', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+    await component.selectScene(scene.id);
+    const player = fixture.debugElement.injector.get(PlayerController);
+    const stopSpy = vi.spyOn(player, 'stop');
+    component.playMode.set(true);
+
+    component.exitPlay();
+
+    expect(component.playMode()).toBe(false);
+    expect(stopSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('persists a spawn point and clears the spawn tool', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const scene = await sceneService.createScene('p1', 'Spawn', 8, 6);
+    await component.selectScene(scene.id);
+    const svc = fixture.debugElement.injector.get(SceneService);
+    const updateSpy = vi.spyOn(svc, 'updateScene').mockResolvedValue(undefined);
+    const notification = TestBed.inject(NotificationService);
+    const successSpy = vi.spyOn(notification, 'success');
+    component.placeSpawnMode.set(true);
+
+    await component.onSpawnPlaced({ x: 3, y: 4 });
+
+    expect(updateSpy).toHaveBeenCalledWith(scene.id, { spawnPoint: { x: 3, y: 4 } });
+    expect(component.selectedScene()?.spawnPoint).toEqual({ x: 3, y: 4 });
+    expect(component.placeSpawnMode()).toBe(false);
+    expect(successSpy).toHaveBeenCalledWith('Spawn point set');
+  });
+
+  it('notifies an error when persisting a spawn point fails', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const scene = await sceneService.createScene('p1', 'Spawn', 8, 6);
+    await component.selectScene(scene.id);
+    const svc = fixture.debugElement.injector.get(SceneService);
+    vi.spyOn(svc, 'updateScene').mockRejectedValue(new Error('boom'));
+    const notification = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notification, 'error');
+
+    await component.onSpawnPlaced({ x: 0, y: 0 });
+
+    expect(errorSpy).toHaveBeenCalledWith('Failed to set the spawn point.');
+  });
+
+  it('suppresses editor shortcuts in Play mode', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+    await component.selectScene(scene.id);
+    component.enterPlay();
+    const undoService = TestBed.inject(UndoService);
+    const undoSpy = vi.spyOn(undoService, 'undo');
+
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, cancelable: true }),
+    );
+    fixture.detectChanges();
+
+    expect(undoSpy).not.toHaveBeenCalled();
+  });
+
+  it('toggles the spawn tool on and off', () => {
+    component.toggleSpawnTool();
+    expect(component.placeSpawnMode()).toBe(true);
+    component.toggleSpawnTool();
+    expect(component.placeSpawnMode()).toBe(false);
+  });
+
+  it('renders the Play, spawn and grid toolbar buttons', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const scene = await sceneService.createScene('p1', 'Tb', 4, 4);
+    await component.selectScene(scene.id);
+    fixture.detectChanges();
+
+    const byTitle = (title: string) =>
+      fixture.nativeElement.querySelector(`button[title="${title}"]`);
+    expect(byTitle('Enter play mode')).toBeTruthy();
+    expect(byTitle('Place spawn point')).toBeTruthy();
+    expect(byTitle('Hide grid')).toBeTruthy();
   });
 });

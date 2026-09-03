@@ -5,6 +5,7 @@ import {
   viewChild,
   signal,
   effect,
+  inject,
   ChangeDetectionStrategy,
   AfterViewInit,
   OnDestroy,
@@ -17,6 +18,7 @@ import type { TileFootprintMap } from './map-footprint';
 import { cssTokenColor, gridStrokeColor } from './grid-color';
 import { GRID_EXT_ALPHA, MAX_EXPAND_TILES } from './autogrow.consts';
 import type { TileAnimationMeta } from './services/map-tiles.service';
+import { PlayerController } from './services/play-controller';
 
 /** sessionStorage key holding the grid visibility preference for the current session. */
 export const GRID_VISIBLE_STORAGE_KEY = 'rk-scene-editor.show-grid';
@@ -54,8 +56,19 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   tileFootprints = input<TileFootprintMap>({});
   /** Animation metadata per tile id (absent for static tiles). */
   tileAnimations = input<Record<number, TileAnimationMeta>>({});
+  /** Whether Play mode is active; in Play mode a player renders and is followed. */
+  playMode = input(false);
+  /** Whether the next canvas click should place the spawn point instead of editing. */
+  placeSpawnMode = input(false);
+  /** Explicit player spawn cell; drawn as a marker in Edit mode. Null hides the marker. */
+  spawnPoint = input<{ x: number; y: number } | null>(null);
   /** Emitted when a tile is placed on the canvas. */
   tilePlaced = output<{ x: number; y: number; tileId: number }>();
+  /** Emitted when the spawn point is placed while placeSpawnMode is active. */
+  spawnPlaced = output<{ x: number; y: number }>();
+
+  /** Runtime player state for Play mode. */
+  private readonly player = inject(PlayerController);
 
   /** Current camera X offset in pixels. */
   cameraX = signal(0);
@@ -82,8 +95,10 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   private readonly lastFrameTimes = new Map<number, number>();
   /** @internal Handle for the active requestAnimationFrame loop. */
   private rafId = 0;
-  /** @internal Whether the animation loop is currently running. */
-  private animating = false;
+  /** @internal Whether the requestAnimationFrame loop is currently running. */
+  private loopRunning = false;
+  /** @internal Timestamp of the previous animation frame (for player dt). */
+  private lastPlayTime = 0;
   /** @internal Whether the user is currently panning. */
   private isDragging = false;
   /** @internal Last mouse X position for pan delta calculation. */
@@ -115,12 +130,13 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       const sources = this.tileImages();
       void this.rebuildImageCache(sources);
       this.render();
-      const animations = this.tileAnimations();
-      if (Object.keys(animations).length > 0 && !this.animating) {
-        this.startAnimationLoop();
-      } else if (Object.keys(animations).length === 0 && this.animating) {
-        this.stopAnimationLoop();
-      }
+      this.ensureLoop();
+    });
+
+    /** Keep the loop running while in Play mode so the player is updated and drawn. */
+    effect(() => {
+      this.playMode();
+      this.ensureLoop();
     });
 
     /** Center the camera on the grid once when the scene first loads. */
@@ -280,10 +296,35 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       }
     }
 
+    const spawn = this.spawnPoint();
+    if (spawn && !this.playMode()) {
+      const marker = cssTokenColor(this.canvasRef().nativeElement, '--accent', '#ffffff');
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = marker;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(spawn.x * cell + cell / 2, spawn.y * cell + cell / 2, cell / 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    if (this.playMode()) {
+      const px = this.player.x();
+      const py = this.player.y();
+      const stroke = cssTokenColor(this.canvasRef().nativeElement, '--accent', '#ffffff');
+      ctx.fillStyle = stroke;
+      ctx.fillRect(px * cell, py * cell, cell, cell);
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(px * cell, py * cell, cell, cell);
+      ctx.globalAlpha = 1;
+    }
+
     // Grid drawn AFTER tiles so cell boundaries stay visible over filled cells.
     // Adaptive spacing (drawGrid) prevents moiré noise, so the grid stays on
     // at any zoom instead of vanishing when zoomed out.
-    if (this.showGrid()) {
+    if (this.showGrid() && !this.playMode()) {
       this.drawGrid(ctx, scene, cell, this.viewportWidth(), this.viewportHeight());
     }
 
@@ -303,50 +344,63 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
-   * Starts the animation loop. Continuously advances frame indices for
-   * animated tiles based on their fps and redraws the canvas.
+   * Ensures the requestAnimationFrame loop is running exactly when it is
+   * needed: while Play mode is active or while there are animated tiles.
    */
-  private startAnimationLoop(): void {
-    if (this.animating) return;
-    this.animating = true;
-    this.lastFrameTimes.clear();
-    const now = performance.now();
-    for (const id of Object.keys(this.tileAnimations()).map(Number)) {
-      this.lastFrameTimes.set(id, now);
+  private ensureLoop(): void {
+    const shouldRun = this.hasAnimatedTiles() || this.playMode();
+    if (shouldRun && !this.loopRunning) {
+      this.loopRunning = true;
+      this.lastFrameTimes.clear();
+      this.lastPlayTime = 0;
+      const now = performance.now();
+      for (const id of Object.keys(this.tileAnimations()).map(Number)) {
+        this.lastFrameTimes.set(id, now);
+      }
+      this.tick(now);
+    } else if (!shouldRun && this.loopRunning) {
+      this.loopRunning = false;
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = 0;
+      }
+      this.frameIndices.clear();
+      this.lastFrameTimes.clear();
+      this.lastPlayTime = 0;
     }
-    this.tickAnimation(now);
+  }
+
+  /** @internal Whether any tile in the scene is animated. */
+  private hasAnimatedTiles(): boolean {
+    return Object.keys(this.tileAnimations()).length > 0;
   }
 
   /**
-   * Stops the animation loop and resets frame state.
-   */
-  private stopAnimationLoop(): void {
-    this.animating = false;
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = 0;
-    }
-    this.frameIndices.clear();
-    this.lastFrameTimes.clear();
-  }
-
-  /**
-   * Animation frame callback. Advances frame indices for all animated tiles
-   * that are visible, then redraws and schedules the next tick.
+   * Animation frame callback. Advances animated tiles, updates and follows
+   * the player in Play mode, redraws, and schedules the next tick.
    * @param now - Current timestamp from requestAnimationFrame.
    */
-  private tickAnimation = (now: number): void => {
-    if (!this.animating) return;
-    const animations = this.tileAnimations();
+  private tick = (now: number): void => {
+    if (!this.loopRunning) return;
+
     let needsRedraw = false;
 
+    if (this.playMode()) {
+      const last = this.lastPlayTime;
+      const dt = last ? (now - last) / 1000 : 0;
+      this.lastPlayTime = now;
+      this.player.update(dt);
+      this.followPlayer();
+      needsRedraw = true;
+    }
+
+    const animations = this.tileAnimations();
     for (const tileIdStr of Object.keys(animations)) {
       const tileId = Number(tileIdStr);
       const meta = animations[tileId];
       const lastTime = this.lastFrameTimes.get(tileId) ?? now;
       const elapsed = now - lastTime;
       const interval = 1000 / meta.fps;
-
       if (elapsed >= interval) {
         const current = this.frameIndices.get(tileId) ?? 0;
         const next = (current + 1) % meta.frameCount;
@@ -357,12 +411,34 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     }
 
     if (needsRedraw) this.render();
-    this.rafId = requestAnimationFrame(this.tickAnimation);
+    this.rafId = requestAnimationFrame(this.tick);
   };
+
+  /**
+   * Moves the camera toward the player cell using a damped lerp so the view
+   * follows smoothly regardless of frame rate.
+   */
+  private followPlayer(): void {
+    const canvas = this.canvasRef()?.nativeElement;
+    if (!canvas) return;
+    const cell = this.tileSize();
+    const px = this.player.x() * cell;
+    const py = this.player.y() * cell;
+    const z = this.zoom();
+    const targetX = -(px * z) + canvas.width / 2;
+    const targetY = -(py * z) + canvas.height / 2;
+    const k = 0.12;
+    this.cameraX.update((v) => v + (targetX - v) * k);
+    this.cameraY.update((v) => v + (targetY - v) * k);
+  }
 
   /** Cleans up the animation loop on component destruction. */
   ngOnDestroy(): void {
-    this.stopAnimationLoop();
+    this.loopRunning = false;
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = 0;
+    }
   }
 
   /**
@@ -476,6 +552,13 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
    * @param event The native mouse event.
    */
   onMouseDown(event: MouseEvent): void {
+    if (this.playMode()) {
+      return;
+    }
+    if (this.placeSpawnMode()) {
+      if (event.button === 0) this.emitSpawnCell(event);
+      return;
+    }
     if (event.button === 1 || (event.button === 0 && !this.selectedTileId())) {
       // Middle mouse or left click without tile selection = pan
       this.isDragging = true;
@@ -485,6 +568,23 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       // Left click with tile selected = place tile
       this.placeTile(event);
     }
+  }
+
+  /**
+   * @internal Computes the grid cell under a left-click and, if it is inside
+   * the scene, emits a spawnPlaced event. Used while placeSpawnMode is active.
+   * @param event - The native mouse event.
+   */
+  private emitSpawnCell(event: MouseEvent): void {
+    const scene = this.scene();
+    if (!scene) return;
+    const canvas = this.canvasRef().nativeElement;
+    const rect = canvas.getBoundingClientRect();
+    const cell = this.tileSize();
+    const x = Math.floor((event.clientX - rect.left - this.cameraX()) / (cell * this.zoom()));
+    const y = Math.floor((event.clientY - rect.top - this.cameraY()) / (cell * this.zoom()));
+    if (x < 0 || y < 0 || x >= scene.width || y >= scene.height) return;
+    this.spawnPlaced.emit({ x, y });
   }
 
   /**

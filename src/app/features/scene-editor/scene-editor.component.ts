@@ -38,6 +38,7 @@ import { computeCollapsedKeys, type Folder } from '../../shared/models/folder.mo
 import type { Tile } from '../../shared/models/tile.model';
 import type { ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import type { TileFootprintMap } from './map-footprint';
+import { PlayerController } from './services/play-controller';
 
 /**
  * Main page component for the Scene Editor feature.
@@ -47,7 +48,7 @@ import type { TileFootprintMap } from './map-footprint';
 @Component({
   selector: 'rk-scene-editor',
   standalone: true,
-  providers: [SceneService, MapTilesService],
+  providers: [SceneService, MapTilesService, PlayerController],
   imports: [
     MapCanvasComponent,
     SceneMinimapComponent,
@@ -78,6 +79,7 @@ export class SceneEditorComponent implements OnInit {
     read: ConfirmDialogComponent,
   });
   mapCanvasRef = viewChild(MapCanvasComponent);
+  private readonly player = inject(PlayerController);
 
   /** Currently active project id derived from route params. */
   projectId = signal<string>('');
@@ -119,6 +121,10 @@ export class SceneEditorComponent implements OnInit {
   readonly leftPanelOpen = signal(true);
   /** Whether the right minimap/layers/palette panel is visible (mobile-only toggle; not persisted). */
   readonly rightPanelOpen = signal(true);
+  /** Whether the editor is in Play mode (player running, editing disabled). */
+  readonly playMode = signal(false);
+  /** Whether the spawn-point placement tool is active (edit mode only). */
+  readonly placeSpawnMode = signal(false);
 
   /** The layers of the currently selected scene. */
   readonly sceneLayers = computed(() => this.selectedScene()?.layers ?? []);
@@ -212,6 +218,7 @@ export class SceneEditorComponent implements OnInit {
    * @param id - The shortcut that was pressed.
    */
   onShortcut(id: ShortcutId): void {
+    if (this.playMode()) return;
     switch (id) {
       case 'undo':
         this.undo.undo();
@@ -251,6 +258,61 @@ export class SceneEditorComponent implements OnInit {
       this.notification.success('Scene saved');
     } catch {
       this.notification.error('Failed to save the scene.');
+    }
+  }
+
+  /**
+   * Resolves the spawn point for a scene: the stored one, or the tile at the
+   * scene's center when none is set.
+   * @param scene The scene to resolve the spawn point for.
+   * @returns The resolved spawn coordinates.
+   */
+  resolveSpawn(scene: Scene): { x: number; y: number } {
+    return scene.spawnPoint ?? { x: Math.floor(scene.width / 2), y: Math.floor(scene.height / 2) };
+  }
+
+  /**
+   * Enters Play mode: starts the player controller at the scene's spawn point
+   * and turns off editing tools.
+   */
+  enterPlay(): void {
+    const scene = this.selectedScene();
+    if (!scene) return;
+    this.player.start(scene, this.resolveSpawn(scene));
+    this.playMode.set(true);
+    this.placeSpawnMode.set(false);
+  }
+
+  /**
+   * Exits Play mode, stopping the player controller and re-enabling editing.
+   */
+  exitPlay(): void {
+    this.playMode.set(false);
+    this.player.stop();
+  }
+
+  /**
+   * Toggles the spawn-point placement tool (edit mode only).
+   */
+  toggleSpawnTool(): void {
+    if (this.playMode()) return;
+    this.placeSpawnMode.set(!this.placeSpawnMode());
+  }
+
+  /**
+   * Persists a spawn point chosen with the spawn tool and exits the tool.
+   * @param cell The tile coordinates the user clicked to place the spawn point.
+   */
+  async onSpawnPlaced(cell: { x: number; y: number }): Promise<void> {
+    const scene = this.selectedScene();
+    if (!scene) return;
+    try {
+      await this.sceneService.updateScene(scene.id, { spawnPoint: cell });
+      this.selectedScene.update((s) => (s ? { ...s, spawnPoint: cell } : null));
+      this.placeSpawnMode.set(false);
+      this.notification.success('Spawn point set');
+    } catch {
+      this.notification.error('Failed to set the spawn point.');
     }
   }
 
