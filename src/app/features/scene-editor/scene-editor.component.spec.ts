@@ -721,7 +721,7 @@ describe('SceneEditorComponent', () => {
     await fixture.whenStable();
     const scene = await sceneService.createScene('p1', 'Play', 8, 6);
     await sceneService.updateScene(scene.id, { spawnPoint: { x: 1, y: 2 } });
-    const stored = await sceneService.getScene(scene.id) as Scene;
+    const stored = (await sceneService.getScene(scene.id)) as Scene;
     await component.selectScene(scene.id);
     const player = fixture.debugElement.injector.get(PlayerController);
     const startSpy = vi.spyOn(player, 'start');

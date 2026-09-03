@@ -27,11 +27,13 @@
 ### Task 1: Add `spawnPoint` to the Scene model
 
 **Files:**
+
 - Modify: `src/app/shared/models/scene.model.ts`
 - Modify: `src/app/features/scene-editor/services/scene.service.ts`
 - Test: `src/app/features/scene-editor/services/scene.service.spec.ts`
 
 **Interfaces:**
+
 - Produces: `Scene.spawnPoint: { x: number; y: number } | null`. A value of `null` (or `undefined` on legacy rows) means "use the scene center". `SceneService.createScene(...)` returns scenes with `spawnPoint: null`.
 
 - [ ] **Step 1: Write the failing test**
@@ -96,10 +98,12 @@ git commit -m "feature-49: add spawnPoint field to Scene model (non-indexed)"
 ### Task 2: PlayerController service
 
 **Files:**
+
 - Create: `src/app/features/scene-editor/services/play-controller.ts`
 - Test: `src/app/features/scene-editor/services/play-controller.spec.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces:
   - `type PlayerDirection = 'up' | 'down' | 'left' | 'right'`
@@ -325,12 +329,8 @@ export class PlayerController {
     dx /= len;
     dy /= len;
 
-    this.x.update((v) =>
-      Math.max(0, Math.min(this.sceneWidth - 1, v + dx * this.speed * dt)),
-    );
-    this.y.update((v) =>
-      Math.max(0, Math.min(this.sceneHeight - 1, v + dy * this.speed * dt)),
-    );
+    this.x.update((v) => Math.max(0, Math.min(this.sceneWidth - 1, v + dx * this.speed * dt)));
+    this.y.update((v) => Math.max(0, Math.min(this.sceneHeight - 1, v + dy * this.speed * dt)));
 
     if (Math.abs(dx) >= Math.abs(dy)) {
       this.direction.set(dx < 0 ? 'left' : 'right');
@@ -359,10 +359,12 @@ git commit -m "feature-49: add PlayerController service for Play mode movement"
 ### Task 3: MapCanvasComponent — player render, camera follow, spawn marker, Play loop
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/map-canvas.component.ts`
 - Test: `src/app/features/scene-editor/map-canvas.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `PlayerController` (injected), `cssTokenColor` from `./grid-color` (already imported).
 - Produces:
   - New inputs: `playMode = input(false)`, `placeSpawnMode = input(false)`, `spawnPoint = input<{ x: number; y: number } | null>(null)`.
@@ -376,20 +378,20 @@ Add the following tests to `src/app/features/scene-editor/map-canvas.component.s
 Replace the `setup` function with:
 
 ```ts
-  function setup(scene: Scene, footprints: Record<number, { w: number; h: number }> = {}): void {
-    TestBed.configureTestingModule({
-      imports: [MapCanvasComponent],
-      providers: [PlayerController],
-    });
-    fixture = TestBed.createComponent(MapCanvasComponent);
-    placed = [];
-    fixture.componentInstance.tilePlaced.subscribe((e) => placed.push(e));
-    fixture.componentRef.setInput('scene', scene);
-    fixture.componentRef.setInput('layers', scene.layers);
-    fixture.componentRef.setInput('selectedTileId', 1);
-    fixture.componentRef.setInput('tileFootprints', footprints);
-    fixture.detectChanges();
-  }
+function setup(scene: Scene, footprints: Record<number, { w: number; h: number }> = {}): void {
+  TestBed.configureTestingModule({
+    imports: [MapCanvasComponent],
+    providers: [PlayerController],
+  });
+  fixture = TestBed.createComponent(MapCanvasComponent);
+  placed = [];
+  fixture.componentInstance.tilePlaced.subscribe((e) => placed.push(e));
+  fixture.componentRef.setInput('scene', scene);
+  fixture.componentRef.setInput('layers', scene.layers);
+  fixture.componentRef.setInput('selectedTileId', 1);
+  fixture.componentRef.setInput('tileFootprints', footprints);
+  fixture.detectChanges();
+}
 ```
 
 Add the import at the top of the spec file (after the existing imports):
@@ -401,103 +403,103 @@ import { PlayerController } from './services/play-controller';
 Add these new `it` blocks at the end of the `describe('MapCanvasComponent', ...)` block:
 
 ```ts
-  it('emits a spawnPlaced cell when placeSpawnMode is active', () => {
+it('emits a spawnPlaced cell when placeSpawnMode is active', () => {
+  setup(makeScene());
+  const instance = fixture.componentInstance;
+  let spawn: { x: number; y: number } | undefined;
+  instance.spawnPlaced.subscribe((c) => (spawn = c));
+  fixture.componentRef.setInput('placeSpawnMode', true);
+
+  instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
+
+  expect(spawn).toEqual({ x: 0, y: 1 });
+  expect(placed).toEqual([]);
+});
+
+it('does not emit spawnPlaced when placeSpawnMode is off', () => {
+  setup(makeScene());
+  const instance = fixture.componentInstance;
+  let spawn: { x: number; y: number } | undefined;
+  instance.spawnPlaced.subscribe((c) => (spawn = c));
+
+  instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
+
+  expect(spawn).toBeUndefined();
+});
+
+it('draws the player placeholder in play mode', () => {
+  const ctx = {
+    imageSmoothingEnabled: true,
+    clearRect: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    strokeRect: vi.fn(),
+    fillRect: vi.fn(),
+  } as unknown as CanvasRenderingContext2D;
+  const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+  try {
     setup(makeScene());
-    const instance = fixture.componentInstance;
-    let spawn: { x: number; y: number } | undefined;
-    instance.spawnPlaced.subscribe((c) => (spawn = c));
-    fixture.componentRef.setInput('placeSpawnMode', true);
-
-    instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
-
-    expect(spawn).toEqual({ x: 0, y: 1 });
-    expect(placed).toEqual([]);
-  });
-
-  it('does not emit spawnPlaced when placeSpawnMode is off', () => {
-    setup(makeScene());
-    const instance = fixture.componentInstance;
-    let spawn: { x: number; y: number } | undefined;
-    instance.spawnPlaced.subscribe((c) => (spawn = c));
-
-    instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
-
-    expect(spawn).toBeUndefined();
-  });
-
-  it('draws the player placeholder in play mode', () => {
-    const ctx = {
-      imageSmoothingEnabled: true,
-      clearRect: vi.fn(),
-      save: vi.fn(),
-      restore: vi.fn(),
-      translate: vi.fn(),
-      scale: vi.fn(),
-      beginPath: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      stroke: vi.fn(),
-      strokeRect: vi.fn(),
-      fillRect: vi.fn(),
-    } as unknown as CanvasRenderingContext2D;
-    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    try {
-      setup(makeScene());
-      const player = fixture.debugElement.injector.get(PlayerController);
-      player.start({ width: 4, height: 4 }, { x: 1, y: 2 });
-      fixture.componentRef.setInput('playMode', true);
-      fixture.detectChanges();
-      expect(ctx.fillRect).toHaveBeenCalledWith(16, 32, 16, 16);
-    } finally {
-      getContextSpy.mockRestore();
-    }
-  });
-
-  it('does not draw the player placeholder outside play mode', () => {
-    const ctx = {
-      imageSmoothingEnabled: true,
-      clearRect: vi.fn(),
-      save: vi.fn(),
-      restore: vi.fn(),
-      translate: vi.fn(),
-      scale: vi.fn(),
-      beginPath: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      stroke: vi.fn(),
-      strokeRect: vi.fn(),
-      fillRect: vi.fn(),
-    } as unknown as CanvasRenderingContext2D;
-    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    try {
-      setup(makeScene());
-      fixture.detectChanges();
-      expect(ctx.fillRect).not.toHaveBeenCalledWith(16, 32, 16, 16);
-    } finally {
-      getContextSpy.mockRestore();
-    }
-  });
-
-  it('follows the player by moving the camera toward the player cell', () => {
-    setup(makeScene());
-    const instance = fixture.componentInstance;
     const player = fixture.debugElement.injector.get(PlayerController);
-    player.start({ width: 4, height: 4 }, { x: 2, y: 2 });
+    player.start({ width: 4, height: 4 }, { x: 1, y: 2 });
     fixture.componentRef.setInput('playMode', true);
-    const beforeX = instance.cameraX();
-    // jsdom canvas is 0x0 wide, so the target X is -(2*cell*zoom).
-    instance['followPlayer']();
-    expect(instance.cameraX()).toBeGreaterThan(beforeX);
-  });
+    fixture.detectChanges();
+    expect(ctx.fillRect).toHaveBeenCalledWith(16, 32, 16, 16);
+  } finally {
+    getContextSpy.mockRestore();
+  }
+});
 
-  it('ignores editing clicks in play mode', () => {
+it('does not draw the player placeholder outside play mode', () => {
+  const ctx = {
+    imageSmoothingEnabled: true,
+    clearRect: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    strokeRect: vi.fn(),
+    fillRect: vi.fn(),
+  } as unknown as CanvasRenderingContext2D;
+  const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+  try {
     setup(makeScene());
-    const instance = fixture.componentInstance;
-    fixture.componentRef.setInput('playMode', true);
-    fixture.componentRef.setInput('selectedTileId', 1);
-    instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
-    expect(placed).toEqual([]);
-  });
+    fixture.detectChanges();
+    expect(ctx.fillRect).not.toHaveBeenCalledWith(16, 32, 16, 16);
+  } finally {
+    getContextSpy.mockRestore();
+  }
+});
+
+it('follows the player by moving the camera toward the player cell', () => {
+  setup(makeScene());
+  const instance = fixture.componentInstance;
+  const player = fixture.debugElement.injector.get(PlayerController);
+  player.start({ width: 4, height: 4 }, { x: 2, y: 2 });
+  fixture.componentRef.setInput('playMode', true);
+  const beforeX = instance.cameraX();
+  // jsdom canvas is 0x0 wide, so the target X is -(2*cell*zoom).
+  instance['followPlayer']();
+  expect(instance.cameraX()).toBeGreaterThan(beforeX);
+});
+
+it('ignores editing clicks in play mode', () => {
+  setup(makeScene());
+  const instance = fixture.componentInstance;
+  fixture.componentRef.setInput('playMode', true);
+  fixture.componentRef.setInput('selectedTileId', 1);
+  instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
+  expect(placed).toEqual([]);
+});
 ```
 
 Note: `addEventListener`/`removeEventListener` on `window` are used by `PlayerController`. In jsdom they are real, so key events fire correctly. No extra setup needed.
@@ -578,28 +580,28 @@ to:
 5. Update the constructor's first `effect` to use the new loop control. Replace the animation start/stop block (currently lines ~118-123):
 
 ```ts
-      const animations = this.tileAnimations();
-      if (Object.keys(animations).length > 0 && !this.animating) {
-        this.startAnimationLoop();
-      } else if (Object.keys(animations).length === 0 && this.animating) {
-        this.stopAnimationLoop();
-      }
+const animations = this.tileAnimations();
+if (Object.keys(animations).length > 0 && !this.animating) {
+  this.startAnimationLoop();
+} else if (Object.keys(animations).length === 0 && this.animating) {
+  this.stopAnimationLoop();
+}
 ```
 
 with:
 
 ```ts
-      this.ensureLoop();
+this.ensureLoop();
 ```
 
 Then add a second effect right after that first `effect`, to keep the loop running while in Play mode:
 
 ```ts
-    /** Keep the loop running while in Play mode so the player is updated and drawn. */
-    effect(() => {
-      this.playMode();
-      this.ensureLoop();
-    });
+/** Keep the loop running while in Play mode so the player is updated and drawn. */
+effect(() => {
+  this.playMode();
+  this.ensureLoop();
+});
 ```
 
 6. Replace the three loop methods `startAnimationLoop`, `stopAnimationLoop`, and `tickAnimation` (currently lines ~305-361) with:
@@ -698,38 +700,38 @@ Then add a second effect right after that first `effect`, to keep the loop runni
 7. In `render()`, draw the spawn marker (Edit mode) and the player placeholder (Play mode). Right after the layers `for` loop finishes (after the `if (layer.opacity < 1) { ctx.globalAlpha = 1; }` block) and before the grid block, insert:
 
 ```ts
-    const spawn = this.spawnPoint();
-    if (spawn && !this.playMode()) {
-      const marker = cssTokenColor(this.canvasRef().nativeElement, '--accent', '#ffffff');
-      ctx.globalAlpha = 0.7;
-      ctx.strokeStyle = marker;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(spawn.x * cell + cell / 2, spawn.y * cell + cell / 2, cell / 2, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
+const spawn = this.spawnPoint();
+if (spawn && !this.playMode()) {
+  const marker = cssTokenColor(this.canvasRef().nativeElement, '--accent', '#ffffff');
+  ctx.globalAlpha = 0.7;
+  ctx.strokeStyle = marker;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(spawn.x * cell + cell / 2, spawn.y * cell + cell / 2, cell / 2, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
 
-    if (this.playMode()) {
-      const px = this.player.x();
-      const py = this.player.y();
-      const stroke = cssTokenColor(this.canvasRef().nativeElement, '--accent', '#ffffff');
-      ctx.fillStyle = stroke;
-      ctx.fillRect(px * cell, py * cell, cell, cell);
-      ctx.globalAlpha = 0.35;
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(px * cell, py * cell, cell, cell);
-      ctx.globalAlpha = 1;
-    }
+if (this.playMode()) {
+  const px = this.player.x();
+  const py = this.player.y();
+  const stroke = cssTokenColor(this.canvasRef().nativeElement, '--accent', '#ffffff');
+  ctx.fillStyle = stroke;
+  ctx.fillRect(px * cell, py * cell, cell, cell);
+  ctx.globalAlpha = 0.35;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(px * cell, py * cell, cell, cell);
+  ctx.globalAlpha = 1;
+}
 ```
 
 8. Suppress the grid during Play mode. Change the grid draw condition (currently `if (this.showGrid()) {`):
 
 ```ts
-    if (this.showGrid() && !this.playMode()) {
-      this.drawGrid(ctx, scene, cell, this.viewportWidth(), this.viewportHeight());
-    }
+if (this.showGrid() && !this.playMode()) {
+  this.drawGrid(ctx, scene, cell, this.viewportWidth(), this.viewportHeight());
+}
 ```
 
 9. Handle editing interactions. Replace `onMouseDown` (currently lines ~478-488) with:
@@ -805,11 +807,13 @@ git commit -m "feature-49: render and follow the player, draw spawn marker, supp
 ### Task 4: SceneEditorComponent — Play/Edit toggle, spawn tool, Play safeguards
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/scene-editor.component.ts`
 - Modify: `src/app/features/scene-editor/scene-editor.component.html`
 - Test: `src/app/features/scene-editor/scene-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes:
   - `PlayerController` (new `providers` entry + injected).
   - `MapCanvasComponent` new inputs `playMode`, `placeSpawnMode`, `spawnPoint` and output `spawnPlaced`.
@@ -824,113 +828,117 @@ git commit -m "feature-49: render and follow the player, draw spawn marker, supp
 Add the following tests at the end of the `describe('SceneEditorComponent', ...)` block in `src/app/features/scene-editor/scene-editor.component.spec.ts`:
 
 ```ts
-  it('entering Play starts the player at the scene center by default', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
-    await component.loadScenes();
-    await component.selectScene(scene.id);
+it('entering Play starts the player at the scene center by default', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+  await component.loadScenes();
+  await component.selectScene(scene.id);
 
-    component.enterPlay();
+  component.enterPlay();
 
-    const player = fixture.debugElement.injector.get(PlayerController);
-    expect(component.playMode()).toBe(true);
-    expect(player.x()).toBe(4);
-    expect(player.y()).toBe(3);
-  });
+  const player = fixture.debugElement.injector.get(PlayerController);
+  expect(component.playMode()).toBe(true);
+  expect(player.x()).toBe(4);
+  expect(player.y()).toBe(3);
+});
 
-  it('entering Play starts the player at the explicit spawnPoint when set', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
-    await sceneService.updateScene(scene.id, { spawnPoint: { x: 2, y: 5 } });
-    await component.loadScenes();
-    await component.selectScene(scene.id);
+it('entering Play starts the player at the explicit spawnPoint when set', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+  await sceneService.updateScene(scene.id, { spawnPoint: { x: 2, y: 5 } });
+  await component.loadScenes();
+  await component.selectScene(scene.id);
 
-    component.enterPlay();
+  component.enterPlay();
 
-    const player = fixture.debugElement.injector.get(PlayerController);
-    expect(player.x()).toBe(2);
-    expect(player.y()).toBe(5);
-  });
+  const player = fixture.debugElement.injector.get(PlayerController);
+  expect(player.x()).toBe(2);
+  expect(player.y()).toBe(5);
+});
 
-  it('exiting Play stops the player and returns to Edit', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
-    await component.loadScenes();
-    await component.selectScene(scene.id);
+it('exiting Play stops the player and returns to Edit', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+  await component.loadScenes();
+  await component.selectScene(scene.id);
 
-    component.enterPlay();
-    component.exitPlay();
+  component.enterPlay();
+  component.exitPlay();
 
-    expect(component.playMode()).toBe(false);
-  });
+  expect(component.playMode()).toBe(false);
+});
 
-  it('persists a placed spawn point and notifies success', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const scene = await sceneService.createScene('p1', 'Spawn', 8, 6);
-    await component.loadScenes();
-    await component.selectScene(scene.id);
-    const successSpy = vi.spyOn(TestBed.inject(NotificationService), 'success');
+it('persists a placed spawn point and notifies success', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  const scene = await sceneService.createScene('p1', 'Spawn', 8, 6);
+  await component.loadScenes();
+  await component.selectScene(scene.id);
+  const successSpy = vi.spyOn(TestBed.inject(NotificationService), 'success');
 
-    await component.onSpawnPlaced({ x: 1, y: 2 });
+  await component.onSpawnPlaced({ x: 1, y: 2 });
 
-    expect(component.selectedScene()?.spawnPoint).toEqual({ x: 1, y: 2 });
-    expect((await db.scenes.get(scene.id))?.spawnPoint).toEqual({ x: 1, y: 2 });
-    expect(component.placeSpawnMode()).toBe(false);
-    expect(successSpy).toHaveBeenCalledWith('Spawn point set');
-  });
+  expect(component.selectedScene()?.spawnPoint).toEqual({ x: 1, y: 2 });
+  expect((await db.scenes.get(scene.id))?.spawnPoint).toEqual({ x: 1, y: 2 });
+  expect(component.placeSpawnMode()).toBe(false);
+  expect(successSpy).toHaveBeenCalledWith('Spawn point set');
+});
 
-  it('notifies an error when persisting the spawn point fails', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const scene = await sceneService.createScene('p1', 'Spawn', 8, 6);
-    await component.loadScenes();
-    await component.selectScene(scene.id);
-    const errorSpy = vi.spyOn(TestBed.inject(NotificationService), 'error');
-    vi.spyOn(sceneService, 'updateScene').mockRejectedValue(new Error('db failure'));
+it('notifies an error when persisting the spawn point fails', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  const scene = await sceneService.createScene('p1', 'Spawn', 8, 6);
+  await component.loadScenes();
+  await component.selectScene(scene.id);
+  const errorSpy = vi.spyOn(TestBed.inject(NotificationService), 'error');
+  vi.spyOn(sceneService, 'updateScene').mockRejectedValue(new Error('db failure'));
 
-    await component.onSpawnPlaced({ x: 1, y: 2 });
+  await component.onSpawnPlaced({ x: 1, y: 2 });
 
-    expect(errorSpy).toHaveBeenCalledWith('Failed to set the spawn point.');
-  });
+  expect(errorSpy).toHaveBeenCalledWith('Failed to set the spawn point.');
+});
 
-  it('suppresses editor shortcuts while in Play mode', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
-    await component.loadScenes();
-    await component.selectScene(scene.id);
+it('suppresses editor shortcuts while in Play mode', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+  await component.loadScenes();
+  await component.selectScene(scene.id);
 
-    const undoService = TestBed.inject(UndoService);
-    const undoSpy = vi.spyOn(undoService, 'undo');
-    component.enterPlay();
+  const undoService = TestBed.inject(UndoService);
+  const undoSpy = vi.spyOn(undoService, 'undo');
+  component.enterPlay();
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, cancelable: true }));
+  document.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, cancelable: true }),
+  );
 
-    expect(undoSpy).not.toHaveBeenCalled();
-  });
+  expect(undoSpy).not.toHaveBeenCalled();
+});
 
-  it('toggles the spawn tool', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    expect(component.placeSpawnMode()).toBe(false);
-    component.toggleSpawnTool();
-    expect(component.placeSpawnMode()).toBe(true);
-    component.toggleSpawnTool();
-    expect(component.placeSpawnMode()).toBe(false);
-  });
+it('toggles the spawn tool', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  expect(component.placeSpawnMode()).toBe(false);
+  component.toggleSpawnTool();
+  expect(component.placeSpawnMode()).toBe(true);
+  component.toggleSpawnTool();
+  expect(component.placeSpawnMode()).toBe(false);
+});
 
-  it('renders the Play and spawn toolbar buttons', async () => {
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const buttons = fixture.nativeElement.querySelectorAll('button[title*="play" i], button[title*="Play" i]');
-    const spawn = fixture.nativeElement.querySelector('button[title="Place spawn point"]');
-    expect(buttons.length).toBeGreaterThan(0);
-    expect(spawn).toBeTruthy();
-  });
+it('renders the Play and spawn toolbar buttons', async () => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  const buttons = fixture.nativeElement.querySelectorAll(
+    'button[title*="play" i], button[title*="Play" i]',
+  );
+  const spawn = fixture.nativeElement.querySelector('button[title="Place spawn point"]');
+  expect(buttons.length).toBeGreaterThan(0);
+  expect(spawn).toBeTruthy();
+});
 ```
 
 Add the `PlayerController` import at the top of the spec file:
@@ -1050,57 +1058,55 @@ Note: `Scene` is already imported as a type in this file (`import type { Scene, 
 5. Wire the new canvas inputs/outputs in the HTML. Edit `src/app/features/scene-editor/scene-editor.component.html`. First, replace the `rk-map-canvas` element to include the new bindings:
 
 ```html
-    <rk-map-canvas
-      [scene]="selectedScene()"
-      [layers]="sceneLayers()"
-      [activeLayerId]="activeLayerId()"
-      [selectedTileId]="selectedTileId()"
-      [palette]="projectPalette()"
-      [tileImages]="tileImages()"
-      [tileSize]="projectTileSize()"
-      [tileFootprints]="tileFootprints()"
-      [tileAnimations]="tileAnimations()"
-      [playMode]="playMode()"
-      [placeSpawnMode]="placeSpawnMode()"
-      [spawnPoint]="selectedScene()?.spawnPoint ?? null"
-      (tilePlaced)="onTilePlaced($event)"
-      (spawnPlaced)="onSpawnPlaced($event)"
-    />
+<rk-map-canvas
+  [scene]="selectedScene()"
+  [layers]="sceneLayers()"
+  [activeLayerId]="activeLayerId()"
+  [selectedTileId]="selectedTileId()"
+  [palette]="projectPalette()"
+  [tileImages]="tileImages()"
+  [tileSize]="projectTileSize()"
+  [tileFootprints]="tileFootprints()"
+  [tileAnimations]="tileAnimations()"
+  [playMode]="playMode()"
+  [placeSpawnMode]="placeSpawnMode()"
+  [spawnPoint]="selectedScene()?.spawnPoint ?? null"
+  (tilePlaced)="onTilePlaced($event)"
+  (spawnPlaced)="onSpawnPlaced($event)"
+/>
 ```
 
 6. Replace the single floating grid-toggle `<button>` with a grouped toolbar that includes Play/Edit toggle and the spawn tool. Replace the current grid button block (lines ~43-49) with:
 
 ```html
-    <div
-      class="tw-absolute tw-top-1 tw-right-1 tw-z-10 tw-flex tw-items-center tw-gap-1"
+<div class="tw-absolute tw-top-1 tw-right-1 tw-z-10 tw-flex tw-items-center tw-gap-1">
+  <button
+    class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+    [title]="playMode() ? 'Exit play mode' : 'Enter play mode'"
+    (click)="playMode() ? exitPlay() : enterPlay()"
+  >
+    <span class="material-symbols" aria-hidden="true"
+      >{{ playMode() ? 'stop' : 'play_arrow' }}</span
     >
-      <button
-        class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
-        [title]="playMode() ? 'Exit play mode' : 'Enter play mode'"
-        (click)="playMode() ? exitPlay() : enterPlay()"
-      >
-        <span class="material-symbols" aria-hidden="true">{{
-          playMode() ? 'stop' : 'play_arrow'
-        }}</span>
-      </button>
-      @if (!playMode()) {
-        <button
-          class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
-          [class.tw-bg-accent]="placeSpawnMode()"
-          [title]="placeSpawnMode() ? 'Finish placing spawn' : 'Place spawn point'"
-          (click)="toggleSpawnTool()"
-        >
-          <span class="material-symbols" aria-hidden="true">my_location</span>
-        </button>
-      }
-      <button
-        class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
-        [title]="mapCanvasRef()?.showGrid() ? 'Hide grid' : 'Show grid'"
-        (click)="mapCanvasRef()?.showGrid.set(!mapCanvasRef()?.showGrid())"
-      >
-        <span class="material-symbols" aria-hidden="true">grid_on</span>
-      </button>
-    </div>
+  </button>
+  @if (!playMode()) {
+  <button
+    class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+    [class.tw-bg-accent]="placeSpawnMode()"
+    [title]="placeSpawnMode() ? 'Finish placing spawn' : 'Place spawn point'"
+    (click)="toggleSpawnTool()"
+  >
+    <span class="material-symbols" aria-hidden="true">my_location</span>
+  </button>
+  }
+  <button
+    class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+    [title]="mapCanvasRef()?.showGrid() ? 'Hide grid' : 'Show grid'"
+    (click)="mapCanvasRef()?.showGrid.set(!mapCanvasRef()?.showGrid())"
+  >
+    <span class="material-symbols" aria-hidden="true">grid_on</span>
+  </button>
+</div>
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -1147,6 +1153,7 @@ Expected: build succeeds within budget.
 git add -A
 git commit -m "feature-49: apply formatting"
 ```
+
 (only if Step 3 produced changes; otherwise skip)
 
 ---

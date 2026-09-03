@@ -109,12 +109,8 @@ export class PlayerController {
     dx /= len;
     dy /= len;
 
-    this.x.update((v) =>
-      Math.max(0, Math.min(this.sceneWidth - 1, v + dx * this.speed * dt)),
-    );
-    this.y.update((v) =>
-      Math.max(0, Math.min(this.sceneHeight - 1, v + dy * this.speed * dt)),
-    );
+    this.x.update((v) => Math.max(0, Math.min(this.sceneWidth - 1, v + dx * this.speed * dt)));
+    this.y.update((v) => Math.max(0, Math.min(this.sceneHeight - 1, v + dy * this.speed * dt)));
 
     if (Math.abs(dx) >= Math.abs(dy)) {
       this.direction.set(dx < 0 ? 'left' : 'right');
