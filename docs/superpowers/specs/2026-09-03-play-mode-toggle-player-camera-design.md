@@ -68,7 +68,7 @@ spawnPoint: { x: number; y: number } | null;
 ```
 
 - Non-indexed, so no Dexie version bump. Existing scenes have `spawnPoint ===
-  undefined` which is treated as "use default (center)".
+undefined` which is treated as "use default (center)".
 - `ProjectIOService` serializes/deserializes scenes as whole objects, so the new
   field flows through project export/import unchanged (verify in
   `project-io.service.ts`).
