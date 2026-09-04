@@ -24,10 +24,12 @@
 ### Task 1: Pure interaction target module
 
 **Files:**
+
 - Create: `src/app/features/scene-editor/interaction.ts`
 - Test: `src/app/features/scene-editor/interaction.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `Layer` from `../../shared/models/scene.model` (path identical to `collision.ts`).
 - Produces: `InteractionTarget` (`{ x, y, actionId }`), `topmostTileIdAt(x, y, layers): number`, `findInteractableTarget(cell, direction, layers, interactableById): InteractionTarget | null`. Task 2 consumes these exact names.
 
@@ -130,12 +132,17 @@ describe('findInteractableTarget', () => {
   });
 
   it('returns null when the interactable map is empty', () => {
-    expect(findInteractableTarget({ x: 1, y: 0 }, { dx: 1, dy: 0 }, [layerWith(7, [[2, 0]])], new Map())).toBeNull();
+    expect(
+      findInteractableTarget({ x: 1, y: 0 }, { dx: 1, dy: 0 }, [layerWith(7, [[2, 0]])], new Map()),
+    ).toBeNull();
   });
 
   it('honors the topmost layer when the facing cell stacks two interactable tiles', () => {
     const bottom = layerWith(7, [[2, 0]]);
-    const top = layer('top', [[-1, -1, 8], [-1, -1, -1]]);
+    const top = layer('top', [
+      [-1, -1, 8],
+      [-1, -1, -1],
+    ]);
     const ring = new Map<number, string>([
       [7, 'bell'],
       [8, 'ring'],
@@ -248,6 +255,7 @@ git commit -m "feature-52: add pure interaction target detection module"
 ### Task 2: Registry no-op, PlayerController E-key handling, enterPlay wiring
 
 **Files:**
+
 - Modify: `src/app/core/actions/game-actions.ts:9`
 - Test: `src/app/core/actions/game-actions.spec.ts`
 - Modify: `src/app/features/scene-editor/services/play-controller.ts`
@@ -257,6 +265,7 @@ git commit -m "feature-52: add pure interaction target detection module"
 - Test: `src/app/features/scene-editor/map-canvas.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `InteractionTarget`, `topmostTileIdAt` not needed here, `findInteractableTarget(cell, direction, layers, interactableById)` from `../interaction` (Task 1); `runGameAction(id)` from `../../../core/actions/game-actions`; `NotificationService` from `../../../core/services/notification.service` (root-provided).
 - Produces: `PlayerController.start(scene, spawn, blockingById, footprints, interactableById)` (5 args, 5th required `Map<number, string>`), `PlayerController.interactionTarget` signal (`{ x, y, actionId } | null`). Task 3 reads `player.interactionTarget()`.
 
@@ -329,7 +338,11 @@ function wallScene(): { width: number; height: number; layers: Layer[] } {
 const WALL = new Map<number, boolean>([[0, true]]);
 
 /** 4x4 scene where the listed cells hold tile id 7. */
-function sceneWithBell(cells: Array<[number, number]>): { width: number; height: number; layers: Layer[] } {
+function sceneWithBell(cells: Array<[number, number]>): {
+  width: number;
+  height: number;
+  layers: Layer[];
+} {
   const tileData = Array.from({ length: 4 }, () => Array<number>(4).fill(-1));
   for (const [x, y] of cells) {
     tileData[y][x] = 7;
@@ -445,7 +458,9 @@ describe('PlayerController', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e' }));
     expect(player.interactionTarget()).toEqual({ x: 2, y: 2, actionId: 'bell' });
     expect(
-      notification.messages().some((m) => m.type === 'success' && m.message === "Action 'bell' triggered"),
+      notification
+        .messages()
+        .some((m) => m.type === 'success' && m.message === "Action 'bell' triggered"),
     ).toBe(true);
   });
 
@@ -453,7 +468,9 @@ describe('PlayerController', () => {
     player.start(sceneWithBell([[2, 1]]), { x: 2, y: 1 }, new Map(), {}, BELL);
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'E' }));
     expect(
-      notification.messages().some((m) => m.type === 'success' && m.message === "Action 'bell' triggered"),
+      notification
+        .messages()
+        .some((m) => m.type === 'success' && m.message === "Action 'bell' triggered"),
     ).toBe(true);
   });
 
@@ -470,7 +487,16 @@ describe('PlayerController', () => {
   });
 
   it('updates the target when the player turns', () => {
-    player.start(sceneWithBell([[1, 1], [2, 2]]), { x: 2, y: 1 }, new Map(), {}, BELL);
+    player.start(
+      sceneWithBell([
+        [1, 1],
+        [2, 2],
+      ]),
+      { x: 2, y: 1 },
+      new Map(),
+      {},
+      BELL,
+    );
     expect(player.interactionTarget()).toEqual({ x: 2, y: 2, actionId: 'bell' });
     press('a');
     player.update(0);
@@ -802,11 +828,11 @@ Note: the restructured `update` no longer early-returns — the else branch sets
 Update its JSDoc (`:274-277`) to mention "per-tile interactable action ids":
 
 ```ts
-  /**
-   * Enters Play mode: starts the player controller at the scene's spawn point,
-   * passing per-tile blocking flags, footprints, and interactable action ids,
-   * and turns off editing tools.
-   */
+/**
+ * Enters Play mode: starts the player controller at the scene's spawn point,
+ * passing per-tile blocking flags, footprints, and interactable action ids,
+ * and turns off editing tools.
+ */
 ```
 
 - [ ] **Step 4: Run the tests to verify they pass**
@@ -839,10 +865,12 @@ git commit -m "feature-52: trigger interactable tile actions on E press"
 ### Task 3: Accent frame around the interaction target
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/map-canvas.component.ts` (play-mode render block, `:311-322`)
 - Test: `src/app/features/scene-editor/map-canvas.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `player.interactionTarget()` signal (`{ x, y, actionId } | null`, from Task 2). `player` is already injected in `map-canvas.component.ts`. No new imports.
 
 - [ ] **Step 1: Write the failing tests**
@@ -850,73 +878,77 @@ git commit -m "feature-52: trigger interactable tile actions on E press"
 Append to `src/app/features/scene-editor/map-canvas.component.spec.ts` (the `ctx` mock shape matches the existing placeholder tests `:233-247`):
 
 ```ts
-  it('draws an accent frame around the interaction target in play mode', () => {
-    const ctx = {
-      imageSmoothingEnabled: true,
-      clearRect: vi.fn(),
-      save: vi.fn(),
-      restore: vi.fn(),
-      translate: vi.fn(),
-      scale: vi.fn(),
-      beginPath: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      stroke: vi.fn(),
-      strokeRect: vi.fn(),
-      fillRect: vi.fn(),
-    } as unknown as CanvasRenderingContext2D;
-    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    try {
-      setup(makeScene());
-      const player = fixture.debugElement.injector.get(PlayerController);
-      const tileData = [
-        [-1, -1, -1, -1],
-        [-1, -1, -1, -1],
-        [-1, -1, 7, -1],
-        [-1, -1, -1, -1],
-      ];
-      player.start(
-        { width: 4, height: 4, layers: [{ id: 'l1', name: 'interact', visible: true, opacity: 1, tileData }] },
-        { x: 2, y: 1 },
-        new Map(),
-        {},
-        new Map([[7, 'bell']]),
-      );
-      fixture.componentRef.setInput('playMode', true);
-      fixture.detectChanges();
-      expect(ctx.strokeRect).toHaveBeenCalledWith(32, 32, 16, 16);
-    } finally {
-      getContextSpy.mockRestore();
-    }
-  });
+it('draws an accent frame around the interaction target in play mode', () => {
+  const ctx = {
+    imageSmoothingEnabled: true,
+    clearRect: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    strokeRect: vi.fn(),
+    fillRect: vi.fn(),
+  } as unknown as CanvasRenderingContext2D;
+  const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+  try {
+    setup(makeScene());
+    const player = fixture.debugElement.injector.get(PlayerController);
+    const tileData = [
+      [-1, -1, -1, -1],
+      [-1, -1, -1, -1],
+      [-1, -1, 7, -1],
+      [-1, -1, -1, -1],
+    ];
+    player.start(
+      {
+        width: 4,
+        height: 4,
+        layers: [{ id: 'l1', name: 'interact', visible: true, opacity: 1, tileData }],
+      },
+      { x: 2, y: 1 },
+      new Map(),
+      {},
+      new Map([[7, 'bell']]),
+    );
+    fixture.componentRef.setInput('playMode', true);
+    fixture.detectChanges();
+    expect(ctx.strokeRect).toHaveBeenCalledWith(32, 32, 16, 16);
+  } finally {
+    getContextSpy.mockRestore();
+  }
+});
 
-  it('draws no interaction frame when there is no target in play mode', () => {
-    const ctx = {
-      imageSmoothingEnabled: true,
-      clearRect: vi.fn(),
-      save: vi.fn(),
-      restore: vi.fn(),
-      translate: vi.fn(),
-      scale: vi.fn(),
-      beginPath: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      stroke: vi.fn(),
-      strokeRect: vi.fn(),
-      fillRect: vi.fn(),
-    } as unknown as CanvasRenderingContext2D;
-    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    try {
-      setup(makeScene());
-      const player = fixture.debugElement.injector.get(PlayerController);
-      player.start({ width: 4, height: 4, layers: [] }, { x: 2, y: 1 }, new Map(), {}, new Map());
-      fixture.componentRef.setInput('playMode', true);
-      fixture.detectChanges();
-      expect(ctx.strokeRect).not.toHaveBeenCalledWith(32, 32, 16, 16);
-    } finally {
-      getContextSpy.mockRestore();
-    }
-  });
+it('draws no interaction frame when there is no target in play mode', () => {
+  const ctx = {
+    imageSmoothingEnabled: true,
+    clearRect: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    strokeRect: vi.fn(),
+    fillRect: vi.fn(),
+  } as unknown as CanvasRenderingContext2D;
+  const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+  try {
+    setup(makeScene());
+    const player = fixture.debugElement.injector.get(PlayerController);
+    player.start({ width: 4, height: 4, layers: [] }, { x: 2, y: 1 }, new Map(), {}, new Map());
+    fixture.componentRef.setInput('playMode', true);
+    fixture.detectChanges();
+    expect(ctx.strokeRect).not.toHaveBeenCalledWith(32, 32, 16, 16);
+  } finally {
+    getContextSpy.mockRestore();
+  }
+});
 ```
 
 Why `(32, 32, 16, 16)`: spawn `(2, 1)` centers the player at `(2.5, 1.5)`, cell `(2, 1)`, facing down → target cell `(2, 2)` → frame at `(2*16, 2*16, 16, 16)`. Cell size is 16px (the placeholder tests already assert `fillRect(16, 32, 16, 16)` for a `(1, 2)` spawn).
@@ -932,12 +964,12 @@ Expected: the frame test FAILS (`strokeRect` not called with `32, 32, 16, 16`).
 In `src/app/features/scene-editor/map-canvas.component.ts`, inside the existing `if (this.playMode()) { ... }` block (`:311-322`), after the player placeholder `strokeRect` and before the closing brace, add the frame draw. `stroke` (accent color) is already defined in that block:
 
 ```ts
-      const target = this.player.interactionTarget();
-      if (target) {
-        ctx.strokeStyle = stroke;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(target.x * cell, target.y * cell, cell, cell);
-      }
+const target = this.player.interactionTarget();
+if (target) {
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(target.x * cell, target.y * cell, cell, cell);
+}
 ```
 
 - [ ] **Step 4: Run the tests to verify they pass**
