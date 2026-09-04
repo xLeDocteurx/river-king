@@ -278,11 +278,7 @@ export class SceneEditorComponent implements OnInit {
   enterPlay(): void {
     const scene = this.selectedScene();
     if (!scene) return;
-    const blockingById = new Map(
-      this.projectTiles()
-        .filter((t) => t.properties.blocking)
-        .map((t) => [t.id, true]),
-    );
+    const blockingById = new Map(this.projectTiles().map((t) => [t.id, t.properties.blocking]));
     this.player.start(scene, this.resolveSpawn(scene), blockingById, this.tileFootprints());
     this.playMode.set(true);
     this.placeSpawnMode.set(false);
