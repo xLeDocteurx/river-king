@@ -6,7 +6,7 @@ export type GameActionHandler = () => void;
  * so new handler shapes can be introduced without data migrations.
  */
 export const GAME_ACTIONS: Record<string, GameActionHandler> = {
-  test: () => alert('alert'),
+  test: () => undefined,
 };
 
 /**
