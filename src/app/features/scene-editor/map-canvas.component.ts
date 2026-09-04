@@ -313,11 +313,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       const py = this.player.y();
       const stroke = cssTokenColor(this.canvasRef().nativeElement, '--accent', '#ffffff');
       ctx.fillStyle = stroke;
-      ctx.fillRect(px * cell, py * cell, cell, cell);
+      ctx.fillRect((px - 0.5) * cell, (py - 0.5) * cell, cell, cell);
       ctx.globalAlpha = 0.35;
       ctx.strokeStyle = stroke;
       ctx.lineWidth = 1;
-      ctx.strokeRect(px * cell, py * cell, cell, cell);
+      ctx.strokeRect((px - 0.5) * cell, (py - 0.5) * cell, cell, cell);
       ctx.globalAlpha = 1;
     }
 

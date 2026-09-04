@@ -711,7 +711,7 @@ describe('SceneEditorComponent', () => {
 
     component.enterPlay();
 
-    expect(startSpy).toHaveBeenCalledWith(scene, { x: 4, y: 3 });
+    expect(startSpy).toHaveBeenCalledWith(scene, { x: 4, y: 3 }, expect.any(Map), {});
     expect(component.playMode()).toBe(true);
     expect(component.placeSpawnMode()).toBe(false);
   });
@@ -728,7 +728,7 @@ describe('SceneEditorComponent', () => {
 
     component.enterPlay();
 
-    expect(startSpy).toHaveBeenCalledWith(stored, { x: 1, y: 2 });
+    expect(startSpy).toHaveBeenCalledWith(stored, { x: 1, y: 2 }, expect.any(Map), {});
   });
 
   it('exits Play mode and stops the player', async () => {

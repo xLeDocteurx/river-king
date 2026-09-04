@@ -248,7 +248,7 @@ describe('MapCanvasComponent', () => {
     try {
       setup(makeScene());
       const player = fixture.debugElement.injector.get(PlayerController);
-      player.start({ width: 4, height: 4 }, { x: 1, y: 2 });
+      player.start({ width: 4, height: 4, layers: [] }, { x: 1, y: 2 }, new Map(), {});
       fixture.componentRef.setInput('playMode', true);
       fixture.detectChanges();
       expect(ctx.fillRect).toHaveBeenCalledWith(16, 32, 16, 16);
@@ -286,7 +286,7 @@ describe('MapCanvasComponent', () => {
     setup(makeScene());
     const instance = fixture.componentInstance;
     const player = fixture.debugElement.injector.get(PlayerController);
-    player.start({ width: 4, height: 4 }, { x: 2, y: 2 });
+    player.start({ width: 4, height: 4, layers: [] }, { x: 2, y: 2 }, new Map(), {});
     fixture.componentRef.setInput('playMode', true);
     const beforeX = instance.cameraX();
     // jsdom canvas is 0x0 wide, so the target X is -(2*cell*zoom), far below

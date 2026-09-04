@@ -272,13 +272,18 @@ export class SceneEditorComponent implements OnInit {
   }
 
   /**
-   * Enters Play mode: starts the player controller at the scene's spawn point
-   * and turns off editing tools.
+   * Enters Play mode: starts the player controller at the scene's spawn point,
+   * passing per-tile blocking flags and footprints, and turns off editing tools.
    */
   enterPlay(): void {
     const scene = this.selectedScene();
     if (!scene) return;
-    this.player.start(scene, this.resolveSpawn(scene));
+    const blockingById = new Map(
+      this.projectTiles()
+        .filter((t) => t.properties.blocking)
+        .map((t) => [t.id, true]),
+    );
+    this.player.start(scene, this.resolveSpawn(scene), blockingById, this.tileFootprints());
     this.playMode.set(true);
     this.placeSpawnMode.set(false);
   }
