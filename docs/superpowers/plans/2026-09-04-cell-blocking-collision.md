@@ -208,6 +208,7 @@ export function buildBlockingGrid(
  * then Y), sweeping the leading AABB edge cell by cell so the player never
  * tunnels through a blocking tile. A cell counts as overlapped only when the AABB
  * crosses its interior, so an edge flush against a wall does not block sliding.
+ * When an axis is unobstructed the full delta is applied on that axis.
  *
  * @param pos - Current center position in grid cells (fractional).
  * @param move - Requested delta this frame, in cells (X then Y are independent).
@@ -238,69 +239,81 @@ export function resolveCollision(
   const topRow = Math.floor(y - half - 1) + 1;
   const bottomRow = Math.ceil(y + half) - 1;
 
+  let hitX = false;
   if (move.x > 0) {
+    // ceil() start (not floor(x+half)+1) makes a flush right edge re-check the
+    // wall cell it is pressed against, preventing tunneling on the next frame.
     const newRight = x + move.x + half;
-    for (let col = Math.floor(x + half) + 1; col <= Math.floor(newRight); col++) {
+    for (let col = Math.ceil(x + half); col <= Math.floor(newRight); col++) {
       if (newRight <= col) break;
-      let hit = false;
+      let cellHit = false;
       for (let row = topRow; row <= bottomRow; row++) {
         if (blocked(col, row)) {
           x = col - half;
-          hit = true;
+          hitX = true;
+          cellHit = true;
           break;
         }
       }
-      if (hit) break;
+      if (cellHit) break;
     }
   } else if (move.x < 0) {
     const newLeft = x + move.x - half;
     for (let col = Math.floor(x - half) - 1; col >= Math.floor(newLeft); col--) {
       if (newLeft >= col + 1) continue;
-      let hit = false;
+      let cellHit = false;
       for (let row = topRow; row <= bottomRow; row++) {
         if (blocked(col, row)) {
           x = col + 1 + half;
-          hit = true;
+          hitX = true;
+          cellHit = true;
           break;
         }
       }
-      if (hit) break;
+      if (cellHit) break;
     }
   }
+  if (!hitX) x += move.x;
 
   // Columns strictly overlapped by the resolved horizontal AABB span.
   const leftCol = Math.floor(x - half - 1) + 1;
   const rightCol = Math.ceil(x + half) - 1;
 
+  let hitY = false;
   if (move.y > 0) {
+    // ceil() start (not floor(y+half)+1) makes a flush bottom edge re-check the
+    // wall cell it is pressed against, preventing tunneling on the next frame.
     const newBottom = y + move.y + half;
-    for (let row = Math.floor(y + half) + 1; row <= Math.floor(newBottom); row++) {
+    for (let row = Math.ceil(y + half); row <= Math.floor(newBottom); row++) {
       if (newBottom <= row) break;
-      let hit = false;
+      let cellHit = false;
       for (let col = leftCol; col <= rightCol; col++) {
         if (blocked(col, row)) {
           y = row - half;
-          hit = true;
+          hitY = true;
+          cellHit = true;
           break;
         }
       }
-      if (hit) break;
+      if (cellHit) break;
     }
   } else if (move.y < 0) {
     const newTop = y + move.y - half;
     for (let row = Math.floor(y - half) - 1; row >= Math.floor(newTop); row--) {
       if (newTop >= row + 1) continue;
-      let hit = false;
+      let cellHit = false;
       for (let col = leftCol; col <= rightCol; col++) {
         if (blocked(col, row)) {
           y = row + 1 + half;
-          hit = true;
+          hitY = true;
+          cellHit = true;
           break;
         }
       }
-      if (hit) break;
+      if (cellHit) break;
     }
   }
+  if (!hitY) y += move.y;
 
   return { x, y };
 }
