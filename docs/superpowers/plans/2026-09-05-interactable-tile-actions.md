@@ -28,7 +28,7 @@
 - Test: `src/app/features/scene-editor/interaction.spec.ts`
 
 **Interfaces:**
-- Consumes: `Layer` from `../../../shared/models/scene.model` (path identical to `collision.ts`).
+- Consumes: `Layer` from `../../shared/models/scene.model` (path identical to `collision.ts`).
 - Produces: `InteractionTarget` (`{ x, y, actionId }`), `topmostTileIdAt(x, y, layers): number`, `findInteractableTarget(cell, direction, layers, interactableById): InteractionTarget | null`. Task 2 consumes these exact names.
 
 - [ ] **Step 1: Write the failing test**
@@ -38,10 +38,10 @@ Create `src/app/features/scene-editor/interaction.spec.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
 import { findInteractableTarget, topmostTileIdAt } from './interaction';
-import type { Layer } from '../../../shared/models/scene.model';
+import type { Layer } from '../../shared/models/scene.model';
 
 /** Builds a single-layer scene where every listed cell holds `id`. */
-function layerWith(id: number, cells: Array<[number, number]>, width = 3, height = 3): Layer {
+function layerWith(id: number, cells: [number, number][], width = 3, height = 3): Layer {
   const tileData = Array.from({ length: height }, () => Array<number>(width).fill(-1));
   for (const [x, y] of cells) {
     tileData[y][x] = id;
@@ -98,7 +98,7 @@ describe('findInteractableTarget', () => {
   });
 
   it('falls back to the cell under the player when the facing cell holds a non-interactable tile', () => {
-    const layers = [layerWith(7, [[1, 0]]), layer('top', [[-1, 99, -1]])];
+    const layers = [layerWith(7, [[1, 0]]), layer('top', [[-1, -1, 99]])];
     expect(findInteractableTarget({ x: 1, y: 0 }, { dx: 1, dy: 0 }, layers, BELL)).toEqual({
       x: 1,
       y: 0,
@@ -160,7 +160,7 @@ Expected: FAIL — the module `src/app/features/scene-editor/interaction.ts` doe
 Create `src/app/features/scene-editor/interaction.ts`:
 
 ```ts
-import type { Layer } from '../../../shared/models/scene.model';
+import type { Layer } from '../../shared/models/scene.model';
 
 /** The cell `E` targets, with the action registered on its tile. */
 export interface InteractionTarget {

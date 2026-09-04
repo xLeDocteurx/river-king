@@ -92,12 +92,17 @@ describe('findInteractableTarget', () => {
   });
 
   it('returns null when the interactable map is empty', () => {
-    expect(findInteractableTarget({ x: 1, y: 0 }, { dx: 1, dy: 0 }, [layerWith(7, [[2, 0]])], new Map())).toBeNull();
+    expect(
+      findInteractableTarget({ x: 1, y: 0 }, { dx: 1, dy: 0 }, [layerWith(7, [[2, 0]])], new Map()),
+    ).toBeNull();
   });
 
   it('honors the topmost layer when the facing cell stacks two interactable tiles', () => {
     const bottom = layerWith(7, [[2, 0]]);
-    const top = layer('top', [[-1, -1, 8], [-1, -1, -1]]);
+    const top = layer('top', [
+      [-1, -1, 8],
+      [-1, -1, -1],
+    ]);
     const ring = new Map<number, string>([
       [7, 'bell'],
       [8, 'ring'],
