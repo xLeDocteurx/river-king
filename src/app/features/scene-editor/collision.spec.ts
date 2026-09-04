@@ -60,6 +60,12 @@ describe('resolveCollision', () => {
     return grid;
   }
 
+  function wallGridRow2(): boolean[][] {
+    const grid = buildBlockingGrid(5, 5, [], new Map(), {});
+    for (let x = 0; x < 5; x++) grid[2][x] = true;
+    return grid;
+  }
+
   it('returns the requested position when nothing blocks the path', () => {
     expect(resolveCollision({ x: 2, y: 2 }, { x: 0.5, y: 0.5 }, half, free, bounds)).toEqual({
       x: 2.5,
@@ -98,6 +104,52 @@ describe('resolveCollision', () => {
     expect(resolveCollision({ x: 4.5, y: 4.5 }, { x: 0, y: 5 }, half, free, bounds)).toEqual({
       x: 4.5,
       y: 4.75,
+    });
+  });
+
+  it('does not tunnel through a wall when starting already flush against it', () => {
+    expect(resolveCollision({ x: 1.75, y: 1.5 }, { x: 1, y: 0 }, half, wallGrid(), bounds)).toEqual(
+      {
+        x: 1.75,
+        y: 1.5,
+      },
+    );
+  });
+
+  it('does not embed into a wall when starting flush and pushing into it', () => {
+    expect(
+      resolveCollision({ x: 1.75, y: 1.5 }, { x: 0.25, y: 0 }, half, wallGrid(), bounds),
+    ).toEqual({
+      x: 1.75,
+      y: 1.5,
+    });
+  });
+
+  it('keeps sliding along a wall when already flush against it', () => {
+    const first = resolveCollision(
+      { x: 1.5, y: 1.5 },
+      { x: 0.5, y: 0.5 },
+      half,
+      wallGrid(),
+      bounds,
+    );
+    const second = resolveCollision(first, { x: 0.5, y: 0.5 }, half, wallGrid(), bounds);
+    expect(first).toEqual({ x: 1.75, y: 2 });
+    expect(second).toEqual({ x: 1.75, y: 2.5 });
+  });
+
+  it('does not tunnel through a horizontal wall when starting flush below it', () => {
+    expect(
+      resolveCollision({ x: 1.5, y: 1.75 }, { x: 0, y: 0.5 }, half, wallGridRow2(), bounds),
+    ).toEqual({
+      x: 1.5,
+      y: 1.75,
+    });
+    expect(
+      resolveCollision({ x: 1.5, y: 1.75 }, { x: 0, y: 0.25 }, half, wallGridRow2(), bounds),
+    ).toEqual({
+      x: 1.5,
+      y: 1.75,
     });
   });
 });

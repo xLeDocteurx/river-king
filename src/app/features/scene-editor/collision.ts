@@ -85,7 +85,7 @@ export function resolveCollision(
   let hitX = false;
   if (move.x > 0) {
     const newRight = x + move.x + half;
-    for (let col = Math.floor(x + half) + 1; col <= Math.floor(newRight); col++) {
+    for (let col = Math.ceil(x + half); col <= Math.floor(newRight); col++) {
       if (newRight <= col) break;
       let cellHit = false;
       for (let row = topRow; row <= bottomRow; row++) {
@@ -123,7 +123,7 @@ export function resolveCollision(
   let hitY = false;
   if (move.y > 0) {
     const newBottom = y + move.y + half;
-    for (let row = Math.floor(y + half) + 1; row <= Math.floor(newBottom); row++) {
+    for (let row = Math.ceil(y + half); row <= Math.floor(newBottom); row++) {
       if (newBottom <= row) break;
       let cellHit = false;
       for (let col = leftCol; col <= rightCol; col++) {
