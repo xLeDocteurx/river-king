@@ -319,6 +319,13 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       ctx.lineWidth = 1;
       ctx.strokeRect((px - 0.5) * cell, (py - 0.5) * cell, cell, cell);
       ctx.globalAlpha = 1;
+
+      const target = this.player.interactionTarget();
+      if (target) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(target.x * cell, target.y * cell, cell, cell);
+      }
     }
 
     // Grid drawn AFTER tiles so cell boundaries stay visible over filled cells.
