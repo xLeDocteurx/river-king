@@ -58,6 +58,7 @@ Le chaînon manquant : le modèle a déjà `blocking` + `interactable` + `action
 - [ ] **A4. Preview projet** — Bouton "Jouer" global qui lance le player dans la scène active (relié au SessionService). 🟢 Léger — ⭐⭐
 - [ ] **A5. Fullscreen/game mode** — Mode plein écran sans chrome UI. 🟢 Léger — ⭐
 - [ ] **A6. Rendu "devant/derrière" du player (tri Y, Y-sorting)** — Besoin né du design de #49 : les tiles débordantes (canopée d'arbre, herbe haute, buisson) doivent se rendre devant ou derrière le player selon la position du player sur l'axe Y. Nécessite un attribut tile (ancrage "pied" / marquage "débordant") + un mécanisme de rendu par profondeur. **Player v1 = rendu au-dessus de tout** ; le tri Y est un chantier séparé à part entière (voir US). 🟠 Moyen—Lourd — ⭐⭐⭐
+- [ ] **A7. Contrôles remappables** — Dès qu'on a une couche d'inputs (WASD/arrows, E interaction, plus tard sprint/dash/verrouillage…), proposer un remapping des touches configurables par le joueur (enregistrées par projet ou app, UI d'édition). Idée apportée pendant le brainstorm de #52. 🟠 Moyen — ⭐⭐
 
 ### Direction B — Enrichir le level design
 
