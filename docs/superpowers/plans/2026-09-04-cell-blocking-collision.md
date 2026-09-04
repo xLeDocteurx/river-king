@@ -27,10 +27,12 @@ Spec: `docs/superpowers/specs/2026-09-04-cell-blocking-collision-design.md`
 ### Task 1: Pure collision module (`collision.ts`)
 
 **Files:**
+
 - Create: `src/app/features/scene-editor/collision.ts`
 - Test: `src/app/features/scene-editor/collision.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `Layer` (`src/app/shared/models/scene.model.ts`, fields `visible`, `tileData`), `getFootprint`/`TileFootprintMap` (`./map-footprint`).
 - Produces:
   - `export const HALF_CELL_HITBOX = 0.25`
@@ -119,7 +121,9 @@ describe('resolveCollision', () => {
   });
 
   it('slides along a wall instead of stopping when moving diagonally', () => {
-    expect(resolveCollision({ x: 1.5, y: 1.5 }, { x: 0.5, y: 0.5 }, half, wallGrid(), bounds)).toEqual({
+    expect(
+      resolveCollision({ x: 1.5, y: 1.5 }, { x: 0.5, y: 0.5 }, half, wallGrid(), bounds),
+    ).toEqual({
       x: 1.75,
       y: 2,
     });
@@ -337,12 +341,14 @@ git commit -m "feature-51: add pure blocking-grid and collision-resolution modul
 ### Task 2: Center-player semantics and runtime collision in `PlayerController`
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/services/play-controller.ts`
 - Modify: `src/app/features/scene-editor/services/play-controller.spec.ts`
 - Modify: `src/app/features/scene-editor/map-canvas.component.ts:311-322` (player placeholder render)
 - Modify: `src/app/features/scene-editor/map-canvas.component.spec.ts:251,289` (start() call arguments)
 
 **Interfaces:**
+
 - Consumes (from Task 1): `buildBlockingGrid`, `resolveCollision`, `HALF_CELL_HITBOX`.
 - Produces: `start(scene: { width: number; height: number; layers: Layer[] }, spawn: { x: number; y: number }, blockingById: Map<number, boolean>, footprints: TileFootprintMap): void` — centers the player at `spawn + 0.5` and precomputes the blocking grid. `update(dt)` resolves via `resolveCollision` instead of clamping to `[0, size-1]`.
 
@@ -363,7 +369,10 @@ function release(key: string): void {
   window.dispatchEvent(new KeyboardEvent('keyup', { key }));
 }
 
-function emptyScene(width: number, height: number): { width: number; height: number; layers: Layer[] } {
+function emptyScene(
+  width: number,
+  height: number,
+): { width: number; height: number; layers: Layer[] } {
   return { width, height, layers: [] };
 }
 
@@ -551,15 +560,15 @@ import type { TileFootprintMap } from '../map-footprint';
 - Replace the two signal-update lines in `update(dt)` (the `Math.max(0, Math.min(...))` lines) with a collision-resolved move:
 
 ```ts
-    const resolved = resolveCollision(
-      { x: this.x(), y: this.y() },
-      { x: dx * this.speed * dt, y: dy * this.speed * dt },
-      HALF_CELL_HITBOX,
-      this.blockingGrid,
-      { width: this.sceneWidth, height: this.sceneHeight },
-    );
-    this.x.set(resolved.x);
-    this.y.set(resolved.y);
+const resolved = resolveCollision(
+  { x: this.x(), y: this.y() },
+  { x: dx * this.speed * dt, y: dy * this.speed * dt },
+  HALF_CELL_HITBOX,
+  this.blockingGrid,
+  { width: this.sceneWidth, height: this.sceneHeight },
+);
+this.x.set(resolved.x);
+this.y.set(resolved.y);
 ```
 
 - Update the `update` JSDoc: change "clamping to scene bounds" to "resolving against the blocking grid (out-of-scene cells block)".
@@ -569,13 +578,13 @@ import type { TileFootprintMap } from '../map-footprint';
 In `src/app/features/scene-editor/map-canvas.component.ts:311-322`, change the two `ctx.fillRect(...)`/`ctx.strokeRect(...)` calls so the 1×1 box is centered on the player position (position is now the center):
 
 ```ts
-      ctx.fillRect((px - 0.5) * cell, (py - 0.5) * cell, cell, cell);
+ctx.fillRect((px - 0.5) * cell, (py - 0.5) * cell, cell, cell);
 ```
 
 and
 
 ```ts
-      ctx.strokeRect((px - 0.5) * cell, (py - 0.5) * cell, cell, cell);
+ctx.strokeRect((px - 0.5) * cell, (py - 0.5) * cell, cell, cell);
 ```
 
 - [ ] **Step 5: Update the `player.start` calls in `map-canvas.component.spec.ts`**
@@ -610,10 +619,12 @@ git commit -m "feature-51: center player position and resolve movement against b
 ### Task 3: Wire blocking flags into Play mode entry
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/scene-editor.component.ts:274-284` (`enterPlay`)
 - Modify: `src/app/features/scene-editor/scene-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `player.start(scene, spawn, blockingById, footprints)` (Task 2), `projectTiles()` signal (`Tile[]`), `tileFootprints()` signal (`TileFootprintMap`).
 - Produces: `enterPlay()` passes a `Map<number, boolean>` of tileId → `properties.blocking` built from `projectTiles()`.
 
@@ -639,45 +650,45 @@ Replace `expect(startSpy).toHaveBeenCalledWith(stored, { x: 1, y: 2 });` with:
 - Add a new test right after the "enters Play mode at an explicit stored spawn point" test:
 
 ```ts
-  it('passes per-tile blocking flags and footprints to the player on enterPlay', async () => {
-    const wallId = await db.tiles.add({
-      projectId: 'p1',
-      name: 'wall',
-      type: 'static',
-      spriteIds: [],
-      animationSpeed: 1,
-      properties: { blocking: true, interactable: false },
-    } as Tile);
-    const floorId = await db.tiles.add({
-      projectId: 'p1',
-      name: 'floor',
-      type: 'static',
-      spriteIds: [],
-      animationSpeed: 1,
-      properties: { blocking: false, interactable: false },
-    } as Tile);
+it('passes per-tile blocking flags and footprints to the player on enterPlay', async () => {
+  const wallId = await db.tiles.add({
+    projectId: 'p1',
+    name: 'wall',
+    type: 'static',
+    spriteIds: [],
+    animationSpeed: 1,
+    properties: { blocking: true, interactable: false },
+  } as Tile);
+  const floorId = await db.tiles.add({
+    projectId: 'p1',
+    name: 'floor',
+    type: 'static',
+    spriteIds: [],
+    animationSpeed: 1,
+    properties: { blocking: false, interactable: false },
+  } as Tile);
 
-    fixture.detectChanges();
-    await fixture.whenStable();
-    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
-    await component.selectScene(scene.id);
-    const player = fixture.debugElement.injector.get(PlayerController);
-    const startSpy = vi.spyOn(player, 'start');
+  fixture.detectChanges();
+  await fixture.whenStable();
+  const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+  await component.selectScene(scene.id);
+  const player = fixture.debugElement.injector.get(PlayerController);
+  const startSpy = vi.spyOn(player, 'start');
 
-    component.enterPlay();
+  component.enterPlay();
 
-    expect(startSpy).toHaveBeenCalledTimes(1);
-    const [, , blockingById, footprints] = startSpy.mock.calls[0] as [
-      Scene,
-      { x: number; y: number },
-      Map<number, boolean>,
-      TileFootprintMap,
-    ];
-    expect(blockingById.size).toBe(2);
-    expect(blockingById.get(wallId)).toBe(true);
-    expect(blockingById.get(floorId)).toBe(false);
-    expect(footprints).toEqual({});
-  });
+  expect(startSpy).toHaveBeenCalledTimes(1);
+  const [, , blockingById, footprints] = startSpy.mock.calls[0] as [
+    Scene,
+    { x: number; y: number },
+    Map<number, boolean>,
+    TileFootprintMap,
+  ];
+  expect(blockingById.size).toBe(2);
+  expect(blockingById.get(wallId)).toBe(true);
+  expect(blockingById.get(floorId)).toBe(false);
+  expect(footprints).toEqual({});
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
