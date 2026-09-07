@@ -273,15 +273,20 @@ Workflow: **oral idea → append to `docs/ideas.md` → clarify → GitHub issue
 
 ---
 
-## Git workflow
+## Git workflow (develop model)
 
-- **Main branch:** `main`
+- **Default branch:** `develop` — the integration base. Every feature branches **from
+  `develop`** and its PR targets `develop`. Never branch from `main`, never stack a feature
+  branch on another feature branch.
+- **`main`:** protected, stable line reserved for releases. PRs to `main` are rejected by a
+  guard workflow unless the PR carries the `release` label. Normal work never touches `main`.
 - **Feature branches:** `feature-<ticket_number>` (e.g., `feature-42`)
 - **Commit messages:** prefix with the branch name, e.g. `feature-42: add login form`
 - The initial project setup commit (this repo's first commit) has **no prefix**.
 - **Auto-delete:** GitHub's "auto-delete head branches" is enabled — a `feature-*` branch is
   deleted automatically as soon as its pull request is merged. Do not restore or reuse a
-  merged branch; always branch from `main` again.
+  merged branch; always branch from `develop` again.
+- **Full reference:** `docs/git-workflow.md`.
 
 ---
 
