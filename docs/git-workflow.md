@@ -21,8 +21,12 @@ once its PR merges.
   once that PR has merged.
 - **Pull requests target `develop`** and close their issue (`Closes #N`).
 - **`main` only receives release PRs**, identified by the `release` label.
-- Branch protection on both `main` and `develop`: pull requests are required, at least one
-  approving review, status checks required, no direct pushes (admins included).
+- Branch protection on both `main` and `develop`: pull requests are required, no direct
+  pushes are allowed (admins included), and strict mode is on (a branch must be up to date
+  with its base before merging). No approving review is enforced: with a single GitHub
+  account the PR author cannot self-approve, so merges are gated by the CI checks instead.
+  The CI workflow (`ci.yml`) runs on every pull request; it is wired in as a required status
+  check on `develop` once it has reported a first green run.
 
 ## Guard on PRs to `main`
 
@@ -43,6 +47,14 @@ Versioning is intentionally not set up yet. When it is decided:
 5. Merge `release/<version>` back into `develop` and delete it.
 
 Until then, `main` stays as-is and no release PRs are expected.
+
+## Deploy
+
+The GitHub Pages workflow (`deploy-pages.yml`) builds with a `/river-king/` base href and
+deploys **on pushes to `main` only**. Because `main` only receives release PRs and releases
+are deferred, the deployed site stays at the current build until the first release. If a
+live preview of the latest work becomes desirable before then, retarget the Pages workflow
+to `develop`.
 
 ## FAQ
 

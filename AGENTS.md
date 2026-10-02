@@ -281,6 +281,7 @@ Workflow: **oral idea → append to `docs/ideas.md` → clarify → GitHub issue
 - **`main`:** protected, stable line reserved for releases. PRs to `main` are rejected by a
   guard workflow unless the PR carries the `release` label. Normal work never touches `main`.
 - **Feature branches:** `feature-<ticket_number>` (e.g., `feature-42`)
+- **Release branches** (future, when versioning begins): `release/<version>`
 - **Commit messages:** prefix with the branch name, e.g. `feature-42: add login form`
 - The initial project setup commit (this repo's first commit) has **no prefix**.
 - **Auto-delete:** GitHub's "auto-delete head branches" is enabled — a `feature-*` branch is
