@@ -1,4 +1,7 @@
 import { Injectable, signal } from '@angular/core';
+import type { Layer } from '../../../shared/models/scene.model';
+import { buildBlockingGrid, resolveCollision, HALF_CELL_HITBOX } from '../collision';
+import type { TileFootprintMap } from '../map-footprint';
 
 /** The direction the player is currently facing. */
 export type PlayerDirection = 'up' | 'down' | 'left' | 'right';
@@ -40,6 +43,7 @@ export class PlayerController {
   private listenersActive = false;
   private sceneWidth = 0;
   private sceneHeight = 0;
+  private blockingGrid: boolean[][] = [];
 
   /** @internal Records a held movement key. */
   private readonly onKeyDown = (event: KeyboardEvent): void => {
@@ -52,16 +56,31 @@ export class PlayerController {
   };
 
   /**
-   * Begins a Play session: attaches input listeners, applies bounds, and
-   * resets the player to the given spawn cell.
-   * @param scene - The scene being played, for its width/height bounds.
-   * @param spawn - The spawn cell to start at.
+   * Begins a Play session: attaches input listeners, builds the blocking grid
+   * from the scene's visible layers, and resets the player to the given spawn
+   * cell (position signals hold the center, offset by half a cell).
+   * @param scene - The scene being played, with its width/height bounds and layers.
+   * @param spawn - The spawn cell to start at (the player centers on it).
+   * @param blockingById - Per-tile blocking flags.
+   * @param footprints - Grid-cell footprint per tile id.
    */
-  start(scene: { width: number; height: number }, spawn: { x: number; y: number }): void {
+  start(
+    scene: { width: number; height: number; layers: Layer[] },
+    spawn: { x: number; y: number },
+    blockingById: Map<number, boolean>,
+    footprints: TileFootprintMap,
+  ): void {
     this.sceneWidth = scene.width;
     this.sceneHeight = scene.height;
-    this.x.set(spawn.x);
-    this.y.set(spawn.y);
+    this.blockingGrid = buildBlockingGrid(
+      scene.width,
+      scene.height,
+      scene.layers,
+      blockingById,
+      footprints,
+    );
+    this.x.set(spawn.x + 0.5);
+    this.y.set(spawn.y + 0.5);
     this.direction.set('down');
     this.moving.set(false);
     this.held.clear();
@@ -86,7 +105,8 @@ export class PlayerController {
 
   /**
    * Advances the player by the given delta time, applying held input and
-   * clamping to scene bounds. Updates facing direction and the moving state.
+   * resolving against the blocking grid (out-of-scene cells block). Updates
+   * facing direction and the moving state.
    * @param dt - Delta time in seconds.
    */
   update(dt: number): void {
@@ -109,8 +129,15 @@ export class PlayerController {
     dx /= len;
     dy /= len;
 
-    this.x.update((v) => Math.max(0, Math.min(this.sceneWidth - 1, v + dx * this.speed * dt)));
-    this.y.update((v) => Math.max(0, Math.min(this.sceneHeight - 1, v + dy * this.speed * dt)));
+    const resolved = resolveCollision(
+      { x: this.x(), y: this.y() },
+      { x: dx * this.speed * dt, y: dy * this.speed * dt },
+      HALF_CELL_HITBOX,
+      this.blockingGrid,
+      { width: this.sceneWidth, height: this.sceneHeight },
+    );
+    this.x.set(resolved.x);
+    this.y.set(resolved.y);
 
     if (Math.abs(dx) >= Math.abs(dy)) {
       this.direction.set(dx < 0 ? 'left' : 'right');

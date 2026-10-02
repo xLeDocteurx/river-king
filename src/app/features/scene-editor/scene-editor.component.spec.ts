@@ -14,6 +14,8 @@ import { StatusBarService } from '../../core/services/status-bar.service';
 import { UndoService } from '../../core/services/undo.service';
 import { createEmptySession } from '../../shared/models/session.model';
 import type { Scene } from '../../shared/models/scene.model';
+import type { Tile } from '../../shared/models/tile.model';
+import type { TileFootprintMap } from './map-footprint';
 import { PlayerController } from './services/play-controller';
 
 // jsdom does not implement HTMLDialogElement methods
@@ -711,7 +713,7 @@ describe('SceneEditorComponent', () => {
 
     component.enterPlay();
 
-    expect(startSpy).toHaveBeenCalledWith(scene, { x: 4, y: 3 });
+    expect(startSpy).toHaveBeenCalledWith(scene, { x: 4, y: 3 }, expect.any(Map), {});
     expect(component.playMode()).toBe(true);
     expect(component.placeSpawnMode()).toBe(false);
   });
@@ -728,7 +730,48 @@ describe('SceneEditorComponent', () => {
 
     component.enterPlay();
 
-    expect(startSpy).toHaveBeenCalledWith(stored, { x: 1, y: 2 });
+    expect(startSpy).toHaveBeenCalledWith(stored, { x: 1, y: 2 }, expect.any(Map), {});
+  });
+
+  it('passes per-tile blocking flags and footprints to the player on enterPlay', async () => {
+    const wallId = await db.tiles.add({
+      projectId: 'p1',
+      name: 'wall',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 1,
+      properties: { blocking: true, interactable: false },
+    } as unknown as Tile);
+    const floorId = await db.tiles.add({
+      projectId: 'p1',
+      name: 'floor',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 1,
+      properties: { blocking: false, interactable: false },
+    } as unknown as Tile);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+    await component.selectScene(scene.id);
+    await component.loadProjectData();
+    const player = fixture.debugElement.injector.get(PlayerController);
+    const startSpy = vi.spyOn(player, 'start');
+
+    component.enterPlay();
+
+    expect(startSpy).toHaveBeenCalledTimes(1);
+    const [, , blockingById, footprints] = startSpy.mock.calls[0] as [
+      Scene,
+      { x: number; y: number },
+      Map<number, boolean>,
+      TileFootprintMap,
+    ];
+    expect(blockingById.size).toBe(2);
+    expect(blockingById.get(wallId)).toBe(true);
+    expect(blockingById.get(floorId)).toBe(false);
+    expect(footprints).toEqual({});
   });
 
   it('exits Play mode and stops the player', async () => {
