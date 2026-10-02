@@ -24,16 +24,17 @@ once its PR merges.
 - Branch protection on both `main` and `develop`: pull requests are required, no direct
   pushes are allowed (admins included), and strict mode is on (a branch must be up to date
   with its base before merging). No approving review is enforced: with a single GitHub
-  account the PR author cannot self-approve, so merges are gated by the CI checks instead.
-  The CI workflow (`ci.yml`) runs on every pull request; it is wired in as a required status
-  check on `develop` once it has reported a first green run.
+  account the PR author cannot self-approve, so merges are gated by the required status
+  checks instead. The CI workflow (`ci.yml`) runs on every pull request and is required on
+  `develop`; the guard is required on `main`.
 
 ## Guard on PRs to `main`
 
 GitHub cannot natively forbid a pull request from targeting a given branch. This repository
 enforces the rule with `.github/workflows/guard-no-pr-to-main.yml`: any PR whose base is
-`main` fails its check **unless** the PR carries the `release` label. Because `develop` is
-the default branch, this workflow runs for every pull request regardless of base.
+`main` fails its check **unless** the PR carries the `release` label, and the guard is a
+**required** status check on `main`, so a failed check blocks the merge. Because `develop`
+is the default branch, this workflow runs for every pull request regardless of base.
 
 ## Release flow (deferred)
 
