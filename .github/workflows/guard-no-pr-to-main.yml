@@ -1,0 +1,20 @@
+name: 'Guard: no non-release PR to main'
+
+on:
+  pull_request:
+
+jobs:
+  block-non-release-pr-to-main:
+    name: Block PR to main without release label
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.base.ref == 'main'
+    steps:
+      - name: Require the release label
+        env:
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          if ! echo "$LABELS" | grep -q '"release"'; then
+            echo "::error::PRs to 'main' are only allowed for releases. Add the 'release' label to this PR, or retarget it to 'develop'."
+            exit 1
+          fi
+          echo "Release PR to main: allowed."
