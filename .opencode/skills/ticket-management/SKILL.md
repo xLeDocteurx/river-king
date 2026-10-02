@@ -30,8 +30,14 @@ split into meaningful units. When in doubt, split.
 oral idea → append to docs/ideas.md → clarify → create GitHub issue
 → add kanban card (Status: Backlog) → groom (Backlog→Ready, set Priority/Size)
 → brainstorm + write spec (linked to issue in issue body) → plan → implement
-→ PR with "Closes #<issue>" → On merge: Status: Done
+→ PR into develop with "Closes #<issue>" → On merge: Status: Done
 ```
+
+**Branching rule (develop model):** feature branches branch **from `develop`** (never from
+`main`, never stacked on another feature). Create a PR to `develop` (the default branch),
+which closes the issue. `main` is a protected, stable line: it only receives release PRs
+carrying the `release` label — normal PRs targeting `main` are rejected by the guard
+workflow. See `docs/git-workflow.md`.
 
 ## Do in every capture
 

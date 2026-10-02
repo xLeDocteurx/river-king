@@ -124,9 +124,12 @@ For more details, see [`AGENTS.md`](AGENTS.md).
 We welcome contributions, whether it's a bug fix, a new feature, or improved documentation.
 
 1. **Fork** this repository
-2. **Create** a feature branch: `git checkout -b feature-42-short-name`
+2. **Create** a feature branch from `develop`: `git checkout -b feature-42-short-name develop`
 3. **Commit** with a prefixed message: `feature-42: add frame strip drag preview`
-4. **Open** a Pull Request against `main`
+4. **Open** a Pull Request against `develop`
+
+See [`docs/git-workflow.md`](docs/git-workflow.md) for the branching model: PRs to `main` are
+only allowed for releases (guarded by a workflow), and `develop` is the integration base.
 
 Before submitting, make sure your changes pass lint and tests:
 
