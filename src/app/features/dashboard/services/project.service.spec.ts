@@ -109,6 +109,7 @@ describe('ProjectService', () => {
       projectId: project.id,
       name: 'Scene',
       folderPath: '',
+      spawnPoint: null,
       width: 10,
       height: 10,
       layers: [

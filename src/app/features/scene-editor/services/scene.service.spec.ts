@@ -36,6 +36,11 @@ describe('SceneService', () => {
     expect(scene.layers[0].tileData[0][0]).toBe(-1);
   });
 
+  it('creates a scene with a null spawnPoint by default', async () => {
+    const scene = await service.createScene('proj-1', 'Spawn Default', 10, 10);
+    expect(scene.spawnPoint).toBeNull();
+  });
+
   it('should list scenes by projectId', async () => {
     await service.createScene('proj-1', 'Scene A', 10, 10);
     await service.createScene('proj-1', 'Scene B', 10, 10);

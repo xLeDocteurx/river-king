@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MapCanvasComponent, GRID_VISIBLE_STORAGE_KEY } from './map-canvas.component';
 import type { Scene, Layer } from '../../shared/models/scene.model';
+import { PlayerController } from './services/play-controller';
 
 // jsdom does not implement ResizeObserver (used by MapCanvasComponent)
 class ResizeObserverStub {
@@ -31,6 +32,7 @@ function makeScene(width = 4, height = 4): Scene {
     projectId: 'proj-1',
     name: 'S',
     folderPath: '',
+    spawnPoint: null,
     width,
     height,
     layers: [makeDefaultLayer(width, height)],
@@ -46,7 +48,10 @@ describe('MapCanvasComponent', () => {
   });
 
   function setup(scene: Scene, footprints: Record<number, { w: number; h: number }> = {}): void {
-    TestBed.configureTestingModule({ imports: [MapCanvasComponent] });
+    TestBed.configureTestingModule({
+      imports: [MapCanvasComponent],
+      providers: [PlayerController],
+    });
     fixture = TestBed.createComponent(MapCanvasComponent);
     placed = [];
     fixture.componentInstance.tilePlaced.subscribe((e) => placed.push(e));
@@ -198,5 +203,104 @@ describe('MapCanvasComponent', () => {
     instance.showGrid.set(true);
     await new Promise((r) => setTimeout(r, 50));
     expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('1');
+  });
+
+  it('emits a spawnPlaced cell when placeSpawnMode is active', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    let spawn: { x: number; y: number } | undefined;
+    instance.spawnPlaced.subscribe((c) => (spawn = c));
+    fixture.componentRef.setInput('placeSpawnMode', true);
+
+    instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
+
+    expect(spawn).toEqual({ x: 0, y: 1 });
+    expect(placed).toEqual([]);
+  });
+
+  it('does not emit spawnPlaced when placeSpawnMode is off', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    let spawn: { x: number; y: number } | undefined;
+    instance.spawnPlaced.subscribe((c) => (spawn = c));
+
+    instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
+
+    expect(spawn).toBeUndefined();
+  });
+
+  it('draws the player placeholder in play mode', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const player = fixture.debugElement.injector.get(PlayerController);
+      player.start({ width: 4, height: 4 }, { x: 1, y: 2 });
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+      expect(ctx.fillRect).toHaveBeenCalledWith(16, 32, 16, 16);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('does not draw the player placeholder outside play mode', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      fixture.detectChanges();
+      expect(ctx.fillRect).not.toHaveBeenCalledWith(16, 32, 16, 16);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('follows the player by moving the camera toward the player cell', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    const player = fixture.debugElement.injector.get(PlayerController);
+    player.start({ width: 4, height: 4 }, { x: 2, y: 2 });
+    fixture.componentRef.setInput('playMode', true);
+    const beforeX = instance.cameraX();
+    // jsdom canvas is 0x0 wide, so the target X is -(2*cell*zoom), far below
+    // the camera's starting position; the camera eases toward it.
+    instance['followPlayer']();
+    expect(instance.cameraX()).toBeLessThan(beforeX);
+  });
+
+  it('ignores editing clicks in play mode', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    fixture.componentRef.setInput('playMode', true);
+    fixture.componentRef.setInput('selectedTileId', 1);
+    instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
+    expect(placed).toEqual([]);
   });
 });

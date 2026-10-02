@@ -44,6 +44,7 @@ export class SceneService {
       projectId,
       name,
       folderPath: '',
+      spawnPoint: null,
       width,
       height,
       layers: [

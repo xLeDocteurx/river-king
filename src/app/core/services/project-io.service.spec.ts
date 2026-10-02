@@ -104,6 +104,7 @@ describe('ProjectIoService', () => {
       projectId,
       name: 'Level 1',
       folderPath: '',
+      spawnPoint: null,
       width: 10,
       height: 10,
       layers: [
