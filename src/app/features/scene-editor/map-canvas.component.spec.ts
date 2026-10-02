@@ -375,4 +375,79 @@ describe('MapCanvasComponent', () => {
       getContextSpy.mockRestore();
     }
   });
+
+  it('runs the rAF loop in play mode even without animated tiles', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const instance = fixture.componentInstance;
+      expect(instance['hasAnimatedTiles']()).toBe(false);
+
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+
+      expect(instance['loopRunning']).toBe(true);
+      expect(instance['rafId']).toBeGreaterThan(0);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('does not run the rAF loop in edit mode without animated tiles', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+
+    expect(instance['hasAnimatedTiles']()).toBe(false);
+    expect(instance['loopRunning']).toBe(false);
+    expect(instance['rafId']).toBe(0);
+  });
+
+  it('cancels the rAF loop when leaving play mode', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const instance = fixture.componentInstance;
+
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+      expect(instance['loopRunning']).toBe(true);
+      expect(instance['rafId']).toBeGreaterThan(0);
+
+      fixture.componentRef.setInput('playMode', false);
+      fixture.detectChanges();
+
+      expect(instance['loopRunning']).toBe(false);
+      expect(instance['rafId']).toBe(0);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
 });
