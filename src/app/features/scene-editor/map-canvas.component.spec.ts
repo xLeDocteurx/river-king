@@ -248,7 +248,7 @@ describe('MapCanvasComponent', () => {
     try {
       setup(makeScene());
       const player = fixture.debugElement.injector.get(PlayerController);
-      player.start({ width: 4, height: 4, layers: [] }, { x: 1, y: 2 }, new Map(), {});
+      player.start({ width: 4, height: 4, layers: [] }, { x: 1, y: 2 }, new Map(), {}, new Map());
       fixture.componentRef.setInput('playMode', true);
       fixture.detectChanges();
       expect(ctx.fillRect).toHaveBeenCalledWith(16, 32, 16, 16);
@@ -286,7 +286,7 @@ describe('MapCanvasComponent', () => {
     setup(makeScene());
     const instance = fixture.componentInstance;
     const player = fixture.debugElement.injector.get(PlayerController);
-    player.start({ width: 4, height: 4, layers: [] }, { x: 2, y: 2 }, new Map(), {});
+    player.start({ width: 4, height: 4, layers: [] }, { x: 2, y: 2 }, new Map(), {}, new Map());
     fixture.componentRef.setInput('playMode', true);
     const beforeX = instance.cameraX();
     // jsdom canvas is 0x0 wide, so the target X is -(2*cell*zoom), far below
@@ -302,5 +302,77 @@ describe('MapCanvasComponent', () => {
     fixture.componentRef.setInput('selectedTileId', 1);
     instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
     expect(placed).toEqual([]);
+  });
+
+  it('draws an accent frame around the interaction target in play mode', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const player = fixture.debugElement.injector.get(PlayerController);
+      const tileData = [
+        [-1, -1, -1, -1],
+        [-1, -1, -1, -1],
+        [-1, -1, 7, -1],
+        [-1, -1, -1, -1],
+      ];
+      player.start(
+        {
+          width: 4,
+          height: 4,
+          layers: [{ id: 'l1', name: 'interact', visible: true, opacity: 1, tileData }],
+        },
+        { x: 2, y: 1 },
+        new Map(),
+        {},
+        new Map([[7, 'bell']]),
+      );
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+      expect(ctx.strokeRect).toHaveBeenCalledWith(32, 32, 16, 16);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('draws no interaction frame when there is no target in play mode', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const player = fixture.debugElement.injector.get(PlayerController);
+      player.start({ width: 4, height: 4, layers: [] }, { x: 2, y: 1 }, new Map(), {}, new Map());
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+      expect(ctx.strokeRect).not.toHaveBeenCalledWith(32, 32, 16, 16);
+    } finally {
+      getContextSpy.mockRestore();
+    }
   });
 });

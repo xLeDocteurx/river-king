@@ -713,7 +713,13 @@ describe('SceneEditorComponent', () => {
 
     component.enterPlay();
 
-    expect(startSpy).toHaveBeenCalledWith(scene, { x: 4, y: 3 }, expect.any(Map), {});
+    expect(startSpy).toHaveBeenCalledWith(
+      scene,
+      { x: 4, y: 3 },
+      expect.any(Map),
+      {},
+      expect.any(Map),
+    );
     expect(component.playMode()).toBe(true);
     expect(component.placeSpawnMode()).toBe(false);
   });
@@ -730,7 +736,13 @@ describe('SceneEditorComponent', () => {
 
     component.enterPlay();
 
-    expect(startSpy).toHaveBeenCalledWith(stored, { x: 1, y: 2 }, expect.any(Map), {});
+    expect(startSpy).toHaveBeenCalledWith(
+      stored,
+      { x: 1, y: 2 },
+      expect.any(Map),
+      {},
+      expect.any(Map),
+    );
   });
 
   it('passes per-tile blocking flags and footprints to the player on enterPlay', async () => {
@@ -767,11 +779,62 @@ describe('SceneEditorComponent', () => {
       { x: number; y: number },
       Map<number, boolean>,
       TileFootprintMap,
+      Map<number, string>,
     ];
     expect(blockingById.size).toBe(2);
     expect(blockingById.get(wallId)).toBe(true);
     expect(blockingById.get(floorId)).toBe(false);
     expect(footprints).toEqual({});
+  });
+
+  it('passes only interactable tiles with an actionId to the player on enterPlay', async () => {
+    const bellId = await db.tiles.add({
+      projectId: 'p1',
+      name: 'bell',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 1,
+      properties: { blocking: false, interactable: true, actionId: 'bell' },
+    } as unknown as Tile);
+    const silentId = await db.tiles.add({
+      projectId: 'p1',
+      name: 'silent',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 1,
+      properties: { blocking: false, interactable: true },
+    } as unknown as Tile);
+    const plainId = await db.tiles.add({
+      projectId: 'p1',
+      name: 'plain',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 1,
+      properties: { blocking: false, interactable: false },
+    } as unknown as Tile);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const scene = await sceneService.createScene('p1', 'Play', 8, 6);
+    await component.selectScene(scene.id);
+    await component.loadProjectData();
+    const player = fixture.debugElement.injector.get(PlayerController);
+    const startSpy = vi.spyOn(player, 'start');
+
+    component.enterPlay();
+
+    expect(startSpy).toHaveBeenCalledTimes(1);
+    const [, , , , interactableById] = startSpy.mock.calls[0] as [
+      Scene,
+      { x: number; y: number },
+      Map<number, boolean>,
+      TileFootprintMap,
+      Map<number, string>,
+    ];
+    expect(interactableById.size).toBe(1);
+    expect(interactableById.get(bellId)).toBe('bell');
+    expect(interactableById.has(silentId)).toBe(false);
+    expect(interactableById.has(plainId)).toBe(false);
   });
 
   it('exits Play mode and stops the player', async () => {

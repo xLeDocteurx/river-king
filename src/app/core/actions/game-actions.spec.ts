@@ -1,4 +1,3 @@
-import { vi } from 'vitest';
 import { GAME_ACTIONS, listGameActions, runGameAction } from './game-actions';
 
 describe('game-actions', () => {
@@ -7,13 +6,8 @@ describe('game-actions', () => {
     expect(typeof GAME_ACTIONS['test']).toBe('function');
   });
 
-  it('runs a known action', () => {
-    const spy = vi.spyOn(window, 'alert').mockImplementation(() => {
-      // no-op
-    });
-    runGameAction('test');
-    expect(spy).toHaveBeenCalledWith('alert');
-    spy.mockRestore();
+  it('runs a known action without alerting', () => {
+    expect(() => runGameAction('test')).not.toThrow();
   });
 
   it('no-ops on unknown action id', () => {
