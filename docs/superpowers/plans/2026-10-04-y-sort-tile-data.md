@@ -24,12 +24,14 @@
 ### Task 1: Data model `ySort` + production defaults
 
 **Files:**
+
 - Modify: `src/app/shared/models/tile.model.ts:29-36` (add `ySort`)
 - Modify: `src/app/core/services/database.service.ts:16-24` (`migrateTileProperties`)
 - Modify: `src/app/features/tile-manager/services/tile.service.ts:42-45` (`createTile`)
 - Test: `src/app/core/services/database.service.spec.ts:7-34`, `src/app/features/tile-manager/services/tile.service.spec.ts:26-35`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `TileProperties.ySort: boolean`; `migrateTileProperties()` and `TileService.createTile()` always return objects with `ySort: false`.
 
@@ -53,12 +55,12 @@ Edit `src/app/shared/models/tile.model.ts`, after the `actionId` property (line 
 In `src/app/core/services/database.service.spec.ts`, add `ySort: false` to the three expected objects (key order after `actionId`), e.g. lines 9-13 become:
 
 ```ts
-    expect(migrateTileProperties({ collision: true, solid: false, layer: 'background' })).toEqual({
-      blocking: true,
-      interactable: false,
-      actionId: undefined,
-      ySort: false,
-    });
+expect(migrateTileProperties({ collision: true, solid: false, layer: 'background' })).toEqual({
+  blocking: true,
+  interactable: false,
+  actionId: undefined,
+  ySort: false,
+});
 ```
 
 Lines 24 and 28-32 get the same trailing `ySort: false,`.
@@ -66,7 +68,7 @@ Lines 24 and 28-32 get the same trailing `ySort: false,`.
 In `src/app/features/tile-manager/services/tile.service.spec.ts`, in `'should create a tile with defaults'` (after the `tile.properties.interactable` assertion):
 
 ```ts
-    expect(tile.properties.ySort).toBe(false);
+expect(tile.properties.ySort).toBe(false);
 ```
 
 - [ ] **Step 3: Run the two specs to verify they fail**
@@ -84,12 +86,12 @@ Expected: FAIL — `ySort` is `undefined` from `migrateTileProperties`/`createTi
 `src/app/core/services/database.service.ts` — `migrateTileProperties` return gets `ySort: false` (after `actionId`):
 
 ```ts
-  return {
-    blocking: Boolean(oldProps?.['collision'] || oldProps?.['solid']),
-    interactable: Boolean(oldProps?.['interactable']),
-    actionId: undefined,
-    ySort: false,
-  };
+return {
+  blocking: Boolean(oldProps?.['collision'] || oldProps?.['solid']),
+  interactable: Boolean(oldProps?.['interactable']),
+  actionId: undefined,
+  ySort: false,
+};
 ```
 
 `src/app/features/tile-manager/services/tile.service.ts` — `createTile` properties object (lines 42-45):
@@ -122,6 +124,7 @@ Adding a required property breaks type-checking on every test fixture that build
 **Files:** the spec files listed below. No production code changes.
 
 **Interfaces:**
+
 - Consumes: `TileProperties` now requires `ySort`.
 - Produces: a compiling test suite; the most common single-line literal becomes `{ blocking: false, interactable: false, ySort: false }`.
 
@@ -188,11 +191,13 @@ git commit -m "feature-53: add ySort false to all TileProperties test fixtures"
 ### Task 3: Tile properties editor UI (form, toggle, template)
 
 **Files:**
+
 - Modify: `src/app/features/tile-manager/properties/tile-properties.component.ts` (form group lines 88-91; patch effect 169-174; `toggleBlocking` 348-351; `buildUpdatedTile` 387-391)
 - Modify: `src/app/features/tile-manager/properties/tile-properties.component.html` (Flags row 129-142)
 - Test: `src/app/features/tile-manager/properties/tile-properties.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `TileProperties.ySort` (Task 1) and the `makeTile` fixture now carrying `ySort: false` (Task 2).
 - Produces: form control `properties.ySort`, method `toggleYSort()`, output `save` emits tiles with `ySort` preserved; DOM button `button[name="ySort"]` and a caption.
 
@@ -207,53 +212,51 @@ import type { Tile, TileProperties } from '../../../shared/models/tile.model';
 Append these three tests inside the describe block (after the `'auto-saves form edits ~400ms after the last change'` test):
 
 ```ts
-  it('legacy tile without ySort opens with the checkbox unchecked and does not crash', async () => {
-    const legacy = makeTile({
-      properties: {
-        blocking: false,
-        interactable: false,
-      } as unknown as TileProperties,
-    });
-    await setup(legacy);
-    const btn = fixture.debugElement.query(By.css('button[name="ySort"]'))
-      .nativeElement as HTMLButtonElement;
-    expect(btn).toBeTruthy();
-    expect(component.form.get('properties')?.get('ySort')?.value).toBe(false);
+it('legacy tile without ySort opens with the checkbox unchecked and does not crash', async () => {
+  const legacy = makeTile({
+    properties: {
+      blocking: false,
+      interactable: false,
+    } as unknown as TileProperties,
   });
+  await setup(legacy);
+  const btn = fixture.debugElement.query(By.css('button[name="ySort"]'))
+    .nativeElement as HTMLButtonElement;
+  expect(btn).toBeTruthy();
+  expect(component.form.get('properties')?.get('ySort')?.value).toBe(false);
+});
 
-  it('toggling Overhanging (Y-sort) emits ySort true then stays silent when reverted', async () => {
-    await setup(makeTile());
-    const btn = fixture.debugElement.query(By.css('button[name="ySort"]'))
-      .nativeElement as HTMLButtonElement;
-    btn.click();
-    fixture.detectChanges();
-    component.flushAutosave();
-    fixture.detectChanges();
-    expect(saved).toHaveLength(1);
-    expect(saved[0].properties.ySort).toBe(true);
-    expect(saved[0].properties.blocking).toBe(false);
-    btn.click();
-    fixture.detectChanges();
-    component.flushAutosave();
-    fixture.detectChanges();
-    expect(saved).toHaveLength(1);
-  });
+it('toggling Overhanging (Y-sort) emits ySort true then stays silent when reverted', async () => {
+  await setup(makeTile());
+  const btn = fixture.debugElement.query(By.css('button[name="ySort"]'))
+    .nativeElement as HTMLButtonElement;
+  btn.click();
+  fixture.detectChanges();
+  component.flushAutosave();
+  fixture.detectChanges();
+  expect(saved).toHaveLength(1);
+  expect(saved[0].properties.ySort).toBe(true);
+  expect(saved[0].properties.blocking).toBe(false);
+  btn.click();
+  fixture.detectChanges();
+  component.flushAutosave();
+  fixture.detectChanges();
+  expect(saved).toHaveLength(1);
+});
 
-  it('renaming a tile keeps its ySort flag in the emitted save', async () => {
-    await setup(
-      makeTile({ properties: { blocking: false, interactable: false, ySort: true } }),
-    );
-    const nameInput = fixture.debugElement.query(By.css('input[name="name"]'))
-      .nativeElement as HTMLInputElement;
-    nameInput.value = 'Renamed';
-    nameInput.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-    component.flushAutosave();
-    fixture.detectChanges();
-    expect(saved).toHaveLength(1);
-    expect(saved[0].name).toBe('Renamed');
-    expect(saved[0].properties.ySort).toBe(true);
-  });
+it('renaming a tile keeps its ySort flag in the emitted save', async () => {
+  await setup(makeTile({ properties: { blocking: false, interactable: false, ySort: true } }));
+  const nameInput = fixture.debugElement.query(By.css('input[name="name"]'))
+    .nativeElement as HTMLInputElement;
+  nameInput.value = 'Renamed';
+  nameInput.dispatchEvent(new Event('input'));
+  fixture.detectChanges();
+  component.flushAutosave();
+  fixture.detectChanges();
+  expect(saved).toHaveLength(1);
+  expect(saved[0].name).toBe('Renamed');
+  expect(saved[0].properties.ySort).toBe(true);
+});
 ```
 
 - [ ] **Step 2: Run the spec to verify the tests fail**
@@ -282,15 +285,15 @@ Expected: FAIL — test 1 `query(By.css('button[name="ySort"]'))` returns null (
 `tile-properties.component.ts` lines 169-174:
 
 ```ts
-      this.form.patchValue({
-        name: t.name,
-        type: t.type,
-        animationSpeed: t.animationSpeed,
-        properties: {
-          blocking: t.properties.blocking,
-          ySort: t.properties.ySort ?? false,
-        },
-      });
+this.form.patchValue({
+  name: t.name,
+  type: t.type,
+  animationSpeed: t.animationSpeed,
+  properties: {
+    blocking: t.properties.blocking,
+    ySort: t.properties.ySort ?? false,
+  },
+});
 ```
 
 - [ ] **Step 5: Add `toggleYSort` next to `toggleBlocking` (after line 351)**
@@ -323,25 +326,24 @@ Expected: FAIL — test 1 `query(By.css('button[name="ySort"]'))` returns null (
 In `tile-properties.component.html`, insert the Y-sort toggle as the third button in the Flags row, right after the Interactable button block (after line 138), keeping the same base classes:
 
 ```html
-      <button
-        type="button"
-        name="ySort"
-        (click)="toggleYSort()"
-        [class.tw-bg-primary/10]="form.get('properties')?.get('ySort')?.value"
-        [class.tw-border-primary]="form.get('properties')?.get('ySort')?.value"
-        class="tw-px-2 tw-py-0.5 tw-rounded-sm tw-border tw-border-border tw-text-[11px] tw-text-foreground hover:tw-bg-muted tw-transition-colors"
-      >
-        Overhanging (Y-sort)
-      </button>
+<button
+  type="button"
+  name="ySort"
+  (click)="toggleYSort()"
+  [class.tw-bg-primary/10]="form.get('properties')?.get('ySort')?.value"
+  [class.tw-border-primary]="form.get('properties')?.get('ySort')?.value"
+  class="tw-px-2 tw-py-0.5 tw-rounded-sm tw-border tw-border-border tw-text-[11px] tw-text-foreground hover:tw-bg-muted tw-transition-colors"
+>
+  Overhanging (Y-sort)
+</button>
 ```
 
 Then insert the caption line immediately after the Flags row's closing `</div>` (after line 142, before the `@if (interactableChecked())` block):
 
 ```html
-    <p class="tw-text-[11px] tw-text-muted-foreground tw-mt-2">
-      Bottom of the artwork must touch the ground cell. Enables in-front/behind sorting in
-      Play mode.
-    </p>
+<p class="tw-text-[11px] tw-text-muted-foreground tw-mt-2">
+  Bottom of the artwork must touch the ground cell. Enables in-front/behind sorting in Play mode.
+</p>
 ```
 
 - [ ] **Step 8: Run the spec to verify the tests pass**
@@ -372,9 +374,11 @@ git commit -m "feature-53: add Overhanging (Y-sort) toggle to tile properties pa
 Pass-through is already guaranteed by `project-io.service.ts` (`properties: { ...t.properties }`, lines 99 and 186); this task locks it with a test.
 
 **Files:**
+
 - Modify: `src/app/core/services/project-io.service.spec.ts` (seed at line 60; assertion in the preserved-content test)
 
 **Interfaces:**
+
 - Consumes: `TileProperties.ySort` (Task 1; the seed literal was swept to `ySort: false` in Task 2).
 - Produces: a test proving `ySort: true` round-trips through export → import.
 
@@ -391,7 +395,7 @@ Pass-through is already guaranteed by `project-io.service.ts` (`properties: { ..
 In `'imports as a new project with remapped ids and preserved content'`, after line 225 (`expect(waterSprites.map((s) => s.id)).toEqual(waterSpriteIds);`):
 
 ```ts
-    expect(waterTile!.properties.ySort).toBe(true);
+expect(waterTile!.properties.ySort).toBe(true);
 ```
 
 - [ ] **Step 3: Run the spec**

@@ -87,8 +87,8 @@ export interface TileProperties {
 - The tile-identity patch effect reads `ySort: t.properties.ySort ?? false` when
   (re)loading a tile, so legacy tiles open unchecked.
 - Template: a checkbox labeled **Overhanging (Y-sort)** in the same section as
-  Blocking/Interactable, with a caption line: *"Bottom of the artwork must touch the
-  ground cell. Enables in-front/behind sorting in Play mode."* (11px meta text per the
+  Blocking/Interactable, with a caption line: _"Bottom of the artwork must touch the
+  ground cell. Enables in-front/behind sorting in Play mode."_ (11px meta text per the
   design system; copy validated for the future #67 homogenization).
 
 ### Persistence & export/import

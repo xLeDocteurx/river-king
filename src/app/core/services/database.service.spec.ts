@@ -22,7 +22,12 @@ describe('migrateTileProperties', () => {
       eventScript: 'x()',
       layer: 'foreground',
     });
-    expect(result).toEqual({ blocking: true, interactable: true, actionId: undefined, ySort: false });
+    expect(result).toEqual({
+      blocking: true,
+      interactable: true,
+      actionId: undefined,
+      ySort: false,
+    });
   });
 
   it('handles missing properties', () => {
