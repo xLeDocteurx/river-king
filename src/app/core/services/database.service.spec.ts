@@ -46,7 +46,7 @@ describe('DatabaseService v6 migration', () => {
       name: 'Grass',
       type: 'static',
       animationSpeed: 1,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
       spriteIds: [],
       folderPath: '',
     } as unknown as Tile);

@@ -107,7 +107,7 @@ describe('MapTilesService', () => {
       type: 'animated',
       spriteIds: [],
       animationSpeed: 12,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as unknown as import('../../../shared/models/tile.model').Tile);
     await seedSprite({ tileId, pixelData: 'data:image/png;base64,A' });
     await seedSprite({ tileId, pixelData: 'data:image/png;base64,B' });
@@ -125,7 +125,7 @@ describe('MapTilesService', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as unknown as import('../../../shared/models/tile.model').Tile);
     await seedSprite({ tileId, pixelData: 'data:image/png;base64,X' });
 

@@ -30,7 +30,7 @@ describe('ProjectArchive model', () => {
           type: 'static',
           spriteIds: [1],
           animationSpeed: 4,
-          properties: { blocking: false, interactable: false } satisfies TileProperties,
+          properties: { blocking: false, interactable: false, ySort: false } satisfies TileProperties,
           folderPath: '',
         },
       ],

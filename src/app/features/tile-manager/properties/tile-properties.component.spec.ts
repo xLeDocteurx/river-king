@@ -36,7 +36,7 @@ describe('TilePropertiesComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
       ...overrides,
     };
   }
@@ -242,7 +242,7 @@ describe('TilePropertiesComponent', () => {
     await setup(
       makeTile({
         type: 'static',
-        properties: { blocking: false, interactable: true, actionId: 'test' },
+        properties: { blocking: false, interactable: true, actionId: 'test', ySort: false },
       }),
     );
     expect(fixture.debugElement.query(By.css('rk-searchable-select'))).toBeTruthy();
@@ -280,7 +280,7 @@ describe('TilePropertiesComponent', () => {
 
   it('unknown stored actionId displays unknown-action hint', async () => {
     await setup(
-      makeTile({ properties: { blocking: false, interactable: true, actionId: 'ghost' } }),
+      makeTile({ properties: { blocking: false, interactable: true, actionId: 'ghost', ySort: false } }),
     );
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('(action inconnue)');

@@ -11,7 +11,7 @@ function makeTile(id: number, name: string): Tile {
     type: 'static',
     spriteIds: [],
     animationSpeed: 4,
-    properties: { blocking: false, interactable: false },
+    properties: { blocking: false, interactable: false, ySort: false },
   };
 }
 
