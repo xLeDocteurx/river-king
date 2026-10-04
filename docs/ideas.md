@@ -23,6 +23,7 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 - [x] **UI : création de dossier** — Remplacer `window.prompt()` par un petit inline input dans `grouped-list` pour une création de dossier plus propre et cohérente. → [#18](https://github.com/xLeDocteurx/river-king/issues/18)
 - [ ] **Sprite editor : grid visibility** — Un bouton de visibilité de la grille de pixels sur l'écran tiles (comme celui de l'éditeur de scène), pour masquer/afficher le quadrillage du pixel canvas. → [#40](https://github.com/xLeDocteurx/river-king/issues/40)
 - [ ] **Sprite editor : onion dans un popover** — Remplacer la ligne inline "Onion" par un bouton (icône façon grid visibility) qui ouvre un petit panneau flottant avec les contrôles onion (prev/next + opacités). → [#41](https://github.com/xLeDocteurx/river-king/issues/41)
+- [ ] **Textes d'aide UI homogénéisés** — Systématiser les textes d'aide (hints inline / tooltips) sur les contrôles de l'interface dans toute l'app : convention commune (quand, formulation, densité, placement), puis audit des éditeurs (tile properties, sprite editor, scene editor) pour poser un hint là où le label ne suffit pas. Né de la convention "Overhanging (Y-sort)" de #53. → [#67](https://github.com/xLeDocteurx/river-king/issues/67)
 
 ## Lower Priority
 
