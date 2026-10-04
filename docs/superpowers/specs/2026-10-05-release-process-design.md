@@ -48,22 +48,22 @@ without test suites going red and without the live site drifting from `main`.
 
 ### Release conventions (single contract — shared by skill, runbook, and CI)
 
-| Element         | Value                                        |
-| --------------- | -------------------------------------------- |
-| Version         | SemVer `vX.Y.Z`, source = `package.json`     |
-| Release branch  | `release/<x.y.z>` (from `develop`)           |
-| Release PR      | `release/<x.y.z>` → `main`, label `release`  |
-| Tag             | annotated `vX.Y.Z`, created on `main`        |
-| Changelog       | `CHANGELOG.md`, keep-a-changelog             |
-| Deploy          | GitHub Pages, source *GitHub Actions*        |
+| Element        | Value                                       |
+| -------------- | ------------------------------------------- |
+| Version        | SemVer `vX.Y.Z`, source = `package.json`    |
+| Release branch | `release/<x.y.z>` (from `develop`)          |
+| Release PR     | `release/<x.y.z>` → `main`, label `release` |
+| Tag            | annotated `vX.Y.Z`, created on `main`       |
+| Changelog      | `CHANGELOG.md`, keep-a-changelog            |
+| Deploy         | GitHub Pages, source _GitHub Actions_       |
 
 ### Deliverable 1 — `.github/workflows/deploy.yml` (issue #73)
 
 - Triggers: `push: { branches: [main] }` and `push: { tags: ['v*'] }`.
 - `build`: checkout → setup Node 22 (matches devbox pin) → `npm ci` → `npm run build`
   (production config).
-- `deploy`: upload page artifact (`dist/river-king/browser`) → 
-  `actions/deploy-pages`. Requires Pages source *GitHub Actions* (one-time manual settings
+- `deploy`: upload page artifact (`dist/river-king/browser`) →
+  `actions/deploy-pages`. Requires Pages source _GitHub Actions_ (one-time manual settings
   callout, documented in the runbook).
 - `permissions: { pages: write, id-token: write }`, `concurrency` guard for Pages.
 
