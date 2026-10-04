@@ -70,13 +70,13 @@ async ensureDemo(): Promise<void> {
   grass, water frame 1, water frame 2, trunk, foliage, boulder, sign.
 - **6 tiles** (`createTile`-shaped defaults, `animationSpeed` 4 = engine default):
 
-  | Tile      | type     | spriteIds     | properties                          |
-  | --------- | -------- | ------------- | ----------------------------------- |
-  | Grass     | static   | [grass]       | {} all false                        |
-  | Water     | animated | [w1, w2]      | blocking true                       |
-  | Tree      | static   | [trunk, foliage] | blocking true, **ySort true**    |
-  | Boulder   | static   | [boulder]     | blocking true                       |
-  | Sign      | static   | [sign]        | interactable true, `actionId: 'demo'` |
+  | Tile    | type     | spriteIds        | properties                            |
+  | ------- | -------- | ---------------- | ------------------------------------- |
+  | Grass   | static   | [grass]          | {} all false                          |
+  | Water   | animated | [w1, w2]         | blocking true                         |
+  | Tree    | static   | [trunk, foliage] | blocking true, **ySort true**         |
+  | Boulder | static   | [boulder]        | blocking true                         |
+  | Sign    | static   | [sign]           | interactable true, `actionId: 'demo'` |
 
 - Tiles/sprites get deterministic ids (auto-increment tables: capture `db.tiles.add(...)`
   return values; sprites reference their owning tile id).
@@ -86,7 +86,7 @@ async ensureDemo(): Promise<void> {
 - Add `registerGameAction(id: string, handler: GameActionHandler): void` (mutable
   registry; last registration wins).
 - Boot wiring: after `ensureDemo()`, `registerGameAction('demo', () =>
-  this.notify.info('This is the River King demo project.'))`.
+this.notify.info('This is the River King demo project.'))`.
 
 ## Testing
 

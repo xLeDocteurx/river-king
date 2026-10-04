@@ -1,9 +1,4 @@
-import {
-  GAME_ACTIONS,
-  listGameActions,
-  runGameAction,
-  registerGameAction,
-} from './game-actions';
+import { GAME_ACTIONS, listGameActions, runGameAction, registerGameAction } from './game-actions';
 
 describe('game-actions', () => {
   it('exposes the test action', () => {

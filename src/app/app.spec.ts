@@ -120,8 +120,8 @@ describe('App', () => {
     fixture.detectChanges();
     const notify = TestBed.inject(NotificationService);
     runGameAction(DEMO_ACTION_ID);
-    expect(notify.messages().some((m) => m.message === DEMO_ACTION_TOAST && m.type === 'info')).toBe(
-      true,
-    );
+    expect(
+      notify.messages().some((m) => m.message === DEMO_ACTION_TOAST && m.type === 'info'),
+    ).toBe(true);
   });
 });

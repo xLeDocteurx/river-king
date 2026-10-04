@@ -32,10 +32,12 @@
 ### Task 1: Mutable game-action registry
 
 **Files:**
+
 - Modify: `src/app/core/actions/game-actions.ts`
 - Test: `src/app/core/actions/game-actions.spec.ts`
 
 **Interfaces:**
+
 - Produces:
   - `registerGameAction(id: string, handler: GameActionHandler): void` — registers/overwrites an action id (last wins).
   - `export const DEMO_ACTION_ID = 'demo'` — id stored on the demo sign tile.
@@ -47,12 +49,7 @@
 Append to `src/app/core/actions/game-actions.spec.ts`:
 
 ```ts
-import {
-  GAME_ACTIONS,
-  listGameActions,
-  runGameAction,
-  registerGameAction,
-} from './game-actions';
+import { GAME_ACTIONS, listGameActions, runGameAction, registerGameAction } from './game-actions';
 ```
 
 Replace the existing single import block with the import above. Then append inside the `describe`:
@@ -121,11 +118,13 @@ git commit -m "feature-70: add mutable registerGameAction registry for interacta
 ### Task 2: Demo art + `DemoProjectService`
 
 **Files:**
+
 - Create: `src/app/core/services/demo-art.ts`
 - Create: `src/app/core/services/demo-project.service.ts`
 - Test: `src/app/core/services/demo-project.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `DatabaseService` (tables `projects`, `scenes`, `sprites`, `tiles`), `NotificationService.error(msg)`, `LOSPEC_PALETTES` (core/palettes), `encodePixelData(indices, palette)` (shared/utils), `DEMO_ACTION_ID` (game-actions).
 - Consumes (types): `Project`, `Scene`, `Layer`, `Tile`, `Sprite` from `shared/models`.
 - Produces (from `demo-art.ts`):
@@ -586,7 +585,7 @@ export class DemoProjectService {
             properties: { blocking: false, interactable: false, ySort: false },
             folderPath: '',
             name,
-          } as Omit<Tile, 'id'>);
+          }) as Omit<Tile, 'id'>;
 
         const grassTileId = await this.db.tiles.add(frame('Grass'));
         const waterTileId = await this.db.tiles.add({
@@ -604,7 +603,12 @@ export class DemoProjectService {
         });
         const signTileId = await this.db.tiles.add({
           ...frame('Sign'),
-          properties: { blocking: false, interactable: true, ySort: false, actionId: DEMO_ACTION_ID },
+          properties: {
+            blocking: false,
+            interactable: true,
+            ySort: false,
+            actionId: DEMO_ACTION_ID,
+          },
         });
 
         const sprite = (tileId: number, name: string, indices: number[][]): Omit<Sprite, 'id'> => ({
@@ -617,11 +621,15 @@ export class DemoProjectService {
           paletteIndices: indices,
         });
 
-        const grassSpriteId = await this.db.sprites.add(sprite(grassTileId, 'Grass', grassIndices()));
+        const grassSpriteId = await this.db.sprites.add(
+          sprite(grassTileId, 'Grass', grassIndices()),
+        );
         const water1Id = await this.db.sprites.add(sprite(waterTileId, 'Water 1', waterIndices(1)));
         const water2Id = await this.db.sprites.add(sprite(waterTileId, 'Water 2', waterIndices(2)));
         const trunkId = await this.db.sprites.add(sprite(treeTileId, 'Trunk', trunkIndices()));
-        const foliageId = await this.db.sprites.add(sprite(treeTileId, 'Foliage', foliageIndices()));
+        const foliageId = await this.db.sprites.add(
+          sprite(treeTileId, 'Foliage', foliageIndices()),
+        );
         const boulderSpriteId = await this.db.sprites.add(
           sprite(boulderTileId, 'Boulder', boulderIndices()),
         );
@@ -704,10 +712,12 @@ git commit -m "feature-70: seed a demo project with procedural art on first run"
 ### Task 3: Boot wiring
 
 **Files:**
+
 - Modify: `src/app/app.ts`
 - Test: `src/app/app.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `DemoProjectService.ensureDemo(): Promise<boolean>`, `registerGameAction`, `DEMO_ACTION_ID`, `DEMO_ACTION_TOAST`, `NotificationService.info(msg)`.
 - Produces: `App implements OnInit` — on init, registers the `demo` action and fires `void this.demo.ensureDemo()` (non-blocking).
 

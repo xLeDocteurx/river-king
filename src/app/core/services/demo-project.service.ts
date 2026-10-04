@@ -130,7 +130,12 @@ export class DemoProjectService {
         });
         const signTileId = await this.db.tiles.add({
           ...frame('Sign'),
-          properties: { blocking: false, interactable: true, ySort: false, actionId: DEMO_ACTION_ID },
+          properties: {
+            blocking: false,
+            interactable: true,
+            ySort: false,
+            actionId: DEMO_ACTION_ID,
+          },
         });
 
         const sprite = (tileId: number, name: string, indices: number[][]): Sprite =>
@@ -144,11 +149,15 @@ export class DemoProjectService {
             paletteIndices: indices,
           }) as Sprite;
 
-        const grassSpriteId = await this.db.sprites.add(sprite(grassTileId, 'Grass', grassIndices()));
+        const grassSpriteId = await this.db.sprites.add(
+          sprite(grassTileId, 'Grass', grassIndices()),
+        );
         const water1Id = await this.db.sprites.add(sprite(waterTileId, 'Water 1', waterIndices(1)));
         const water2Id = await this.db.sprites.add(sprite(waterTileId, 'Water 2', waterIndices(2)));
         const trunkId = await this.db.sprites.add(sprite(treeTileId, 'Trunk', trunkIndices()));
-        const foliageId = await this.db.sprites.add(sprite(treeTileId, 'Foliage', foliageIndices()));
+        const foliageId = await this.db.sprites.add(
+          sprite(treeTileId, 'Foliage', foliageIndices()),
+        );
         const boulderSpriteId = await this.db.sprites.add(
           sprite(boulderTileId, 'Boulder', boulderIndices()),
         );
