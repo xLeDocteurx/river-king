@@ -33,4 +33,10 @@ export interface TileProperties {
   interactable: boolean;
   /** Key of the action in GAME_ACTIONS; undefined when not interactable. */
   actionId?: string;
+  /**
+   * Whether the tile overhangs its ground cell (tree canopy, tall grass, bush).
+   * Enables in-front / behind depth sorting in Play mode (#54). The bottom edge
+   * of the artwork is the ground contact; unused by the current renderer.
+   */
+  ySort: boolean;
 }

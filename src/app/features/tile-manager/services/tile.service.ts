@@ -42,6 +42,7 @@ export class TileService {
       properties: {
         blocking: false,
         interactable: false,
+        ySort: false,
       },
     };
     const id = await this.db.tiles.add(tile as Tile);

@@ -10,6 +10,7 @@ describe('migrateTileProperties', () => {
       blocking: true,
       interactable: false,
       actionId: undefined,
+      ySort: false,
     });
   });
 
@@ -21,7 +22,7 @@ describe('migrateTileProperties', () => {
       eventScript: 'x()',
       layer: 'foreground',
     });
-    expect(result).toEqual({ blocking: true, interactable: true, actionId: undefined });
+    expect(result).toEqual({ blocking: true, interactable: true, actionId: undefined, ySort: false });
   });
 
   it('handles missing properties', () => {
@@ -29,6 +30,7 @@ describe('migrateTileProperties', () => {
       blocking: false,
       interactable: false,
       actionId: undefined,
+      ySort: false,
     });
   });
 });

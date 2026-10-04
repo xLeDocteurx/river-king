@@ -20,6 +20,7 @@ export function migrateTileProperties(
     blocking: Boolean(oldProps?.['collision'] || oldProps?.['solid']),
     interactable: Boolean(oldProps?.['interactable']),
     actionId: undefined,
+    ySort: false,
   };
 }
 
