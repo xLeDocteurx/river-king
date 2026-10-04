@@ -57,7 +57,7 @@ describe('ProjectIoService', () => {
       type: 'animated',
       spriteIds: [] as number[],
       animationSpeed: 8,
-      properties: { blocking: true, interactable: true, actionId: 'talk', ySort: false },
+      properties: { blocking: true, interactable: true, actionId: 'talk', ySort: true },
       folderPath: 'nature',
     } as Tile);
     const groundSpriteId = await db.sprites.add({
@@ -223,6 +223,8 @@ describe('ProjectIoService', () => {
     const waterTile = tiles.find((t) => t.name === 'Water');
     const waterSpriteIds = waterTile!.spriteIds;
     expect(waterSprites.map((s) => s.id)).toEqual(waterSpriteIds);
+
+    expect(waterTile!.properties.ySort).toBe(true);
 
     const scenes = await db.scenes.where('projectId').equals(result.projectId).toArray();
     expect(scenes).toHaveLength(1);
