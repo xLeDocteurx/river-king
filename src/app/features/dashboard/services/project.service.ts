@@ -103,7 +103,7 @@ export class ProjectService {
   /**
    * Delete a project and cascade-delete all related entities.
    *
-   * Removes associated scenes, tiles, sprites, and sessions.
+   * Removes associated scenes, tiles, sprites, folder state, and sessions.
    *
    * @param id - The project UUID.
    */
@@ -113,6 +113,7 @@ export class ProjectService {
     await this.db.scenes.where('projectId').equals(id).delete();
     await this.db.tiles.where('projectId').equals(id).delete();
     await this.db.sprites.where('projectId').equals(id).delete();
+    await this.db.folders.where('projectId').equals(id).delete();
     await this.db.sessions.where('projectId').equals(id).delete();
   }
 }
