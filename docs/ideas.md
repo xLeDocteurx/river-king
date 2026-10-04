@@ -10,6 +10,7 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 - [x] **Undo/Redo** — Stack d'actions dans les éditeurs (scene, sprite, tile). Stub existant dans `core/actions/game-actions.ts`. → [#1](https://github.com/xLeDocteurx/river-king/issues/1)
 - [x] **Export/Import** — Exporter un projet (JSON, tilemap, atlas d'images). Importer un projet existant. → [#2](https://github.com/xLeDocteurx/river-king/issues/2)
 - [x] **Status bar utile** — Coordonnées curseur, zoom, dimensions scène, nombre de tiles, etc. → [#3](https://github.com/xLeDocteurx/river-king/issues/3)
+- [ ] **Suppression d'un projet = purge de TOUTE la base** — `ProjectService.deleteProject` appelle `db.delete()` (IndexedDB entier) au lieu d'une suppression ciblée du projet + ses scènes/sprites/tiles. Perte de données réelle si un autre projet existe. Bloque aussi la supprimabilité propre du futur projet démo.
 
 ## Medium Impact
 
@@ -24,6 +25,7 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 - [ ] **Sprite editor : grid visibility** — Un bouton de visibilité de la grille de pixels sur l'écran tiles (comme celui de l'éditeur de scène), pour masquer/afficher le quadrillage du pixel canvas. → [#40](https://github.com/xLeDocteurx/river-king/issues/40)
 - [ ] **Sprite editor : onion dans un popover** — Remplacer la ligne inline "Onion" par un bouton (icône façon grid visibility) qui ouvre un petit panneau flottant avec les contrôles onion (prev/next + opacités). → [#41](https://github.com/xLeDocteurx/river-king/issues/41)
 - [ ] **Textes d'aide UI homogénéisés** — Systématiser les textes d'aide (hints inline / tooltips) sur les contrôles de l'interface dans toute l'app : convention commune (quand, formulation, densité, placement), puis audit des éditeurs (tile properties, sprite editor, scene editor) pour poser un hint là où le label ne suffit pas. Né de la convention "Overhanging (Y-sort)" de #53. → [#67](https://github.com/xLeDocteurx/river-king/issues/67)
+- [ ] **Projet de démonstration au premier lancement** — Au boot, si la base ne contient aucun projet et que le marqueur localStorage `rk-demo-seeded` est absent : seed d'un projet « Demo » dans le vrai IndexedDB (carte du dashboard, ouvrable comme un projet normal, supprimable à jamais). Contenu minimal : sprites procéduraux générés par canvas (grass statique, water 2 frames, tree `ySort:true`, case `blocking`, case `interactable`) — showcase du moteur sans asset binaire. Marqueur posé dès le 1er check (seedée OU base déjà peuplée).
 
 ## Lower Priority
 
