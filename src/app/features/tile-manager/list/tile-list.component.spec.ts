@@ -13,6 +13,7 @@ function createMockTile(overrides: Partial<Tile> = {}): Tile {
     properties: {
       blocking: false,
       interactable: false,
+      ySort: false,
       ...overrides.properties,
     },
     ...overrides,

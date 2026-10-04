@@ -752,7 +752,7 @@ describe('SceneEditorComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 1,
-      properties: { blocking: true, interactable: false },
+      properties: { blocking: true, interactable: false, ySort: false },
     } as unknown as Tile);
     const floorId = await db.tiles.add({
       projectId: 'p1',
@@ -760,7 +760,7 @@ describe('SceneEditorComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 1,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as unknown as Tile);
 
     fixture.detectChanges();
@@ -794,7 +794,7 @@ describe('SceneEditorComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 1,
-      properties: { blocking: false, interactable: true, actionId: 'bell' },
+      properties: { blocking: false, interactable: true, actionId: 'bell', ySort: false },
     } as unknown as Tile);
     const silentId = await db.tiles.add({
       projectId: 'p1',
@@ -802,7 +802,7 @@ describe('SceneEditorComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 1,
-      properties: { blocking: false, interactable: true },
+      properties: { blocking: false, interactable: true, ySort: false },
     } as unknown as Tile);
     const plainId = await db.tiles.add({
       projectId: 'p1',
@@ -810,7 +810,7 @@ describe('SceneEditorComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 1,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as unknown as Tile);
 
     fixture.detectChanges();

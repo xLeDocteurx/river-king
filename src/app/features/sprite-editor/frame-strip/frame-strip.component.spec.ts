@@ -14,7 +14,7 @@ describe('FrameStripComponent', () => {
     name: 'Test tile',
     type: 'static',
     animationSpeed: 4,
-    properties: { blocking: false, interactable: false },
+    properties: { blocking: false, interactable: false, ySort: false },
     spriteIds: [1, 2, 3],
   });
 

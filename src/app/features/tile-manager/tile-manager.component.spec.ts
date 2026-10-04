@@ -88,7 +88,7 @@ describe('TileManagerComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as unknown as import('../../shared/models/tile.model').Tile);
   }
 
@@ -223,7 +223,7 @@ describe('TileManagerComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as unknown as import('../../shared/models/tile.model').Tile);
     await db.sprites.add({
       projectId: 'test-proj',
@@ -361,7 +361,7 @@ describe('TileManagerComponent', () => {
       type: 'static',
       spriteIds: [41],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as unknown as import('../../shared/models/tile.model').Tile);
     await db.sprites.add({
       id: 41,
@@ -412,7 +412,7 @@ describe('TileManagerComponent', () => {
       spriteIds: [],
       animationSpeed: 4,
       folderPath: 'A',
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as unknown as import('../../shared/models/tile.model').Tile);
     await db.tiles.add({
       projectId: 'test-proj',
@@ -421,7 +421,7 @@ describe('TileManagerComponent', () => {
       spriteIds: [],
       animationSpeed: 4,
       folderPath: 'A',
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as unknown as import('../../shared/models/tile.model').Tile);
     await setupWithProject();
     await new Promise((r) => setTimeout(r, 100));
@@ -454,7 +454,7 @@ describe('TileManagerComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
       folderPath: 'forest',
     } as unknown as import('../../shared/models/tile.model').Tile);
     const nestedId = await db.tiles.add({
@@ -463,7 +463,7 @@ describe('TileManagerComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
       folderPath: 'forest/caves',
     } as unknown as import('../../shared/models/tile.model').Tile);
 
@@ -488,7 +488,7 @@ describe('TileManagerComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
       folderPath: 'forest',
     } as unknown as import('../../shared/models/tile.model').Tile);
     await db.tiles.add({
@@ -497,7 +497,7 @@ describe('TileManagerComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
       folderPath: 'town',
     } as unknown as import('../../shared/models/tile.model').Tile);
 
@@ -529,7 +529,7 @@ describe('TileManagerComponent', () => {
       type: 'static' as const,
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
       folderPath: '',
     } as Tile;
     comp.selectedTile.set(tile);

@@ -32,6 +32,7 @@ describe('TileService', () => {
     expect(tile.spriteIds).toEqual([]);
     expect(tile.properties.blocking).toBe(false);
     expect(tile.properties.interactable).toBe(false);
+    expect(tile.properties.ySort).toBe(false);
   });
 
   it('should list tiles by projectId', async () => {
