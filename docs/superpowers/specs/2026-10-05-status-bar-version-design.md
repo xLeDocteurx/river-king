@@ -28,7 +28,8 @@ stays as-is.
 ## Design decisions
 
 1. **Source of truth:** `package.json` `version` field, imported at build time —
-   `import { version } from '../../package.json'`. This keeps a single source and stays
+   `import { version } from '../../../package.json'` (from `src/app/core/`). This keeps a
+   single source and stays
    in sync with the release runbook's bump step (`docs/release-process.md` Step 2).
 2. **Access point:** new tiny core module `src/app/core/app-version.ts` exporting
    `export const APP_VERSION = version;` with a `@deprecated`-free JSDoc stating the

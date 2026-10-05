@@ -8,6 +8,7 @@ import { UndoService } from './core/services/undo.service';
 import { DemoProjectService, DEMO_SEED_MARKER } from './core/services/demo-project.service';
 import { NotificationService } from './core/services/notification.service';
 import { runGameAction, DEMO_ACTION_ID, DEMO_ACTION_TOAST } from './core/actions/game-actions';
+import { APP_VERSION } from './core/app-version';
 import 'fake-indexeddb/auto';
 
 describe('App', () => {
@@ -75,6 +76,14 @@ describe('App', () => {
       '3 projects',
     );
     expect(footer?.textContent).toContain('River King Engine');
+  });
+
+  it('should render the app version in the status bar', () => {
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const footer = compiled.querySelector('footer');
+    expect(footer?.textContent).toContain(`River King Engine — v${APP_VERSION}`);
   });
 
   it('records the visited project screen into the session', async () => {

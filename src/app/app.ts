@@ -9,6 +9,7 @@ import { KeyboardShortcutsService } from './core/services/keyboard-shortcuts.ser
 import { DemoProjectService } from './core/services/demo-project.service';
 import { NotificationService } from './core/services/notification.service';
 import { registerGameAction, DEMO_ACTION_ID, DEMO_ACTION_TOAST } from './core/actions/game-actions';
+import { APP_VERSION } from './core/app-version';
 import { ToastComponent } from './shared/components/toast/toast.component';
 
 /**
@@ -27,6 +28,9 @@ import { ToastComponent } from './shared/components/toast/toast.component';
 export class App implements OnInit {
   protected readonly theme = inject(ThemeService);
   protected readonly status = inject(StatusBarService);
+
+  /** Footer branding label, e.g. "River King Engine — v0.1.0". */
+  protected readonly versionLabel = `River King Engine — v${APP_VERSION}`;
   private readonly router = inject(Router);
   private readonly sessions = inject(SessionService);
   private readonly undo = inject(UndoService);

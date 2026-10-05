@@ -64,7 +64,7 @@ Expected: FAIL — cannot resolve `./core/app-version` (module not found).
 Create `src/app/core/app-version.ts`:
 
 ```ts
-import { version } from '../../package.json';
+import { version } from '../../../package.json';
 
 /**
  * Application version, read from the `version` field of `package.json` at
