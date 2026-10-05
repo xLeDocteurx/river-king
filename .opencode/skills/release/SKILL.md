@@ -83,8 +83,10 @@ git tag -a vX.Y.Z -m "River King Engine vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-- `deploy.yml` redeploys GitHub Pages; `release.yml` drafts the GitHub Release with
-  auto-generated notes.
+- Pages is **already deployed** by the merge in Step 3; the tag does not redeploy it.
+  `deploy.yml` triggers on pushes to `main` only — never re-add `tags: ['v*']`, the
+  `github-pages` environment policy rejects deployments from a tag ref.
+- `release.yml` drafts the GitHub Release with auto-generated notes.
 - Publishing the draft release (or editing its notes) is a **human** action — say so, do
   not do it.
 
@@ -95,8 +97,8 @@ git checkout develop && git pull
 ```
 
 - Ensure `CHANGELOG.md` on `develop` carries the `## [X.Y.Z]` section too (the release PR
-  only wrote it on `main`), above a fresh `## [Unreleased]`. Push directly or open a small
-  PR to `develop`.
+  only wrote it on `main`), above a fresh `## [Unreleased]`, and bump `package.json` to
+  `X.Y.Z` on the same commit. Push directly or open a small PR to `develop`.
 - Move the kanban card to **Done** with the `ticket-management` skill:
 
 ```bash
@@ -108,8 +110,12 @@ devbox run gh project item-edit 6 --owner xLeDocteurx --url "<ISSUE_URL>" \
 ## Common mistakes
 
 - Missing `release` label -> the guard workflow rejects the PR to `main`.
-- Tagging before the merge lands on `main` -> no Pages redeploy, no draft release.
-- Forgetting the `develop` changelog port -> the next release PR conflicts on `CHANGELOG.md`.
+- Tagging before the merge lands on `main` -> the tag points at nothing released, and no
+  draft release is cut from a commit that is not on `main`.
+- Adding `tags: ['v*']` to `deploy.yml` -> the deploy job fails with an environment
+  protection error; the `github-pages` environment only accepts the `main` branch.
+- Forgetting the `develop` version/changelog port -> `develop` reports `0.0.0` and the next
+  release PR conflicts on `CHANGELOG.md`.
 - Skipping the prechecks -> a red release PR that cannot merge.
 - Long `gh` bodies inline -> mangled; write the body to a file and use `--body-file`.
 - Forgetting the `| grep -v ...` filter on `gh` -> unreadable devbox banner noise.
