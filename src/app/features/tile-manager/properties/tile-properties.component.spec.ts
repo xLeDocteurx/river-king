@@ -6,7 +6,7 @@ import { TilePropertiesComponent } from './tile-properties.component';
 import { TileSpritesService } from '../services/tile-sprites.service';
 import { TileService } from '../services/tile.service';
 import { DatabaseService } from '../../../core/services/database.service';
-import type { Tile } from '../../../shared/models/tile.model';
+import type { Tile, TileProperties } from '../../../shared/models/tile.model';
 import type { Sprite } from '../../../shared/models/sprite.model';
 
 const dialogProto = HTMLDialogElement.prototype as unknown as Record<string, unknown>;
@@ -36,7 +36,7 @@ describe('TilePropertiesComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
       ...overrides,
     };
   }
@@ -242,7 +242,7 @@ describe('TilePropertiesComponent', () => {
     await setup(
       makeTile({
         type: 'static',
-        properties: { blocking: false, interactable: true, actionId: 'test' },
+        properties: { blocking: false, interactable: true, actionId: 'test', ySort: false },
       }),
     );
     expect(fixture.debugElement.query(By.css('rk-searchable-select'))).toBeTruthy();
@@ -280,7 +280,9 @@ describe('TilePropertiesComponent', () => {
 
   it('unknown stored actionId displays unknown-action hint', async () => {
     await setup(
-      makeTile({ properties: { blocking: false, interactable: true, actionId: 'ghost' } }),
+      makeTile({
+        properties: { blocking: false, interactable: true, actionId: 'ghost', ySort: false },
+      }),
     );
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('(action inconnue)');
@@ -353,5 +355,51 @@ describe('TilePropertiesComponent', () => {
     await new Promise((r) => setTimeout(r, 500));
     expect(saved).toHaveLength(1);
     expect(saved[0].name).toBe('Auto Saved');
+  });
+
+  it('legacy tile without ySort opens with the checkbox unchecked and does not crash', async () => {
+    const legacy = makeTile({
+      properties: {
+        blocking: false,
+        interactable: false,
+      } as unknown as TileProperties,
+    });
+    await setup(legacy);
+    const btn = fixture.debugElement.query(By.css('button[name="ySort"]'))
+      .nativeElement as HTMLButtonElement;
+    expect(btn).toBeTruthy();
+    expect(component.form.get('properties')?.get('ySort')?.value).toBe(false);
+  });
+
+  it('toggling Overhanging (Y-sort) emits ySort true then stays silent when reverted', async () => {
+    await setup(makeTile());
+    const btn = fixture.debugElement.query(By.css('button[name="ySort"]'))
+      .nativeElement as HTMLButtonElement;
+    btn.click();
+    fixture.detectChanges();
+    component.flushAutosave();
+    fixture.detectChanges();
+    expect(saved).toHaveLength(1);
+    expect(saved[0].properties.ySort).toBe(true);
+    expect(saved[0].properties.blocking).toBe(false);
+    btn.click();
+    fixture.detectChanges();
+    component.flushAutosave();
+    fixture.detectChanges();
+    expect(saved).toHaveLength(1);
+  });
+
+  it('renaming a tile keeps its ySort flag in the emitted save', async () => {
+    await setup(makeTile({ properties: { blocking: false, interactable: false, ySort: true } }));
+    const nameInput = fixture.debugElement.query(By.css('input[name="name"]'))
+      .nativeElement as HTMLInputElement;
+    nameInput.value = 'Renamed';
+    nameInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    component.flushAutosave();
+    fixture.detectChanges();
+    expect(saved).toHaveLength(1);
+    expect(saved[0].name).toBe('Renamed');
+    expect(saved[0].properties.ySort).toBe(true);
   });
 });

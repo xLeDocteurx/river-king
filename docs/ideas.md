@@ -10,24 +10,27 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 - [x] **Undo/Redo** — Stack d'actions dans les éditeurs (scene, sprite, tile). Stub existant dans `core/actions/game-actions.ts`. → [#1](https://github.com/xLeDocteurx/river-king/issues/1)
 - [x] **Export/Import** — Exporter un projet (JSON, tilemap, atlas d'images). Importer un projet existant. → [#2](https://github.com/xLeDocteurx/river-king/issues/2)
 - [x] **Status bar utile** — Coordonnées curseur, zoom, dimensions scène, nombre de tiles, etc. → [#3](https://github.com/xLeDocteurx/river-king/issues/3)
+- [x] **Suppression d'un projet = purge de TOUTE la base** — Corrigé : `ProjectService.delete` (`src/app/features/dashboard/services/project.service.ts`) fait une cascade ciblée (projet → scènes / tiles / sprites / dossiers / sessions) au lieu d'un `db.delete()`. → [#2](https://github.com/xLeDocteurx/river-king/issues/2) (`bae1576`)
 
 ## Medium Impact
 
 - [x] **Keyboard shortcuts** — Ctrl+Z undo, Delete, numéros pour switch d'outil, Ctrl+S save. → [#13](https://github.com/xLeDocteurx/river-king/issues/13)
-- [x] **Visualisation des collisions/footprints** — Toggle pour voir les tiles bloquants sur la map (`map-footprint.ts` existe déjà). → [#14](https://github.com/xLeDocteurx/river-king/issues/14)
+- [ ] **Visualisation des collisions/footprints** — Toggle pour voir les tiles bloquants sur la map. Carte en `Blocked` : le design de 2026-08-30 est à amender avant implémentation (réutiliser `buildBlockingGrid`, pass d'overlay au-dessus des layers, preview qui survivra aux masques par pixel de #58) — audit détaillé en commentaire sur l'issue. → [#14](https://github.com/xLeDocteurx/river-king/issues/14)
 - [x] **Grid visibility toggle** — Afficher/masquer la grille dans l'éditeur de scène. → [#5](https://github.com/xLeDocteurx/river-king/issues/5)
 - [x] **Sprite editor : frame management** — Éditeur multi-frame avec onion-skinning et preview d'animation. → [#15](https://github.com/xLeDocteurx/river-king/issues/15)
 - [x] **Folder : suppression** — Bouton de suppression sur l'en-tête d'un groupe vide (scènes et tuiles) pour nettoyer les dossiers inutiles. → [#4](https://github.com/xLeDocteurx/river-king/issues/4)
 - [x] **Folder : renommage** — Double-click sur le titre d'un groupe pour renommer le dossier sans tout redéplacer. → [#16](https://github.com/xLeDocteurx/river-king/issues/16)
 - [x] **Folders premium folding** — Fermer certains dossiers par défaut quand la liste est longue, pour une navigation plus rapide. → [#17](https://github.com/xLeDocteurx/river-king/issues/17)
 - [x] **UI : création de dossier** — Remplacer `window.prompt()` par un petit inline input dans `grouped-list` pour une création de dossier plus propre et cohérente. → [#18](https://github.com/xLeDocteurx/river-king/issues/18)
-- [ ] **Sprite editor : grid visibility** — Un bouton de visibilité de la grille de pixels sur l'écran tiles (comme celui de l'éditeur de scène), pour masquer/afficher le quadrillage du pixel canvas. → [#40](https://github.com/xLeDocteurx/river-king/issues/40)
-- [ ] **Sprite editor : onion dans un popover** — Remplacer la ligne inline "Onion" par un bouton (icône façon grid visibility) qui ouvre un petit panneau flottant avec les contrôles onion (prev/next + opacités). → [#41](https://github.com/xLeDocteurx/river-king/issues/41)
+- [x] **Sprite editor : grid visibility** — Un bouton de visibilité de la grille de pixels sur l'écran tiles (comme celui de l'éditeur de scène), pour masquer/afficher le quadrillage du pixel canvas. → [#40](https://github.com/xLeDocteurx/river-king/issues/40)
+- [x] **Sprite editor : onion dans un popover** — Remplacer la ligne inline "Onion" par un bouton (icône façon grid visibility) qui ouvre un petit panneau flottant avec les contrôles onion (prev/next + opacités). → [#41](https://github.com/xLeDocteurx/river-king/issues/41)
+- [ ] **Textes d'aide UI homogénéisés** — Systématiser les textes d'aide (hints inline / tooltips) sur les contrôles de l'interface dans toute l'app : convention commune (quand, formulation, densité, placement), puis audit des éditeurs (tile properties, sprite editor, scene editor) pour poser un hint là où le label ne suffit pas. Né de la convention "Overhanging (Y-sort)" de #53. → [#67](https://github.com/xLeDocteurx/river-king/issues/67)
+- [x] **Projet de démonstration au premier lancement** — Au boot, si la base ne contient aucun projet et que le marqueur localStorage `rk-demo-seeded` est absent : seed d'un projet « Demo » dans le vrai IndexedDB (carte du dashboard, ouvrable comme un projet normal, supprimable à jamais). Contenu minimal : sprites procéduraux générés par canvas (grass statique, water 2 frames, tree `ySort:true`, case `blocking`, case `interactable`) — showcase du moteur sans asset binaire. Marqueur posé dès le 1er check (seedée OU base déjà peuplée). → [#70](https://github.com/xLeDocteurx/river-king/issues/70)
 
 ## Lower Priority
 
-- [x] **Project rename/settings** — Renommer un projet après création. → [#19](https://github.com/xLeDocteurx/river-king/issues/19)
-- [x] **Loading states** — Skeleton/spinner pendant les opérations IndexedDB async. → [#20](https://github.com/xLeDocteurx/river-king/issues/20)
+- [ ] **Project rename/settings** — Renommer un projet après création. Reste au backlog (P2/M), non bloqué. → [#19](https://github.com/xLeDocteurx/river-king/issues/19)
+- [ ] **Loading states** — Skeleton/spinner pendant les opérations IndexedDB async. Carte en `Blocked` : écarté par décision produit, pas une dépendance technique (le travail IndexedDB local est assez rapide pour ne pas le justifier, et ça ne bloque pas `v0.1.0`). → [#20](https://github.com/xLeDocteurx/river-king/issues/20)
 - [x] **Guard route projet** — Valider l'existence du projet avant de charger les nested routes. → [#21](https://github.com/xLeDocteurx/river-king/issues/21)
 - [x] **Nettoyage des stubs vides** — `core/guards/`, `shared/directives/`, `shared/pipes/` sont des dossiers vides. → [#22](https://github.com/xLeDocteurx/river-king/issues/22)
 - [x] **README projet** — Le README est le template Angular CLI par défaut. Le remplacer par une vraie description du projet. → [#6](https://github.com/xLeDocteurx/river-king/issues/6)
@@ -40,6 +43,7 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 - [x] **About du repo + lien live** — L'About GitHub est vide (description, homepage, topics). Le site GitHub Pages est déjà déployé (https://xledocteurx.github.io/river-king/) mais le lien n'apparaît nulle part. Remplir l'About du repo (description punchy, homepage → site Pages, topics découvrables) et ajouter un badge "Live demo" cliquable dans le README. → [#33](https://github.com/xLeDocteurx/river-king/issues/33)
 - [x] **Supprimer la branche après merge** — Ne pas polluer le repo avec les branches `feature-*` une fois leur PR mergée. Activer l'option native "auto-delete head branches" + documenter. → [#34](https://github.com/xLeDocteurx/river-king/issues/34)
 - [x] **Contenu GitHub en anglais** — Tout le contenu visible sur GitHub (About, README, PR, rapports, issues, commentaires) doit être en anglais. Traduction rétroactive des sections "Design (groomed...)" en français ajoutées aux corps d'issues + commentaires FR. → [#35](https://github.com/xLeDocteurx/river-king/issues/35)
+- [x] **Processus de release pro** — Skill OpenCode + automatisation GitHub Actions + docs, pour publier des versions de l'engine. Décisions prises (design approuvé le 2026-10-05) : semver manuel sur branche `release/<x.y.z>` (source de vérité = `package.json`), PR → `main` avec label `release` (guard existant), tag annoté `vX.Y.Z` sur main, `CHANGELOG.md` manuel keep-a-changelog, Pages basculé en source _GitHub Actions_ (build + deploy au push sur `main` et aux tags `v*`), release notes GitHub draftées par CI au tag, runbook `docs/release-process.md`, skill `.opencode/skills/release/` encodant la même procédure (compatible agent/humain/CI), status bar affichant la version (`River King Engine — v0.1.0`) injectée depuis `package.json`, première release `v0.1.0` dès que le process est en place. → [#73](https://github.com/xLeDocteurx/river-king/issues/73) (pipeline + runbook) · [#74](https://github.com/xLeDocteurx/river-king/issues/74) (version en status bar) · [#75](https://github.com/xLeDocteurx/river-king/issues/75) (skill `.opencode/skills/release/`). Reste à faire : la release `v0.1.0` elle-même.
 
 ---
 
@@ -52,12 +56,15 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 
 Le chaînon manquant : le modèle a déjà `blocking` + `interactable` + `actionId` référencés mais **inutilisés**. C'est LE truc qui transforme l'outil en "Engine".
 
-- [ ] **A1. Mode Play** — Toggle Play/Edit dans le scene editor : un player parcourt la map, collisions avec les tiles `blocking`, la caméra suit le personnage. WASD/arrows. 🔴 Lourd — priorité ⭐⭐⭐
-- [ ] **A2. Player controller** — Sprite player, animations de marche, les tiles `interactable` déclenchent des actions à l'approche. 🟠 Moyen — ⭐⭐⭐
-- [ ] **A3. Interactions réelles** — Donner vie au `actionId` : dialogues, portes/objets, téléport entre scènes, changement de tile. 🟠 Moyen — ⭐⭐
+- [x] **A1. Mode Play** — Toggle Play/Edit dans le scene editor : un player parcourt la map, collisions avec les tiles `blocking`, la caméra suit le personnage. WASD/arrows. 🔴 Lourd — priorité ⭐⭐⭐ → [#49](https://github.com/xLeDocteurx/river-king/issues/49)
+- [x] **A2. Player controller** — Sprite player, animations de marche, les tiles `interactable` déclenchent des actions à l'approche. 🟠 Moyen — ⭐⭐⭐ → [#49](https://github.com/xLeDocteurx/river-king/issues/49) + [#52](https://github.com/xLeDocteurx/river-king/issues/52) (le player livré est un placeholder ; le vrai modèle d'animation reste → [#59](https://github.com/xLeDocteurx/river-king/issues/59))
+- [x] **A3a. Interactions — plomberie** — Les tiles `interactable` déclenchent leur `actionId` à l'approche, via le registre `GAME_ACTIONS` (le démo en est le premier usage). 🟠 Moyen — ⭐⭐ → [#52](https://github.com/xLeDocteurx/river-king/issues/52)
+- [ ] **A3b. Interactions réelles** — Donner vie au `actionId` : dialogues, portes/objets, téléport entre scènes, changement de tile. 🟠 Moyen — ⭐⭐
 - [ ] **A4. Preview projet** — Bouton "Jouer" global qui lance le player dans la scène active (relié au SessionService). 🟢 Léger — ⭐⭐
 - [ ] **A5. Fullscreen/game mode** — Mode plein écran sans chrome UI. 🟢 Léger — ⭐
-- [ ] **A6. Rendu "devant/derrière" du player (tri Y, Y-sorting)** — Besoin né du design de #49 : les tiles débordantes (canopée d'arbre, herbe haute, buisson) doivent se rendre devant ou derrière le player selon la position du player sur l'axe Y. Nécessite un attribut tile (ancrage "pied" / marquage "débordant") + un mécanisme de rendu par profondeur. **Player v1 = rendu au-dessus de tout** ; le tri Y est un chantier séparé à part entière (voir US). 🟠 Moyen—Lourd — ⭐⭐⭐
+- [x] **A6a. Tri Y — côté données** — Attribut tile d'ancrage `ySort` + édition dans le tile manager (les tiles débordantes sont marquées). 🟠 Moyen — ⭐⭐⭐ → [#53](https://github.com/xLeDocteurx/river-king/issues/53)
+- [ ] **A6b. Tri Y — côté rendu** — Les tiles débordantes (canopée d'arbre, herbe haute, buisson) doivent se rendre devant ou derrière le player selon sa position sur l'axe Y. **Player v1 = rendu au-dessus de tout** ; le tri Y est un chantier séparé à part entière. 🟠 Moyen—Lourd — ⭐⭐⭐ → [#54](https://github.com/xLeDocteurx/river-king/issues/54) (+ [#55](https://github.com/xLeDocteurx/river-king/issues/55) pour la couche de rendu configurable du player)
+- [ ] **A7. Contrôles remappables** — Dès qu'on a une couche d'inputs (WASD/arrows, E interaction, plus tard sprint/dash/verrouillage…), proposer un remapping des touches configurables par le joueur (enregistrées par projet ou app, UI d'édition). Idée apportée pendant le brainstorm de #52. 🟠 Moyen — ⭐⭐
 
 ### Direction B — Enrichir le level design
 

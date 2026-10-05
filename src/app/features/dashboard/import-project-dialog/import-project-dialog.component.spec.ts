@@ -40,7 +40,7 @@ describe('ImportProjectDialogComponent', () => {
           type: 'static',
           spriteIds: [11],
           animationSpeed: 4,
-          properties: { blocking: false, interactable: false },
+          properties: { blocking: false, interactable: false, ySort: false },
           folderPath: '',
         },
         {
@@ -49,7 +49,7 @@ describe('ImportProjectDialogComponent', () => {
           type: 'static',
           spriteIds: [21, 22],
           animationSpeed: 4,
-          properties: { blocking: true, interactable: false },
+          properties: { blocking: true, interactable: false, ySort: false },
           folderPath: '',
         },
       ],

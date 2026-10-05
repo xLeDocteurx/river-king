@@ -37,6 +37,12 @@ export interface Scene {
   name: string;
   /** Optional folder path for organisation (e.g. `"forest/caves"` or `""` for root). */
   folderPath: string;
+  /**
+   * Player spawn cell, in grid coordinates. `null` (or `undefined` on legacy
+   * rows) means the default spawn: the scene center `(floor(width/2),
+   * floor(height/2))`.
+   */
+  spawnPoint: { x: number; y: number } | null;
   /** Scene width in tiles. */
   width: number;
   /** Scene height in tiles. */

@@ -121,6 +121,11 @@ export interface SceneArchiveItem {
    */
   folderPath: string;
   /**
+   * Player spawn cell in grid coordinates. Absent on archives created before
+   * this feature; `null` means "use the scene center".
+   */
+  spawnPoint?: { x: number; y: number } | null;
+  /**
    * Scene width in tiles.
    */
   width: number;

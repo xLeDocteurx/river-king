@@ -5,6 +5,10 @@ import { AppDummyComponent } from './app-dummy.component';
 import { StatusBarService } from './core/services/status-bar.service';
 import { SessionService } from './core/services/session.service';
 import { UndoService } from './core/services/undo.service';
+import { DemoProjectService, DEMO_SEED_MARKER } from './core/services/demo-project.service';
+import { NotificationService } from './core/services/notification.service';
+import { runGameAction, DEMO_ACTION_ID, DEMO_ACTION_TOAST } from './core/actions/game-actions';
+import { APP_VERSION } from './core/app-version';
 import 'fake-indexeddb/auto';
 
 describe('App', () => {
@@ -23,6 +27,7 @@ describe('App', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(App);
+    localStorage.setItem(DEMO_SEED_MARKER, 'true');
   });
 
   it('should create the app', () => {
@@ -73,6 +78,14 @@ describe('App', () => {
     expect(footer?.textContent).toContain('River King Engine');
   });
 
+  it('should render the app version in the status bar', () => {
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const footer = compiled.querySelector('footer');
+    expect(footer?.textContent).toContain(`River King Engine — v${APP_VERSION}`);
+  });
+
   it('records the visited project screen into the session', async () => {
     const sessions = TestBed.inject(SessionService);
     const spy = vi.spyOn(sessions, 'updateSession').mockResolvedValue(undefined);
@@ -103,5 +116,21 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(undo.canUndo()).toBe(false);
+  });
+
+  it('kicks off the demo seed on initialisation', () => {
+    const demo = TestBed.inject(DemoProjectService);
+    const spy = vi.spyOn(demo, 'ensureDemo').mockResolvedValue(false);
+    fixture.detectChanges();
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('registers the demo action showing an informational toast', () => {
+    fixture.detectChanges();
+    const notify = TestBed.inject(NotificationService);
+    runGameAction(DEMO_ACTION_ID);
+    expect(
+      notify.messages().some((m) => m.message === DEMO_ACTION_TOAST && m.type === 'info'),
+    ).toBe(true);
   });
 });

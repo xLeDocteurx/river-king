@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MapCanvasComponent, GRID_VISIBLE_STORAGE_KEY } from './map-canvas.component';
 import type { Scene, Layer } from '../../shared/models/scene.model';
+import { PlayerController } from './services/play-controller';
 
 // jsdom does not implement ResizeObserver (used by MapCanvasComponent)
 class ResizeObserverStub {
@@ -31,6 +32,7 @@ function makeScene(width = 4, height = 4): Scene {
     projectId: 'proj-1',
     name: 'S',
     folderPath: '',
+    spawnPoint: null,
     width,
     height,
     layers: [makeDefaultLayer(width, height)],
@@ -46,7 +48,10 @@ describe('MapCanvasComponent', () => {
   });
 
   function setup(scene: Scene, footprints: Record<number, { w: number; h: number }> = {}): void {
-    TestBed.configureTestingModule({ imports: [MapCanvasComponent] });
+    TestBed.configureTestingModule({
+      imports: [MapCanvasComponent],
+      providers: [PlayerController],
+    });
     fixture = TestBed.createComponent(MapCanvasComponent);
     placed = [];
     fixture.componentInstance.tilePlaced.subscribe((e) => placed.push(e));
@@ -198,5 +203,251 @@ describe('MapCanvasComponent', () => {
     instance.showGrid.set(true);
     await new Promise((r) => setTimeout(r, 50));
     expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('1');
+  });
+
+  it('emits a spawnPlaced cell when placeSpawnMode is active', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    let spawn: { x: number; y: number } | undefined;
+    instance.spawnPlaced.subscribe((c) => (spawn = c));
+    fixture.componentRef.setInput('placeSpawnMode', true);
+
+    instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
+
+    expect(spawn).toEqual({ x: 0, y: 1 });
+    expect(placed).toEqual([]);
+  });
+
+  it('does not emit spawnPlaced when placeSpawnMode is off', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    let spawn: { x: number; y: number } | undefined;
+    instance.spawnPlaced.subscribe((c) => (spawn = c));
+
+    instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
+
+    expect(spawn).toBeUndefined();
+  });
+
+  it('draws the player placeholder in play mode', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const player = fixture.debugElement.injector.get(PlayerController);
+      player.start({ width: 4, height: 4, layers: [] }, { x: 1, y: 2 }, new Map(), {}, new Map());
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+      expect(ctx.fillRect).toHaveBeenCalledWith(16, 32, 16, 16);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('does not draw the player placeholder outside play mode', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      fixture.detectChanges();
+      expect(ctx.fillRect).not.toHaveBeenCalledWith(16, 32, 16, 16);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('follows the player by moving the camera toward the player cell', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    const player = fixture.debugElement.injector.get(PlayerController);
+    player.start({ width: 4, height: 4, layers: [] }, { x: 2, y: 2 }, new Map(), {}, new Map());
+    fixture.componentRef.setInput('playMode', true);
+    const beforeX = instance.cameraX();
+    // jsdom canvas is 0x0 wide, so the target X is -(2*cell*zoom), far below
+    // the camera's starting position; the camera eases toward it.
+    instance['followPlayer']();
+    expect(instance.cameraX()).toBeLessThan(beforeX);
+  });
+
+  it('ignores editing clicks in play mode', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    fixture.componentRef.setInput('playMode', true);
+    fixture.componentRef.setInput('selectedTileId', 1);
+    instance.onMouseDown(new MouseEvent('mousedown', { button: 0, clientX: 10, clientY: 20 }));
+    expect(placed).toEqual([]);
+  });
+
+  it('draws an accent frame around the interaction target in play mode', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const player = fixture.debugElement.injector.get(PlayerController);
+      const tileData = [
+        [-1, -1, -1, -1],
+        [-1, -1, -1, -1],
+        [-1, -1, 7, -1],
+        [-1, -1, -1, -1],
+      ];
+      player.start(
+        {
+          width: 4,
+          height: 4,
+          layers: [{ id: 'l1', name: 'interact', visible: true, opacity: 1, tileData }],
+        },
+        { x: 2, y: 1 },
+        new Map(),
+        {},
+        new Map([[7, 'bell']]),
+      );
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+      expect(ctx.strokeRect).toHaveBeenCalledWith(32, 32, 16, 16);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('draws no interaction frame when there is no target in play mode', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const player = fixture.debugElement.injector.get(PlayerController);
+      player.start({ width: 4, height: 4, layers: [] }, { x: 2, y: 1 }, new Map(), {}, new Map());
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+      expect(ctx.strokeRect).not.toHaveBeenCalledWith(32, 32, 16, 16);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('runs the rAF loop in play mode even without animated tiles', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const instance = fixture.componentInstance;
+      expect(instance['hasAnimatedTiles']()).toBe(false);
+
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+
+      expect(instance['loopRunning']).toBe(true);
+      expect(instance['rafId']).toBeGreaterThan(0);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('does not run the rAF loop in edit mode without animated tiles', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+
+    expect(instance['hasAnimatedTiles']()).toBe(false);
+    expect(instance['loopRunning']).toBe(false);
+    expect(instance['rafId']).toBe(0);
+  });
+
+  it('cancels the rAF loop when leaving play mode', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const instance = fixture.componentInstance;
+
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+      expect(instance['loopRunning']).toBe(true);
+      expect(instance['rafId']).toBeGreaterThan(0);
+
+      fixture.componentRef.setInput('playMode', false);
+      fixture.detectChanges();
+
+      expect(instance['loopRunning']).toBe(false);
+      expect(instance['rafId']).toBe(0);
+    } finally {
+      getContextSpy.mockRestore();
+    }
   });
 });

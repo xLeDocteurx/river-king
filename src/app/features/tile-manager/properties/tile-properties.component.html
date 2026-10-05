@@ -136,10 +136,24 @@
       >
         Interactable
       </button>
+      <button
+        type="button"
+        name="ySort"
+        (click)="toggleYSort()"
+        [class.tw-bg-primary/10]="form.get('properties')?.get('ySort')?.value"
+        [class.tw-border-primary]="form.get('properties')?.get('ySort')?.value"
+        class="tw-px-2 tw-py-0.5 tw-rounded-sm tw-border tw-border-border tw-text-[11px] tw-text-foreground hover:tw-bg-muted tw-transition-colors"
+      >
+        Overhanging (Y-sort)
+      </button>
       @if (interactableChecked() && actionId()) {
         <span class="tw-text-[10px] tw-text-muted-foreground">→ {{ actionId() }}</span>
       }
     </div>
+    <p class="tw-text-[11px] tw-text-muted-foreground tw-mt-2">
+      Bottom of the artwork must touch the ground cell. Enables in-front/behind sorting in Play
+      mode.
+    </p>
     @if (interactableChecked()) {
       <div class="tw-flex tw-items-center tw-gap-2 tw-mt-2">
         <rk-searchable-select

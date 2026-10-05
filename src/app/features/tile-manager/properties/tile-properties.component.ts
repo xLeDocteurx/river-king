@@ -27,8 +27,8 @@ import { TileSpritesService } from '../services/tile-sprites.service';
  *
  * Displays a reactive form for editing a tile's name, type, animation speed,
  * linked sprite thumbnails (with animated-frame lifecycle), tile-unit size
- * applied to all frames, and blocking/interactable properties (action chosen
- * through a searchable dropdown). Persists frame lifecycle and size changes
+ * applied to all frames, and blocking/interactable/overhang (ySort) properties
+ * (action chosen through a searchable dropdown). Persists frame lifecycle and size changes
  * through {@link TileSpritesService} shared state; navigation to the sprite
  * editor is performed directly via the Router. Property edits auto-save:
  * form changes schedule a trailing save 400 ms after the last keystroke
@@ -87,6 +87,7 @@ export class TilePropertiesComponent {
     animationSpeed: [4],
     properties: this.fb.group({
       blocking: [false],
+      ySort: [false],
     }),
   });
 
@@ -170,7 +171,7 @@ export class TilePropertiesComponent {
         name: t.name,
         type: t.type,
         animationSpeed: t.animationSpeed,
-        properties: { blocking: t.properties.blocking },
+        properties: { blocking: t.properties.blocking, ySort: t.properties.ySort ?? false },
       });
       this.typeSelected.set(t.type);
       this.frameCount.set(Math.max(1, t.spriteIds.length || (sprites?.length ?? 0) || 1));
@@ -351,6 +352,14 @@ export class TilePropertiesComponent {
   }
 
   /**
+   * Toggles the Overhanging (Y-sort) flag via the reactive form.
+   */
+  toggleYSort(): void {
+    const current = this.form.get('properties')?.get('ySort')?.value ?? false;
+    this.form.get('properties')?.get('ySort')?.setValue(!current);
+  }
+
+  /**
    * Toggles the Interactable flag and clears actionId when turning off.
    */
   toggleInteractable(): void {
@@ -388,6 +397,7 @@ export class TilePropertiesComponent {
         blocking: value.properties?.blocking ?? false,
         interactable: this.interactableChecked(),
         actionId: this.interactableChecked() ? (this.actionId() ?? undefined) : undefined,
+        ySort: value.properties?.ySort ?? false,
       },
     };
   }

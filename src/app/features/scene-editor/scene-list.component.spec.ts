@@ -12,6 +12,7 @@ describe('SceneListComponent', () => {
     projectId: 'p1',
     name,
     folderPath,
+    spawnPoint: null,
     width: 10,
     height: 10,
     layers: [

@@ -15,6 +15,7 @@ describe('ProjectService', () => {
     await db.tiles.clear();
     await db.sprites.clear();
     await db.sessions.clear();
+    await db.folders.clear();
   });
 
   it('should be created', () => {
@@ -109,6 +110,7 @@ describe('ProjectService', () => {
       projectId: project.id,
       name: 'Scene',
       folderPath: '',
+      spawnPoint: null,
       width: 10,
       height: 10,
       layers: [
@@ -126,5 +128,32 @@ describe('ProjectService', () => {
     const deletedScene = await db.scenes.where('projectId').equals(project.id).first();
     expect(deletedProject).toBeUndefined();
     expect(deletedScene).toBeUndefined();
+  });
+
+  it('should cascade-delete folder state and leave other projects intact', async () => {
+    const db = TestBed.inject(DatabaseService);
+    const doomed = await service.create({
+      name: 'Doomed',
+      palette: ['#000000'],
+      tileSize: 16,
+      mapWidth: 40,
+      mapHeight: 30,
+    });
+    const survivor = await service.create({
+      name: 'Survivor',
+      palette: ['#000000'],
+      tileSize: 16,
+      mapWidth: 40,
+      mapHeight: 30,
+    });
+    await db.upsertFolderState(doomed.id, 'tile', 'forest', {});
+    await db.upsertFolderState(survivor.id, 'tile', 'forest', {});
+
+    await service.delete(doomed.id);
+
+    expect(await db.projects.get(doomed.id)).toBeUndefined();
+    expect(await db.projects.get(survivor.id)).toBeTruthy();
+    expect(await db.folders.where('projectId').equals(doomed.id).count()).toBe(0);
+    expect(await db.folders.where('projectId').equals(survivor.id).count()).toBe(1);
   });
 });

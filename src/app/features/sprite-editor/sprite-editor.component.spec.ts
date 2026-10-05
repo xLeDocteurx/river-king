@@ -123,7 +123,7 @@ describe('SpriteEditorComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as Tile);
     await setupWithProject();
     const service = TestBed.inject(SpriteService);
@@ -176,7 +176,7 @@ describe('SpriteEditorComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as Tile);
     const service = TestBed.inject(SpriteService);
     const sprite = await service.createSprite('test-proj', 'Deep Linked Sprite', 1);
@@ -239,7 +239,7 @@ describe('SpriteEditorComponent', () => {
         type: 'animated',
         spriteIds: [1, 2],
         animationSpeed: 4,
-        properties: { blocking: false, interactable: false },
+        properties: { blocking: false, interactable: false, ySort: false },
       } as Tile,
     ]);
     fixture.componentInstance.selectedTileId.set(10);
@@ -367,7 +367,7 @@ describe('SpriteEditorComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as Tile);
     await setupWithProject();
     const service = TestBed.inject(SpriteService);
@@ -413,7 +413,7 @@ describe('SpriteEditorComponent', () => {
       type: 'static',
       spriteIds: [],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as Tile);
     await setupWithProject();
     const service = TestBed.inject(SpriteService);
@@ -455,7 +455,7 @@ describe('SpriteEditorComponent', () => {
       type: 'static',
       spriteIds: [11],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as Tile);
     await db.sprites.add({
       id: 11,
@@ -505,7 +505,7 @@ describe('SpriteEditorComponent', () => {
       type: 'animated',
       spriteIds: [11, 12],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as Tile);
     await db.sprites.add({
       id: 11,
@@ -583,7 +583,7 @@ describe('SpriteEditorComponent', () => {
       type: 'animated',
       spriteIds: [11, 12],
       animationSpeed: 4,
-      properties: { blocking: false, interactable: false },
+      properties: { blocking: false, interactable: false, ySort: false },
     } as Tile);
     await db.sprites.add({
       id: 11,
