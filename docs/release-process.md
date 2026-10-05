@@ -6,14 +6,14 @@ and the CI workflows react to the artifacts this procedure produces.
 
 ## Conventions
 
-| Element        | Value                                                                  |
-| -------------- | ---------------------------------------------------------------------- |
-| Version        | SemVer `vX.Y.Z`, source of truth = `package.json`                      |
-| Release branch | `release/<x.y.z>`, always created from `develop`                       |
-| Release PR     | `release/<x.y.z>` → `main`, with the `release` label                   |
-| Tag            | Annotated `vX.Y.Z` on `main`, pushed after merge                       |
-| Changelog      | `CHANGELOG.md` (keep-a-changelog)                                      |
-| Deployment     | GitHub Pages, source _GitHub Actions_ (`.github/workflows/deploy.yml`) |
+| Element        | Value                                                           |
+| -------------- | --------------------------------------------------------------- |
+| Version        | SemVer `vX.Y.Z`, source of truth = `package.json`               |
+| Release branch | `release/<x.y.z>`, always created from `develop`                |
+| Release PR     | `release/<x.y.z>` → `main`, with the `release` label            |
+| Tag            | Annotated `vX.Y.Z` on `main`, pushed after merge                |
+| Changelog      | `CHANGELOG.md` (keep-a-changelog)                               |
+| Deployment     | GitHub Pages, triggered by the merge into `main` (`deploy.yml`) |
 
 ## Step 0 — Prechecks
 
@@ -52,14 +52,20 @@ git push -u origin release/<x.y.z>
 
 ## Step 4 — Tag and let CI do the rest
 
+The Pages site is already live at this point: the **merge of the release PR into `main`** is
+what deploys it (Step 3). Pushing the tag does **not** redeploy.
+
 ```bash
 git checkout main && git pull
 git tag -a vX.Y.Z -m "River King Engine vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-- `.github/workflows/deploy.yml` redeploys the Pages site (it already deployed on the `main`
-  merge; the tag push re-runs it).
+- `.github/workflows/deploy.yml` runs **only** on pushes to `main` (and on manual dispatch).
+  It must stay that way: the `github-pages` environment declares a custom deployment branch
+  policy restricted to the `main` **branch**, so any deployment triggered from a **tag** is
+  rejected with _"is not allowed to deploy to github-pages due to environment protection
+  rules"_. Never re-add `tags: ['v*']` to that workflow.
 - `.github/workflows/release.yml` drafts the GitHub Release at the tag with auto-generated
   notes; publish or tweak the notes in the UI.
 - GitHub auto-deletes `release/<x.y.z>` once the PR merges.
@@ -72,8 +78,9 @@ git checkout develop && git pull
 
 - In `CHANGELOG.md`, ensure `[X.Y.Z]` is present on `develop` too (the release PR wrote it on
   `main`; port the same `[X.Y.Z]` section here so the next release branches don't conflict),
-  and start a fresh `[Unreleased]` section above it. Commit and push (or open a tiny PR to
-  `develop` for the changelog sync).
+  and start a fresh `[Unreleased]` section above it. Bump `package.json` to `X.Y.Z` on the same
+  commit, so `develop` reports the last published version. Commit and push (or open a tiny PR to
+  `develop` for the version/changelog sync).
 - Update the kanban: the release card (if any) moves to Done via the `ticket-management`
   skill.
 
