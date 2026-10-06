@@ -67,7 +67,10 @@ git push origin vX.Y.Z
   rejected with _"is not allowed to deploy to github-pages due to environment protection
   rules"_. Never re-add `tags: ['v*']` to that workflow.
 - `.github/workflows/release.yml` drafts the GitHub Release at the tag with auto-generated
-  notes; publish or tweak the notes in the UI.
+  notes; publish or tweak the notes in the UI. The action's input must be spelled
+  `generate_release_notes` (not `generate_notes`) — a wrong name is accepted by the runner,
+  logged only as an `Unexpected input(s)` warning, and silently yields an **empty** release
+  body. After a tag, confirm the draft body is non-empty before publishing.
 - GitHub auto-deletes `release/<x.y.z>` once the PR merges.
 
 ## Step 5 — Give `develop` the new baseline
