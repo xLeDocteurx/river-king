@@ -60,8 +60,8 @@ earlier version was ever published.
 **Process and infrastructure**
 
 - CI pipeline running lint, tests and build on every pull request (#25).
-- Release pipeline: GitHub Pages deploys from the Actions workflow on `main` pushes and
-  `v*` tags, and a draft GitHub Release is created per tag (#73).
+- Release pipeline: GitHub Pages deploys from the Actions workflow on `main` pushes, and a
+  draft GitHub Release with auto-generated notes is created per `v*` tag (#73).
 - Documented release runbook plus an agent-driven `release` skill (#73, #75).
 - Status bar shows the engine version (`River King Engine — vX.Y.Z`) from `package.json`
   (#74).
