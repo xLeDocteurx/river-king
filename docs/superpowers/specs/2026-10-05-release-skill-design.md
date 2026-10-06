@@ -39,7 +39,10 @@ end, executing the same commands as the runbook.
 4. **Fail fast on the gates.** Prechecks (tests, lint, build, green `develop` CI) and the
    `release`-label requirement are stated as blocking preconditions, because both failure
    modes are silent otherwise: the guard workflow rejects an unlabelled PR, and the Pages
-   deploy only re-runs correctly when the tag lands on `main`.
+   deploy is triggered by the merge into `main` — a tag-triggered deploy is rejected by the
+   `github-pages` environment's branch policy _(amended 2026-10-06: the original wording,
+   "the Pages deploy only re-runs correctly when the tag lands on `main`", described a
+   behaviour that never existed)_.
 5. **Frontmatter description** triggers on release intent ("cut a release", "publish a
    version", "tag a release"), matching the `ticket-management` style: third-person, states
    _when_ to use it.
