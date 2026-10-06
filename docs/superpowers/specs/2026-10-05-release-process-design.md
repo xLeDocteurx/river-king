@@ -1,10 +1,26 @@
 # Release Process — Design
 
 - **Date:** 2026-10-05
-- **Status:** Draft
+- **Status:** Approved (validated 2026-10-05 — see `docs/ideas.md`, "Processus de release pro")
 - **Linked issues:** #73 (release pipeline infra), #74 (status bar version), #75 (release skill)
 - **Epic:** —
 - **Related:** CI guard workflow (block non-release PRs to `main`, feature-64), GitHub Pages already live (`https://xledocteurx.github.io/river-king/`)
+
+> **Amendment — 2026-10-06, after `v0.1.0` shipped.** Three decisions below were invalidated
+> by first contact with GitHub's environment protection rules. `docs/release-process.md`
+> remains the source of truth; the lines corrected in place are marked with _(amended)_:
+>
+> 1. **Pages never deployed from a tag.** The `github-pages` environment allows only the
+>    `main` **branch** as a deployment ref, so the `tags: ['v*']` trigger was rejected
+>    (and, via the `pages` concurrency group, cancelled the in-flight `main` run). Deploy
+>    is triggered by the merge into `main` only — PR #85.
+> 2. **`generate-notes` is not an input of `softprops/action-gh-release@v2`.** The correct
+>    name is `generate_release_notes`; the misspelling is accepted with only a warning and
+>    yields an **empty** release body. `v0.1.0` was published with notes written by hand —
+>    PR #86.
+> 3. **Decision 3's "tags are the single trigger CI reacts to" was already contradicted by
+>    decision 4 in the same document** (which adds a `main`-push trigger). CI now reacts to
+>    two events: `main` push → deploy, `v*` tag → draft the release.
 
 ## Problem
 
@@ -32,11 +48,14 @@ without test suites going red and without the live site drifting from `main`.
    `develop`), a PR to `main` carrying the `release` label — the existing guard workflow is
    the gate, unchanged. This satisfies the protected-`main` model in AGENTS.md.
 3. **Tag on `main`, after merge.** An annotated tag `vX.Y.Z` is created on `main` once the
-   release PR is merged. Tags are the single trigger CI reacts to, so human-driven and
-   agent-driven releases hit the same automation.
+   release PR is merged. Tags trigger the release draft; the `main` push triggers the
+   deploy — CI reacts to **two** events, not one _(amended: "single trigger" was wrong even
+   as written, and decision 4 below already contradicted it)_.
 4. **CI deploys & drafts.** Pages source is switched once to **GitHub Actions**: a workflow
-   builds with the production config and deploys the artifact on push to `main` **and** on
-   tag pushes `v*`. A second workflow drafts the GitHub Release at each tag.
+   builds with the production config and deploys the artifact on push to `main`
+   _(amended: "and on tag pushes `v*`" removed — the `github-pages` environment only
+   accepts the `main` branch, so a tag-triggered deploy is rejected)_. A second workflow
+   drafts the GitHub Release at each tag.
 5. **Manual, versioned changelog.** `CHANGELOG.md` at the repo root, keep-a-changelog
    format, `Unreleased` section, entry added in the release PR. Release notes reference it.
 6. **One agent-facing skill.** `.opencode/skills/release/SKILL.md` encodes the identical
@@ -59,7 +78,9 @@ without test suites going red and without the live site drifting from `main`.
 
 ### Deliverable 1 — `.github/workflows/deploy.yml` (issue #73)
 
-- Triggers: `push: { branches: [main] }` and `push: { tags: ['v*'] }`.
+- Triggers: `push: { branches: [main] }` only _(amended: `push: { tags: ['v*'] }` removed —
+  the `github-pages` environment's deployment branch policy allows `main` and rejects tag
+  refs)_.
 - `build`: checkout → setup Node 22 (matches devbox pin) → `npm ci` → `npm run build`
   (production config).
 - `deploy`: upload page artifact (`dist/river-king/browser`) →
@@ -71,8 +92,9 @@ without test suites going red and without the live site drifting from `main`.
 
 - Triggers: `push: { tags: ['v*'] }`.
 - Uses `softprops/action-gh-release` driving a **draft** release at the tag with
-  `generate-notes: true` (GitHub lists merged PRs since the previous tag — deterministic,
-  no changelog parsing in CI).
+  `generate_release_notes: true` _(amended: the spec originally wrote `generate-notes: true`,
+  which is not an input of the action and silently produces an empty body)_ (GitHub lists
+  merged PRs since the previous tag — deterministic, no changelog parsing in CI).
 
 ### Deliverable 3 — `CHANGELOG.md` (issue #73)
 
@@ -107,7 +129,8 @@ follows `writing-skills` conventions.
 2. `git checkout -b release/<x.y.z> develop`; bump `package.json` + add `[x.y.z]` changelog entry.
 3. Open PR `release/<x.y.z>` → `main` with label `release`; guard passes; human merges.
 4. On `main`: tag annotated `vX.Y.Z`; push tag.
-5. CI: deploy Pages + draft GitHub Release.
+5. CI: the merge in step 3 already deployed Pages; the tag drafts the GitHub Release
+   _(amended: one CI step, not two — the tag never deployed)_.
 6. Delete `release/<x.y.z>` (auto-delete), update kanban release card to Done.
 
 ## First release — `v0.1.0`
@@ -118,8 +141,8 @@ state including the demo seed. The status bar will read `River King Engine — v
 
 ## Acceptance (mapped to the issues)
 
-- #73: Pages source = Actions; deploy on `main` push + `v*` tags; release draft per tag;
-  `CHANGELOG.md` scaffolded; runbook written; guard unaffected.
+- #73: Pages source = Actions; deploy on `main` push _(amended: `+ v* tags` removed)_;
+  release draft per tag; `CHANGELOG.md` scaffolded; runbook written; guard unaffected.
 - #74: status bar shows `River King Engine — vX.Y.Z` from `package.json`; dev + prod
   identical; design-system compliant; lint/test/format green.
 - #75: `release` skill exists with valid frontmatter, matches the runbook, links
