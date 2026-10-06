@@ -87,6 +87,9 @@ git push origin vX.Y.Z
   `deploy.yml` triggers on pushes to `main` only — never re-add `tags: ['v*']`, the
   `github-pages` environment policy rejects deployments from a tag ref.
 - `release.yml` drafts the GitHub Release with auto-generated notes.
+- Verify the draft body is **non-empty** before publishing: the action input must be
+  `generate_release_notes`, and a misnamed input fails only as a warning, leaving an empty
+  release body.
 - Publishing the draft release (or editing its notes) is a **human** action — say so, do
   not do it.
 
