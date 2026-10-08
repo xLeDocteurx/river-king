@@ -6,7 +6,6 @@ import { StatusBarService } from './core/services/status-bar.service';
 import { SessionService, screenFromUrl } from './core/services/session.service';
 import { UndoService } from './core/services/undo.service';
 import { KeyboardShortcutsService } from './core/services/keyboard-shortcuts.service';
-import { DemoProjectService } from './core/services/demo-project.service';
 import { NotificationService } from './core/services/notification.service';
 import { registerGameAction, DEMO_ACTION_ID, DEMO_ACTION_TOAST } from './core/actions/game-actions';
 import { APP_VERSION } from './core/app-version';
@@ -35,7 +34,6 @@ export class App implements OnInit {
   private readonly sessions = inject(SessionService);
   private readonly undo = inject(UndoService);
   private readonly shortcuts = inject(KeyboardShortcutsService);
-  private readonly demo = inject(DemoProjectService);
   private readonly notify = inject(NotificationService);
 
   /** Whether the current route is under /project/:id (shows workspace nav). */
@@ -43,10 +41,9 @@ export class App implements OnInit {
   /** Project id extracted from the current URL when inside a project. */
   projectId = signal<string | null>(null);
 
-  /** Registers the demo game action and seeds the demo project once. */
+  /** Registers the demo game action; the demo project is seeded at bootstrap. */
   ngOnInit(): void {
     registerGameAction(DEMO_ACTION_ID, () => this.notify.info(DEMO_ACTION_TOAST));
-    void this.demo.ensureDemo();
   }
 
   constructor() {
