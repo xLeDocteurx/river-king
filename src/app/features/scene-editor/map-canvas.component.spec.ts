@@ -450,4 +450,26 @@ describe('MapCanvasComponent', () => {
       getContextSpy.mockRestore();
     }
   });
+
+  it('disconnects the ResizeObserver on destroy', () => {
+    const observe = vi.fn();
+    const disconnect = vi.fn();
+    class TrackingObserver {
+      observe = observe;
+      unobserve = vi.fn();
+      disconnect = disconnect;
+    }
+    const original = globalThis.ResizeObserver;
+    (globalThis as unknown as Record<string, unknown>)['ResizeObserver'] = TrackingObserver;
+    try {
+      setup(makeScene());
+      expect(observe).toHaveBeenCalledTimes(1);
+
+      fixture.destroy();
+
+      expect(disconnect).toHaveBeenCalledTimes(1);
+    } finally {
+      (globalThis as unknown as Record<string, unknown>)['ResizeObserver'] = original;
+    }
+  });
 });

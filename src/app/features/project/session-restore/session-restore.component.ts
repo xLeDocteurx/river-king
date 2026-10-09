@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SessionService } from '../../../core/services/session.service';
 import type { ProjectScreen, Session } from '../../../shared/models/session.model';
@@ -13,6 +13,7 @@ import type { ProjectScreen, Session } from '../../../shared/models/session.mode
  */
 @Component({
   selector: 'rk-session-restore',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './session-restore.component.html',
   styleUrl: './session-restore.component.scss',
 })
