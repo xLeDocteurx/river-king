@@ -1,11 +1,10 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import type { Layer } from '../../../shared/models/scene.model';
 import { buildBlockingGrid, resolveCollision, HALF_CELL_HITBOX } from '../collision';
 import type { TileFootprintMap } from '../map-footprint';
 import { findInteractableTarget } from '../interaction';
 import type { InteractionTarget } from '../interaction';
 import { runGameAction } from '../../../core/actions/game-actions';
-import { NotificationService } from '../../../core/services/notification.service';
 
 /** The direction the player is currently facing. */
 export type PlayerDirection = 'up' | 'down' | 'left' | 'right';
@@ -37,7 +36,7 @@ const DIRECTION_VECTORS: Record<PlayerDirection, { dx: number; dy: number }> = {
  * keys are currently held via raw window keydown/keyup listeners and applies
  * input to movement in `update(dt)` so playback is frame-rate independent.
  * Interactable tiles are re-targeted after every update; pressing `E` fires
- * the targeted tile's registered action with a toast confirmation.
+ * the targeted tile's registered action, whose handler owns any feedback.
  */
 @Injectable()
 export class PlayerController {
@@ -54,7 +53,6 @@ export class PlayerController {
   /** The interactable cell `E` currently targets, or null when out of range. */
   readonly interactionTarget = signal<InteractionTarget | null>(null);
 
-  private readonly notification = inject(NotificationService);
   private readonly held = new Set<string>();
   /** @internal Whether the window input listeners are attached. */
   private listenersActive = false;
@@ -82,7 +80,6 @@ export class PlayerController {
     const target = this.interactionTarget();
     if (!target) return;
     runGameAction(target.actionId);
-    this.notification.success(`Action '${target.actionId}' triggered`);
   };
 
   /**

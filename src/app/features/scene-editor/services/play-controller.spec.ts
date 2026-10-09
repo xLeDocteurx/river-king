@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { PlayerController } from './play-controller';
+import { registerGameAction } from '../../../core/actions/game-actions';
 import { NotificationService } from '../../../core/services/notification.service';
 import type { Layer } from '../../../shared/models/scene.model';
 
@@ -154,37 +155,40 @@ describe('PlayerController', () => {
     expect(player.y()).toBeCloseTo(1.5 + Math.SQRT1_2 * 5 * 0.5, 3);
   });
 
-  it('fires the facing-tile action and shows a success toast on E', () => {
+  it('fires the facing-tile action on E', () => {
+    const handler = vi.fn();
+    registerGameAction('bell', handler);
     player.start(sceneWithBell([[2, 2]]), { x: 2, y: 1 }, new Map(), {}, BELL);
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e' }));
     expect(player.interactionTarget()).toEqual({ x: 2, y: 2, actionId: 'bell' });
-    expect(
-      notification
-        .messages()
-        .some((m) => m.type === 'success' && m.message === "Action 'bell' triggered"),
-    ).toBe(true);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(notification.messages().length).toBe(0);
   });
 
   it('falls back to the cell under the player when the facing cell is empty', () => {
+    const handler = vi.fn();
+    registerGameAction('bell', handler);
     player.start(sceneWithBell([[2, 1]]), { x: 2, y: 1 }, new Map(), {}, BELL);
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'E' }));
-    expect(
-      notification
-        .messages()
-        .some((m) => m.type === 'success' && m.message === "Action 'bell' triggered"),
-    ).toBe(true);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(notification.messages().length).toBe(0);
   });
 
   it('does nothing on E without a target', () => {
+    const handler = vi.fn();
+    registerGameAction('bell', handler);
     player.start(emptyScene(4, 4), { x: 2, y: 1 }, new Map(), {}, new Map());
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e' }));
     expect(notification.messages().length).toBe(0);
+    expect(handler).not.toHaveBeenCalled();
   });
 
   it('ignores repeated E keydown events', () => {
+    const handler = vi.fn();
+    registerGameAction('bell', handler);
     player.start(sceneWithBell([[2, 2]]), { x: 2, y: 1 }, new Map(), {}, BELL);
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', repeat: true }));
-    expect(notification.messages().length).toBe(0);
+    expect(handler).not.toHaveBeenCalled();
   });
 
   it('updates the target when the player turns', () => {

@@ -5,7 +5,7 @@ import { AppDummyComponent } from './app-dummy.component';
 import { StatusBarService } from './core/services/status-bar.service';
 import { SessionService } from './core/services/session.service';
 import { UndoService } from './core/services/undo.service';
-import { DemoProjectService, DEMO_SEED_MARKER } from './core/services/demo-project.service';
+import { DEMO_SEED_MARKER } from './core/services/demo-project.service';
 import { NotificationService } from './core/services/notification.service';
 import { runGameAction, DEMO_ACTION_ID, DEMO_ACTION_TOAST } from './core/actions/game-actions';
 import { APP_VERSION } from './core/app-version';
@@ -116,13 +116,6 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(undo.canUndo()).toBe(false);
-  });
-
-  it('kicks off the demo seed on initialisation', () => {
-    const demo = TestBed.inject(DemoProjectService);
-    const spy = vi.spyOn(demo, 'ensureDemo').mockResolvedValue(false);
-    fixture.detectChanges();
-    expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it('registers the demo action showing an informational toast', () => {

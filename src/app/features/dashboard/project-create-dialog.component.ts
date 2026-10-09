@@ -92,8 +92,7 @@ export class ProjectCreateDialogComponent {
       });
       this.dialogRef().close();
       await this.router.navigate(['/project', project.id]);
-    } catch (error) {
-      console.error('Failed to create project:', error);
+    } catch {
       this.notification.error('Failed to create project');
     }
   }

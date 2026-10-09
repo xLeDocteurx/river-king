@@ -219,9 +219,8 @@ export class TileManagerComponent implements OnInit {
         this.tileSize.set(project.tileSize);
         this.palette.set(project.palette);
       }
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load project');
-      console.error(e);
     }
   }
 
@@ -233,9 +232,8 @@ export class TileManagerComponent implements OnInit {
     try {
       const tiles = await this.tileService.getTiles(this.projectId());
       this.tiles.set(tiles);
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load tiles');
-      console.error(e);
     }
   }
 
@@ -249,9 +247,8 @@ export class TileManagerComponent implements OnInit {
       const folderRows = await this.tileService.getFolderRows(this.projectId());
       this.folders.set(folders);
       this.folderRows.set(folderRows);
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load folders');
-      console.error(e);
     }
   }
 
@@ -273,9 +270,8 @@ export class TileManagerComponent implements OnInit {
             await this.tileService.updateTileFolder(event.tileId, event.folderPath);
             await this.loadTiles();
             await this.loadFolders();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to move tile');
-            console.error(e);
           }
         },
         undo: async () => {
@@ -283,14 +279,12 @@ export class TileManagerComponent implements OnInit {
             await this.tileService.updateTileFolder(event.tileId, oldPath);
             await this.loadTiles();
             await this.loadFolders();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to move tile');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
-      console.error('Failed to move tile:', e);
+    } catch {
       this.notification.error('Failed to move tile');
     }
   }
@@ -308,9 +302,8 @@ export class TileManagerComponent implements OnInit {
         lastOpenedAt: Date.now(),
       });
       await this.loadFolders();
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to update folder state');
-      console.error(e);
     }
   }
 
@@ -334,9 +327,8 @@ export class TileManagerComponent implements OnInit {
           await this.loadFolders();
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to create the folder');
-      console.error(e);
     }
   }
 
@@ -369,9 +361,8 @@ export class TileManagerComponent implements OnInit {
     try {
       await this.tileService.deleteTileFolders(this.projectId(), path);
       await this.loadFolders();
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to delete the folder');
-      console.error(e);
     }
   }
 
@@ -392,8 +383,7 @@ export class TileManagerComponent implements OnInit {
       await this.loadTiles();
       await this.loadFolders();
       this.notification.success('Folder renamed');
-    } catch (e) {
-      console.error('Failed to rename folder:', e);
+    } catch {
       this.notification.error('Failed to rename the folder.');
     }
   }
@@ -437,8 +427,8 @@ export class TileManagerComponent implements OnInit {
             await this.tileService.rewriteFolderRows(this.projectId(), from, newPrefix);
             await this.loadTiles();
             await this.loadFolders();
-          } catch (e) {
-            console.error('Failed to move folder:', e);
+          } catch {
+            this.notification.error('Failed to move folder');
           }
         },
         undo: async () => {
@@ -447,13 +437,12 @@ export class TileManagerComponent implements OnInit {
             await this.tileService.rewriteFolderRows(this.projectId(), newPrefix, from);
             await this.loadTiles();
             await this.loadFolders();
-          } catch (e) {
-            console.error('Failed to move folder:', e);
+          } catch {
+            this.notification.error('Failed to move folder');
           }
         },
       });
-    } catch (e) {
-      console.error('Failed to move folder:', e);
+    } catch {
       this.notification.error('Failed to move folder');
     }
   }
@@ -479,9 +468,8 @@ export class TileManagerComponent implements OnInit {
       if (this.route.snapshot.paramMap.get('tileId') !== String(tileId)) {
         void this.router.navigate(['/project', this.projectId(), 'tiles', tileId]);
       }
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load tile');
-      console.error(e);
     }
   }
 
@@ -511,9 +499,8 @@ export class TileManagerComponent implements OnInit {
         const tile = await this.tileService.getTile(id);
         this.selectedTile.set(tile ?? null);
       }
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to refresh tiles');
-      console.error(e);
     }
   }
 
@@ -545,24 +532,21 @@ export class TileManagerComponent implements OnInit {
             await this.tileService.restoreTile(tile, [frame]);
             await this.loadTiles();
             await this.selectTile(tile.id);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to create tile');
-            console.error(e);
           }
         },
         undo: async () => {
           try {
             await this.tileService.deleteTile(tile.id);
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to create tile');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to create tile');
-      console.error(e);
     }
   }
 
@@ -598,9 +582,8 @@ export class TileManagerComponent implements OnInit {
             });
             const applied = await this.tileService.getTile(tile.id);
             this.selectedTile.set(applied ?? null);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to save tile');
-            console.error(e);
           }
         },
         undo: async () => {
@@ -614,15 +597,13 @@ export class TileManagerComponent implements OnInit {
             });
             const restored = await this.tileService.getTile(tile.id);
             this.selectedTile.set(restored ?? null);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to save tile');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to save tile');
-      console.error(e);
     }
   }
 
@@ -662,24 +643,21 @@ export class TileManagerComponent implements OnInit {
           try {
             await this.tileService.deleteTile(tileId);
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo delete tile');
-            console.error(e);
           }
         },
         undo: async () => {
           try {
             await this.tileService.restoreTile(tile, sprites);
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo delete tile');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to delete tile');
-      console.error(e);
     }
   }
 }
