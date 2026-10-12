@@ -1,8 +1,8 @@
 # Tile anchor & 4-way footprint — single-frame static guarantee (canopy fix)
 
 Date: 2026-10-12
-Status: Draft
-Linked issue: TBD (create with ticket-management)
+Status: Approved
+Linked issue: #92
 Related: #48/#54 (Play-mode Y-sort render), #55 (configurable player layer)
 
 ## Problem

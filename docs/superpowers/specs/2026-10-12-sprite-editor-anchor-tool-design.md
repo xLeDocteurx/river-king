@@ -1,8 +1,8 @@
 # Sprite-editor Anchor tool (set/move the tile ground zone)
 
 Date: 2026-10-12
-Status: Draft
-Linked issue: TBD (create with ticket-management)
+Status: Approved
+Linked issue: #93
 Related: Spec A — `2026-10-12-tile-anchor-single-frame-design.md` (machinery this tool drives)
 
 ## Problem
