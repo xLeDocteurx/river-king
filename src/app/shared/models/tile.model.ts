@@ -25,10 +25,10 @@ export interface Tile {
   folderPath?: string;
   /**
    * Optional ground-cell anchor in pixels (top-left of the `ts×ts` zone,
-   * relative to the frame). Shared by all frames. When absent, the anchor is
-   * derived as bottom-center (see `deriveAnchor`).
+   * relative to the frame). Shared by all frames. When absent or `null`, the
+   * anchor is derived as bottom-center (see `deriveAnchor`).
    */
-  anchor?: TileAnchor;
+  anchor?: TileAnchor | null;
 }
 
 /**
