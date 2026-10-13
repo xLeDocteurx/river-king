@@ -356,8 +356,7 @@ export class SceneEditorComponent implements OnInit {
       const tiles = await this.db.tiles.where('projectId').equals(this.projectId()).toArray();
       this.projectTiles.set(tiles);
       await this.loadTileVisuals();
-    } catch (e) {
-      console.error('Failed to load project data:', e);
+    } catch {
       this.notification.error('Failed to load project data.');
     }
   }
@@ -379,8 +378,7 @@ export class SceneEditorComponent implements OnInit {
         if (images[tileId].length > 0) firstFrames[tileId] = images[tileId][0];
       }
       this.tileFirstFrames.set(firstFrames);
-    } catch (e) {
-      console.error('Failed to load tile images:', e);
+    } catch {
       this.notification.error('Failed to load tile images.');
     }
   }
@@ -392,8 +390,7 @@ export class SceneEditorComponent implements OnInit {
     try {
       const scenes = await this.sceneService.getScenes(this.projectId());
       this.scenes.set(scenes);
-    } catch (e) {
-      console.error('Failed to load scenes:', e);
+    } catch {
       this.notification.error('Failed to load scenes.');
     }
   }
@@ -406,8 +403,7 @@ export class SceneEditorComponent implements OnInit {
       const rows = await this.sceneService.getFolders(this.projectId());
       this.folderRows.set(rows);
       this.folders.set(rows.map((f) => f.path));
-    } catch (e) {
-      console.error('Failed to load folders:', e);
+    } catch {
       this.notification.error('Failed to load folders.');
     }
   }
@@ -439,8 +435,7 @@ export class SceneEditorComponent implements OnInit {
       if (this.route.snapshot.paramMap.get('sceneId') !== String(sceneId)) {
         void this.router.navigate(['/project', this.projectId(), 'scenes', sceneId]);
       }
-    } catch (e) {
-      console.error('Failed to load scene:', e);
+    } catch {
       this.notification.error('Failed to load the scene.');
     }
   }
@@ -457,8 +452,7 @@ export class SceneEditorComponent implements OnInit {
         lastOpenedAt: Date.now(),
       });
       await this.loadFolders();
-    } catch (e) {
-      console.error('Failed to update folder state:', e);
+    } catch {
       this.notification.error('Failed to update folder state.');
     }
   }
@@ -475,8 +469,7 @@ export class SceneEditorComponent implements OnInit {
         30,
       );
       await this.loadScenes();
-    } catch (e) {
-      console.error('Failed to create scene:', e);
+    } catch {
       this.notification.error('Failed to create the scene.');
     }
   }
@@ -490,8 +483,7 @@ export class SceneEditorComponent implements OnInit {
     try {
       await this.sceneService.createFolder(this.projectId(), path);
       await this.loadFolders();
-    } catch (e) {
-      console.error('Failed to create folder:', e);
+    } catch {
       this.notification.error('Failed to create the folder.');
     }
   }
@@ -523,8 +515,7 @@ export class SceneEditorComponent implements OnInit {
     try {
       await this.sceneService.deleteFolder(this.projectId(), path);
       await this.loadFolders();
-    } catch (e) {
-      console.error('Failed to delete folder:', e);
+    } catch {
       this.notification.error('Failed to delete the folder.');
     }
   }
@@ -545,8 +536,7 @@ export class SceneEditorComponent implements OnInit {
       await this.loadFolders();
       await this.loadScenes();
       this.notification.success('Folder renamed');
-    } catch (e) {
-      console.error('Failed to rename folder:', e);
+    } catch {
       this.notification.error('Failed to rename the folder.');
     }
   }
@@ -587,8 +577,7 @@ export class SceneEditorComponent implements OnInit {
           },
         });
       }
-    } catch (e) {
-      console.error('Failed to delete scene:', e);
+    } catch {
       this.notification.error('Failed to delete the scene.');
     }
   }
@@ -614,8 +603,7 @@ export class SceneEditorComponent implements OnInit {
           void this.sceneService.updateSceneFolder(sceneId, prevPath).then(() => this.loadScenes());
         },
       });
-    } catch (e) {
-      console.error('Failed to move scene:', e);
+    } catch {
       this.notification.error('Failed to move the scene.');
     }
   }
@@ -750,8 +738,7 @@ export class SceneEditorComponent implements OnInit {
             .catch(() => notif.error('Failed to undo tile placement.'));
         },
       });
-    } catch (e) {
-      console.error('Failed to place tile:', e);
+    } catch {
       this.notification.error('Failed to place the tile.');
     }
   }
@@ -814,8 +801,7 @@ export class SceneEditorComponent implements OnInit {
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
       this.activeLayerId.set(newLayer.id);
       this.pushLayerUndo('Add layer', scene.id, previousLayers, newLayers);
-    } catch (e) {
-      console.error('Failed to add layer:', e);
+    } catch {
       this.notification.error('Failed to add layer.');
     }
   }
@@ -839,8 +825,7 @@ export class SceneEditorComponent implements OnInit {
         this.activeLayerId.set(newLayers[0]?.id ?? null);
       }
       this.pushLayerUndo('Delete layer', scene.id, previousLayers, newLayers);
-    } catch (e) {
-      console.error('Failed to delete layer:', e);
+    } catch {
       this.notification.error('Failed to delete layer.');
     }
   }
@@ -863,8 +848,8 @@ export class SceneEditorComponent implements OnInit {
       await this.sceneService.updateScene(scene.id, { layers: newLayers });
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
       this.pushLayerUndo('Toggle layer visibility', scene.id, previousLayers, newLayers);
-    } catch (e) {
-      console.error('Failed to toggle layer visibility:', e);
+    } catch {
+      this.notification.error('Failed to toggle layer visibility.');
     }
   }
 
@@ -886,8 +871,8 @@ export class SceneEditorComponent implements OnInit {
       await this.sceneService.updateScene(scene.id, { layers: newLayers });
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
       this.pushLayerUndo('Change layer opacity', scene.id, previousLayers, newLayers);
-    } catch (e) {
-      console.error('Failed to update layer opacity:', e);
+    } catch {
+      this.notification.error('Failed to update layer opacity.');
     }
   }
 
@@ -909,8 +894,8 @@ export class SceneEditorComponent implements OnInit {
       await this.sceneService.updateScene(scene.id, { layers: newLayers });
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
       this.pushLayerUndo('Rename layer', scene.id, previousLayers, newLayers);
-    } catch (e) {
-      console.error('Failed to rename layer:', e);
+    } catch {
+      this.notification.error('Failed to rename layer.');
     }
   }
 
@@ -936,8 +921,8 @@ export class SceneEditorComponent implements OnInit {
       await this.sceneService.updateScene(scene.id, { layers: newLayers });
       this.selectedScene.update((s) => (s ? { ...s, layers: newLayers } : null));
       this.pushLayerUndo('Reorder layer', scene.id, previousLayers, newLayers);
-    } catch (e) {
-      console.error('Failed to reorder layer:', e);
+    } catch {
+      this.notification.error('Failed to reorder layer.');
     }
   }
 

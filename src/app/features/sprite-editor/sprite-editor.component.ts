@@ -283,8 +283,7 @@ export class SpriteEditorComponent implements OnInit {
         }
         this.selectedTileId.set(sprite.tileId);
         await this.selectSprite(sprite.id);
-      } catch (e) {
-        console.error('Failed to load sprite:', e);
+      } catch {
         this.notification.error('Failed to load sprite');
       }
     });
@@ -335,9 +334,8 @@ export class SpriteEditorComponent implements OnInit {
         (await this.projectService.getById(this.projectId()));
       this.projectPalette.set(project?.palette ?? []);
       this.projectTileSize.set(project?.tileSize ?? 16);
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load project');
-      console.error(e);
     }
   }
 
@@ -346,9 +344,8 @@ export class SpriteEditorComponent implements OnInit {
     try {
       const sprites = await this.spriteService.getSprites(this.projectId());
       this.sprites.set(sprites);
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load sprites');
-      console.error(e);
     }
   }
 
@@ -356,9 +353,8 @@ export class SpriteEditorComponent implements OnInit {
   async loadTiles(): Promise<void> {
     try {
       this.tiles.set(await this.tileService.getTiles(this.projectId()));
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load tiles');
-      console.error(e);
     }
   }
 
@@ -411,9 +407,8 @@ export class SpriteEditorComponent implements OnInit {
         this.paletteIndices.set(null);
       }
       void this.sessions.updateSession(this.projectId(), { lastSpriteId: spriteId });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load sprite');
-      console.error(e);
     }
   }
 
@@ -433,9 +428,8 @@ export class SpriteEditorComponent implements OnInit {
         s ? { ...s, paletteIndices: updatedIndices.map((row) => [...row]), pixelData } : null,
       );
       this.schedulePersist(sprite.id, updatedIndices, pixelData);
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to save sprite');
-      console.error(e);
     }
   }
 
@@ -512,9 +506,8 @@ export class SpriteEditorComponent implements OnInit {
         paletteIndices: payload.indices,
         pixelData: payload.pixelData,
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to save sprite');
-      console.error(e);
     }
   }
 
@@ -550,9 +543,8 @@ export class SpriteEditorComponent implements OnInit {
             await this.loadSprites();
             await this.loadTiles();
             await this.selectSprite(newSprite.id);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo add frame');
-            console.error(e);
           }
         },
         undo: async () => {
@@ -561,15 +553,13 @@ export class SpriteEditorComponent implements OnInit {
             await this.spriteService.deleteSprite(newSprite.id);
             await this.loadSprites();
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo add frame');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to add frame');
-      console.error(e);
     }
   }
 
@@ -604,9 +594,8 @@ export class SpriteEditorComponent implements OnInit {
             await this.loadSprites();
             await this.loadTiles();
             if (adjacentIdx >= 0) await this.selectSprite(newSpriteIds[adjacentIdx]);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo delete frame');
-            console.error(e);
           }
         },
         undo: async () => {
@@ -616,15 +605,13 @@ export class SpriteEditorComponent implements OnInit {
             await this.loadSprites();
             await this.loadTiles();
             await this.selectSprite(frameId);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo delete frame');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to delete frame');
-      console.error(e);
     }
   }
 
@@ -668,9 +655,8 @@ export class SpriteEditorComponent implements OnInit {
             await this.loadSprites();
             await this.loadTiles();
             await this.selectSprite(removedId);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo duplicate frame');
-            console.error(e);
           }
         },
         undo: async () => {
@@ -680,15 +666,13 @@ export class SpriteEditorComponent implements OnInit {
             await this.loadSprites();
             await this.loadTiles();
             await this.selectSprite(prevSpriteIds[0]);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo duplicate frame');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to duplicate frame');
-      console.error(e);
     }
   }
 
@@ -714,24 +698,21 @@ export class SpriteEditorComponent implements OnInit {
           try {
             await this.tileService.updateTile(tileId, { spriteIds: newSpriteIds });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo reorder frame');
-            console.error(e);
           }
         },
         undo: async () => {
           try {
             await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo reorder frame');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to reorder frame');
-      console.error(e);
     }
   }
 
@@ -754,24 +735,21 @@ export class SpriteEditorComponent implements OnInit {
           try {
             await this.tileService.updateTile(tileId, { type });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo type change');
-            console.error(e);
           }
         },
         undo: async () => {
           try {
             await this.tileService.updateTile(tileId, { type: prevType });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo type change');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to update tile type');
-      console.error(e);
     }
   }
 
@@ -796,24 +774,21 @@ export class SpriteEditorComponent implements OnInit {
           try {
             await this.tileService.updateTile(tileId, { animationSpeed: clamped });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo speed change');
-            console.error(e);
           }
         },
         undo: async () => {
           try {
             await this.tileService.updateTile(tileId, { animationSpeed: prevSpeed });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo speed change');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to update animation speed');
-      console.error(e);
     }
   }
 

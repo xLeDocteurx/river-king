@@ -166,6 +166,27 @@ describe('DemoProjectService', () => {
     expect(await db.projects.count()).toBe(1);
   });
 
+  it('seeds at most once across concurrent instances, mimicking two tabs', async () => {
+    const secondInstance = TestBed.runInInjectionContext(() => new DemoProjectService());
+    const [s1, s2] = await Promise.all([service.ensureDemo(), secondInstance.ensureDemo()]);
+    expect([s1, s2].filter(Boolean)).toHaveLength(1);
+    expect(await db.projects.count()).toBe(1);
+  });
+
+  it('rolls back all writes when seeding fails mid-transaction', async () => {
+    vi.spyOn(db.sprites, 'add').mockRejectedValueOnce(new Error('disk full'));
+    const notify = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notify, 'error');
+    const seeded = await service.ensureDemo();
+    expect(seeded).toBe(false);
+    expect(errorSpy).toHaveBeenCalledWith('Failed to set up the demo project');
+    expect(localStorage.getItem(DEMO_SEED_MARKER)).toBeNull();
+    expect(await db.projects.count()).toBe(0);
+    expect(await db.tiles.count()).toBe(0);
+    expect(await db.sprites.count()).toBe(0);
+    expect(await db.scenes.count()).toBe(0);
+  });
+
   it('notifies and leaves the marker unset when seeding fails', async () => {
     vi.spyOn(db.projects, 'count').mockRejectedValueOnce(new Error('boom'));
     const notify = TestBed.inject(NotificationService);
