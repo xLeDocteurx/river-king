@@ -27,7 +27,7 @@ import type { TileAnimationMeta } from './services/map-tiles.service';
 import { MapCanvasComponent } from './map-canvas.component';
 import { SceneMinimapComponent } from './minimap/scene-minimap.component';
 import { LayerPanelComponent } from './layer-panel/layer-panel.component';
-import { clearOverlappedAnchors, getFootprint } from './map-footprint';
+import { clearOverlappedAnchors, footprintRect } from './map-footprint';
 import { growTileData } from './autogrow';
 import { MAX_EXPAND_TILES } from './autogrow.consts';
 import { SceneListComponent } from './scene-list.component';
@@ -621,7 +621,8 @@ export class SceneEditorComponent implements OnInit {
    * Places the tile on the currently active layer. When the placement falls
    * outside the current scene rectangle, the scene grows (in every layer) to
    * include it, capped at `MAX_EXPAND_TILES` per direction.
-   * @param event Object containing x, y coordinates and the placed tile id.
+   * @param event Object containing the placed tile's anchor (ground) cell
+   *     coordinates (x, y) and tile id.
    */
   async onTilePlaced(event: { x: number; y: number; tileId: number }): Promise<void> {
     const scene = this.selectedScene();
@@ -639,11 +640,11 @@ export class SceneEditorComponent implements OnInit {
         tileData: l.tileData.map((row) => [...row]),
       }));
 
-      const { w, h } = getFootprint(event.tileId, this.tileFootprints());
-      const padLeft = Math.max(0, -event.x);
-      const padRight = Math.max(0, event.x + w - previousWidth);
-      const padTop = Math.max(0, -event.y);
-      const padBottom = Math.max(0, event.y + h - previousHeight);
+      const placed = footprintRect(event.x, event.y, event.tileId, this.tileFootprints());
+      const padLeft = Math.max(0, -placed.x);
+      const padRight = Math.max(0, placed.x + placed.w - previousWidth);
+      const padTop = Math.max(0, -placed.y);
+      const padBottom = Math.max(0, placed.y + placed.h - previousHeight);
 
       if (
         padLeft > MAX_EXPAND_TILES ||
@@ -675,10 +676,10 @@ export class SceneEditorComponent implements OnInit {
         if (i !== layerIdx) return { ...l, tileData: grown };
         const cleared = clearOverlappedAnchors(
           grown,
-          anchorX,
-          anchorY,
-          w,
-          h,
+          placed.x + padLeft,
+          placed.y + padTop,
+          placed.w,
+          placed.h,
           this.tileFootprints(),
         );
         cleared[anchorY][anchorX] = event.tileId;

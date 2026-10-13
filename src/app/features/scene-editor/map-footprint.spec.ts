@@ -1,17 +1,44 @@
-import { clearOverlappedAnchors, getFootprint } from './map-footprint';
+import { clearOverlappedAnchors, footprintRect, getFootprint } from './map-footprint';
 
 describe('getFootprint', () => {
-  it('defaults to a 1x1 footprint when the tile has no entry', () => {
-    expect(getFootprint(7, {})).toEqual({ w: 1, h: 1 });
+  it('defaults to an empty footprint when the tile has no entry', () => {
+    expect(getFootprint(7, {})).toEqual({ left: 0, up: 0, right: 0, down: 0 });
   });
 
   it('returns the stored footprint for a known tile', () => {
-    expect(getFootprint(7, { 7: { w: 2, h: 3 } })).toEqual({ w: 2, h: 3 });
+    expect(getFootprint(7, { 7: { left: 1, up: 2, right: 1, down: 0 } })).toEqual({
+      left: 1,
+      up: 2,
+      right: 1,
+      down: 0,
+    });
+  });
+});
+
+describe('footprintRect', () => {
+  const footprints = {
+    1: { left: 0, up: 0, right: 1, down: 1 },
+    2: { left: 0, up: 1, right: 0, down: 0 },
+  };
+
+  it('extends down-right for a bottom-right footprint', () => {
+    expect(footprintRect(2, 1, 1, footprints)).toEqual({ x: 2, y: 1, w: 2, h: 2 });
+  });
+
+  it('extends upward for a bottom-anchored tile', () => {
+    expect(footprintRect(1, 1, 2, footprints)).toEqual({ x: 1, y: 0, w: 1, h: 2 });
+  });
+
+  it('returns a single cell for an unknown tile', () => {
+    expect(footprintRect(3, 4, 99, footprints)).toEqual({ x: 3, y: 4, w: 1, h: 1 });
   });
 });
 
 describe('clearOverlappedAnchors', () => {
-  const footprints = { 1: { w: 2, h: 2 }, 9: { w: 1, h: 1 } };
+  const footprints = {
+    1: { left: 0, up: 0, right: 1, down: 1 },
+    9: { left: 0, up: 0, right: 0, down: 0 },
+  };
 
   it('removes only anchors whose footprint intersects the rectangle', () => {
     const tileData = [
@@ -22,9 +49,7 @@ describe('clearOverlappedAnchors', () => {
 
     const result = clearOverlappedAnchors(tileData, 1, 1, 2, 1, footprints);
 
-    // Tile 1 anchored at (0,0) spans cells x 0..1 / y 0..1 -> shares (1,1).
     expect(result[0][0]).toBe(-1);
-    // Tile 9 anchored at (2,1) sits inside the rectangle x 1..2 / y 1..1.
     expect(result[1][2]).toBe(-1);
   });
 
@@ -47,22 +72,22 @@ describe('clearOverlappedAnchors', () => {
       [-1, -1, -1],
     ];
 
-    // Rectangle starts at column 2; tile 1 spans columns 0..1 and merely abuts it.
     const result = clearOverlappedAnchors(tileData, 2, 0, 1, 2, footprints);
 
     expect(result[0][0]).toBe(1);
   });
 
-  it('clears a multi-cell anchor whose body overlaps the rectangle even when its anchor cell lies outside', () => {
+  it('clears an upward-overhanging anchor whose body reaches the rectangle', () => {
+    const overhang = { 2: { left: 0, up: 1, right: 0, down: 0 } };
     const tileData = [
-      [1, -1],
       [-1, -1],
+      [-1, 2],
     ];
 
-    // Anchor cell (0,0) is outside the rect (1,1,1,1) but its 2x2 body covers it.
-    const result = clearOverlappedAnchors(tileData, 1, 1, 1, 1, footprints);
+    // Tile 2 anchored at (1,1) overhangs into (1,0); a rect covering (1,0) hits the body.
+    const result = clearOverlappedAnchors(tileData, 1, 0, 1, 1, overhang);
 
-    expect(result[0][0]).toBe(-1);
+    expect(result[1][1]).toBe(-1);
   });
 
   it('does not mutate the input array', () => {

@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import type { Scene } from '../../../shared/models/scene.model';
 import type { Layer } from '../../../shared/models/scene.model';
+import { footprintRect } from '../map-footprint';
 import type { TileFootprintMap } from '../map-footprint';
 
 /**
@@ -183,12 +184,24 @@ export class SceneMinimapComponent implements AfterViewInit, OnDestroy {
         for (let x = 0; x < scene.width; x++) {
           const tileId = layer.tileData[y]?.[x] ?? -1;
           if (tileId < 0) continue;
+          const rect = footprintRect(x, y, tileId, this.tileFootprints());
           const img = this.imageCache.get(tileId);
           if (img) {
-            ctx.drawImage(img, x * cell * scale, y * cell * scale, cell * scale, cell * scale);
+            ctx.drawImage(
+              img,
+              rect.x * cell * scale,
+              rect.y * cell * scale,
+              rect.w * cell * scale,
+              rect.h * cell * scale,
+            );
           } else {
             ctx.fillStyle = '#94b0c2';
-            ctx.fillRect(x * cell * scale, y * cell * scale, cell * scale, cell * scale);
+            ctx.fillRect(
+              rect.x * cell * scale,
+              rect.y * cell * scale,
+              rect.w * cell * scale,
+              rect.h * cell * scale,
+            );
           }
         }
       }

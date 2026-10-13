@@ -1,37 +1,58 @@
-/**
- * Footprint of a tile expressed in grid cells.
- */
-export interface TileFootprint {
-  /** Width of the footprint in grid cells. */
-  w: number;
-  /** Height of the footprint in grid cells. */
-  h: number;
-}
+import {
+  EMPTY_FOOTPRINT,
+  type AnchorFootprint,
+  type TileFootprintMap,
+} from '../../shared/models/tile-anchor';
 
-/** Map of tile id to its grid-cell footprint. Entries may be absent for 1×1 tiles. */
-export type TileFootprintMap = Record<number, TileFootprint>;
+export type { AnchorFootprint, TileFootprintMap } from '../../shared/models/tile-anchor';
+
+/** Backwards-compatible alias for a tile footprint. */
+export type TileFootprint = AnchorFootprint;
 
 /**
- * Returns the grid-cell footprint of a tile.
+ * Returns the directional grid-cell footprint of a tile.
  * @param tileId - The tile whose footprint to look up.
  * @param footprints - Known footprints keyed by tile id.
- * @returns The stored footprint, or a 1x1 footprint when absent.
+ * @returns The stored footprint, or an empty (1×1) footprint when absent.
  */
-export function getFootprint(tileId: number, footprints: TileFootprintMap): TileFootprint {
-  return footprints[tileId] ?? { w: 1, h: 1 };
+export function getFootprint(tileId: number, footprints: TileFootprintMap): AnchorFootprint {
+  return footprints[tileId] ?? EMPTY_FOOTPRINT;
 }
 
 /**
- * Returns a new tileData array where every existing anchor whose footprint
- * intersects the rectangle starting at (x, y) sized w*h is cleared to -1
- * (the "Replace" placement policy).
- * @param tileData - Current scene grid (-1 = empty, >=0 = tile id anchor).
- * @param x - Rectangle top-left column.
- * @param y - Rectangle top-left row.
- * @param w - Rectangle width in cells.
- * @param h - Rectangle height in cells.
+ * Computes the absolute grid rectangle covered by a tile anchored at (x, y).
+ * @param x - Anchor cell column.
+ * @param y - Anchor cell row.
+ * @param tileId - The tile whose footprint to apply.
  * @param footprints - Known footprints keyed by tile id.
- * @returns A new tileData array; the input is never mutated.
+ * @returns The absolute rectangle `{x, y, w, h}` in grid cells.
+ */
+export function footprintRect(
+  x: number,
+  y: number,
+  tileId: number,
+  footprints: TileFootprintMap,
+): { x: number; y: number; w: number; h: number } {
+  const fp = getFootprint(tileId, footprints);
+  return {
+    x: x - fp.left,
+    y: y - fp.up,
+    w: fp.left + fp.right + 1,
+    h: fp.up + fp.down + 1,
+  };
+}
+
+/**
+ * Returns a new tileData array where every existing anchor whose absolute
+ * footprint rectangle intersects `(x, y, w, h)` is cleared to -1 (the "Replace"
+ * placement policy). The rectangle is the placed tile's absolute footprint.
+ * @param tileData - Current scene grid (-1 = empty, >=0 = tile id anchor).
+ * @param x - Placed rectangle top-left column (absolute).
+ * @param y - Placed rectangle top-left row (absolute).
+ * @param w - Placed rectangle width in grid cells.
+ * @param h - Placed rectangle height in grid cells.
+ * @param footprints - Known footprints keyed by tile id.
+ * @returns A new array where intersecting anchors are cleared.
  */
 export function clearOverlappedAnchors(
   tileData: number[][],
@@ -41,17 +62,13 @@ export function clearOverlappedAnchors(
   h: number,
   footprints: TileFootprintMap,
 ): number[][] {
-  const result = tileData.map((row) => [...row]);
-  for (let cy = 0; cy < result.length; cy++) {
-    for (let cx = 0; cx < result[cy].length; cx++) {
-      const tileId = result[cy][cx];
-      if (tileId < 0) continue;
-      const fp = getFootprint(tileId, footprints);
-      const intersects = cx < x + w && x < cx + fp.w && cy < y + h && y < cy + fp.h;
-      if (intersects) {
-        result[cy][cx] = -1;
-      }
-    }
-  }
-  return result;
+  return tileData.map((row, cy) =>
+    row.map((tileId, cx) => {
+      if (tileId < 0) return tileId;
+      const rect = footprintRect(cx, cy, tileId, footprints);
+      const intersects =
+        rect.x < x + w && x < rect.x + rect.w && rect.y < y + h && y < rect.y + rect.h;
+      return intersects ? -1 : tileId;
+    }),
+  );
 }

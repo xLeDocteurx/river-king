@@ -75,29 +75,62 @@ describe('MapTilesService', () => {
     expect(images[3]).toEqual([mine.pixelData]);
   });
 
-  it('computes footprints in grid cells using ceil of sprite dimensions', async () => {
+  it('derives a directional footprint from the sprite anchor', async () => {
     await seedSprite({ tileId: 1, width: 32, height: 40 });
 
     const { images, footprints } = await service.loadTileVisuals('proj-1', 16);
 
     expect(images[1]).toBeDefined();
-    expect(footprints[1]).toEqual({ w: 2, h: 3 });
+    expect(footprints[1]).toEqual({ left: 1, up: 2, right: 1, down: 0 });
   });
 
-  it('clamps footprints to at least one cell', async () => {
+  it('produces an empty footprint when the artwork fits inside one cell', async () => {
     await seedSprite({ tileId: 1, width: 8, height: 5 });
 
     const { footprints } = await service.loadTileVisuals('proj-1', 16);
 
-    expect(footprints[1]).toEqual({ w: 1, h: 1 });
+    expect(footprints[1]).toEqual({ left: 0, up: 0, right: 0, down: 0 });
   });
 
-  it('honours the provided tile size when computing footprints', async () => {
+  it('honours the provided tile size when computing the footprint', async () => {
     await seedSprite({ tileId: 1, width: 48, height: 16 });
 
     const { footprints } = await service.loadTileVisuals('proj-1', 24);
 
-    expect(footprints[1]).toEqual({ w: 2, h: 1 });
+    expect(footprints[1]).toEqual({ left: 1, up: 0, right: 1, down: 0 });
+  });
+
+  it('derives a bottom-anchored footprint for an oversized single frame', async () => {
+    const tileId = await db.tiles.add({
+      projectId: 'proj-1',
+      name: 'tree',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false, ySort: false },
+    } as unknown as import('../../../shared/models/tile.model').Tile);
+    await seedSprite({ tileId, width: 16, height: 32 });
+
+    const { footprints } = await service.loadTileVisuals('proj-1', 16);
+
+    expect(footprints[tileId]).toEqual({ left: 0, up: 1, right: 0, down: 0 });
+  });
+
+  it('uses a stored tile anchor instead of the derived default', async () => {
+    const tileId = await db.tiles.add({
+      projectId: 'proj-1',
+      name: 'boulder',
+      type: 'static',
+      spriteIds: [],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false, ySort: false },
+      anchor: { x: 0, y: 0 },
+    } as unknown as import('../../../shared/models/tile.model').Tile);
+    await seedSprite({ tileId, width: 32, height: 32 });
+
+    const { footprints } = await service.loadTileVisuals('proj-1', 16);
+
+    expect(footprints[tileId]).toEqual({ left: 0, up: 0, right: 1, down: 1 });
   });
 
   it('returns animation metadata for tiles with animated type and multiple frames', async () => {
