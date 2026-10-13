@@ -15,6 +15,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SearchableSelectComponent } from '../../../shared/components/searchable-select/searchable-select.component';
+import { clampAnchor } from '../../../shared/models/tile-anchor';
 import { NotificationService } from '../../../core/services/notification.service';
 import { listGameActions } from '../../../core/actions/game-actions';
 import type { ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -111,6 +112,9 @@ export class TilePropertiesComponent {
 
   /** Target frame count awaiting deletion confirmation (null = none). */
   pendingFrameReduction = signal<number | null>(null);
+
+  /** Whether the pending frame reduction is part of an animated→static switch. */
+  private pendingStaticType = signal(false);
 
   /** Pending shrink dimensions awaiting crop confirmation (null = none). */
   pendingSizeShrink = signal<{ w: number; h: number } | null>(null);
@@ -222,8 +226,9 @@ export class TilePropertiesComponent {
    */
   async onTypeChange(type: string): Promise<void> {
     const value = type as 'static' | 'animated';
-    this.typeSelected.set(value);
     if (value === 'animated') {
+      this.pendingStaticType.set(false);
+      this.typeSelected.set('animated');
       const sprites = this.tileSprites();
       if (sprites.length === 0) {
         try {
@@ -234,7 +239,16 @@ export class TilePropertiesComponent {
         }
       }
     } else if (this.tileSprites().length > 1) {
+      // Defer the switch until the user confirms the frame reduction: keep the
+      // stored (animated) type so an invalid static + multiple-frames write is
+      // never auto-saved before confirmation.
+      this.form.get('type')?.setValue('animated', { emitEvent: false });
+      this.typeSelected.set('animated');
+      this.pendingStaticType.set(true);
       this.pendingFrameReduction.set(1);
+    } else {
+      this.pendingStaticType.set(false);
+      this.typeSelected.set('static');
     }
   }
 
@@ -283,22 +297,30 @@ export class TilePropertiesComponent {
     const sprites = this.tileSprites();
     const keep = sprites.slice(0, target);
     const extras = sprites.slice(target);
+    const toStatic = this.pendingStaticType();
     try {
       await this.spriteService.deleteSprites(extras.map((s) => s.id));
       await this.tileService.updateTile(t.id, {
         spriteIds: keep.map((s) => s.id),
+        ...(toStatic ? { type: 'static' as const } : {}),
       });
+      if (toStatic) {
+        this.form.get('type')?.setValue('static', { emitEvent: false });
+        this.typeSelected.set('static');
+      }
       await this.spriteService.markMutated();
     } catch {
       this.notification.error('Failed to delete frames');
     } finally {
       this.pendingFrameReduction.set(null);
+      this.pendingStaticType.set(false);
     }
   }
 
   /** Cancels the pending frame reduction and closes the dialog. */
   cancelFrameReduction(): void {
     this.pendingFrameReduction.set(null);
+    this.pendingStaticType.set(false);
   }
 
   /**
@@ -330,6 +352,11 @@ export class TilePropertiesComponent {
     const palette = this.projectPalette() ?? [];
     try {
       await this.spriteService.resizeSprites(this.tileSprites(), w * ts, h * ts, palette);
+      const currentTile = this.tile();
+      if (currentTile?.anchor) {
+        const clamped = clampAnchor(currentTile.anchor, w * ts, h * ts, ts);
+        await this.tileService.updateTile(currentTile.id, { anchor: clamped });
+      }
       await this.spriteService.markMutated();
     } catch {
       this.notification.error('Failed to resize frames');
@@ -471,8 +498,10 @@ export class TilePropertiesComponent {
       );
       ids.push(sprite.id);
     }
+    const total = t.spriteIds.length + ids.length;
     await this.tileService.updateTile(t.id, {
       spriteIds: [...t.spriteIds, ...ids],
+      type: total > 1 ? 'animated' : t.type,
     });
   }
 }

@@ -63,6 +63,9 @@
           (strokeStart)="onStrokeStart()"
           (strokeEnd)="onStrokeEnd($event)"
           (zoomChange)="zoomLevel.set($event)"
+          [tileSize]="projectTileSize()"
+          [anchor]="tileAnchor()"
+          (anchorChange)="onAnchorChange($event)"
         />
         @if (currentTile()?.type === 'animated' && currentFrames().length > 1) {
           <button
@@ -145,7 +148,7 @@
           <select
             class="tw-bg-card-bg tw-border tw-border-border tw-rounded-sm tw-text-foreground tw-text-xs tw-px-1 tw-py-0.5"
             [value]="tile.type"
-            (change)="onUpdateTileType($any($event.target).value)"
+            (change)="onUpdateTileType($any($event.target).value, $any($event.target))"
           >
             <option value="static">Static</option>
             <option value="animated">Animated</option>
@@ -161,6 +164,18 @@
               (change)="onUpdateAnimationSpeed($any($event.target).valueAsNumber)"
             />
             <span class="tw-text-muted-foreground">fps</span>
+          }
+          @if (selectedTool() === 'anchor') {
+            <button
+              type="button"
+              data-testid="auto-anchor"
+              (click)="onAutoAnchor()"
+              [disabled]="!tileAnchor()"
+              title="Reset anchor to bottom-center"
+              class="tw-px-2 tw-py-0.5 tw-text-xs tw-rounded-sm tw-border tw-border-border tw-bg-card-bg tw-text-foreground tw-cursor-pointer hover:tw-bg-accent disabled:tw-opacity-40"
+            >
+              Auto
+            </button>
           }
         </div>
         @if (tile.type === 'animated') {
@@ -208,4 +223,11 @@
   >
     <span class="material-symbols" aria-hidden="true">chevron_right</span>
   </button>
+
+  <rk-confirm-dialog
+    #framesDialog
+    [data]="framesDialogData"
+    (confirmed)="confirmStaticSwitch()"
+    (cancelled)="cancelStaticSwitch()"
+  />
 </div>

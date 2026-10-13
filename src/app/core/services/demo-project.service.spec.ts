@@ -81,7 +81,7 @@ describe('DemoProjectService', () => {
     expect(water.animationSpeed).toBe(4);
     expect(water.properties.blocking).toBe(true);
 
-    expect(tree.spriteIds.length).toBe(2);
+    expect(tree.spriteIds.length).toBe(1);
     expect(tree.properties.blocking).toBe(true);
     expect(tree.properties.ySort).toBe(true);
 
@@ -116,10 +116,13 @@ describe('DemoProjectService', () => {
     expect(overhead.tileData[SIGN_CELL.y][SIGN_CELL.x]).toBe(sign.id);
 
     const sprites = await db.sprites.toArray();
-    expect(sprites.length).toBe(7);
+    expect(sprites.length).toBe(6);
+    const treeSprite = sprites.find((s) => s.name === 'Tree')!;
+    expect(treeSprite.width).toBe(16);
+    expect(treeSprite.height).toBe(32);
     for (const sprite of sprites) {
       expect(sprite.width).toBe(DEMO_TILE_SIZE);
-      expect(sprite.height).toBe(DEMO_TILE_SIZE);
+      expect(sprite.height).toBe(sprite.name === 'Tree' ? DEMO_TILE_SIZE * 2 : DEMO_TILE_SIZE);
       expect(sprite.pixelData.startsWith('data:image/png')).toBe(true);
       expect(sprite.paletteIndices).toBeDefined();
     }
@@ -164,6 +167,27 @@ describe('DemoProjectService', () => {
     const [s1, s2] = await Promise.all([service.ensureDemo(), service.ensureDemo()]);
     expect([s1, s2].filter(Boolean)).toHaveLength(1);
     expect(await db.projects.count()).toBe(1);
+  });
+
+  it('seeds at most once across concurrent instances, mimicking two tabs', async () => {
+    const secondInstance = TestBed.runInInjectionContext(() => new DemoProjectService());
+    const [s1, s2] = await Promise.all([service.ensureDemo(), secondInstance.ensureDemo()]);
+    expect([s1, s2].filter(Boolean)).toHaveLength(1);
+    expect(await db.projects.count()).toBe(1);
+  });
+
+  it('rolls back all writes when seeding fails mid-transaction', async () => {
+    vi.spyOn(db.sprites, 'add').mockRejectedValueOnce(new Error('disk full'));
+    const notify = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notify, 'error');
+    const seeded = await service.ensureDemo();
+    expect(seeded).toBe(false);
+    expect(errorSpy).toHaveBeenCalledWith('Failed to set up the demo project');
+    expect(localStorage.getItem(DEMO_SEED_MARKER)).toBeNull();
+    expect(await db.projects.count()).toBe(0);
+    expect(await db.tiles.count()).toBe(0);
+    expect(await db.sprites.count()).toBe(0);
+    expect(await db.scenes.count()).toBe(0);
   });
 
   it('notifies and leaves the marker unset when seeding fails', async () => {

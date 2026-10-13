@@ -549,6 +549,207 @@ describe('SpriteEditorComponent', () => {
     expect(await db.sprites.get(12)).toBeUndefined();
   });
 
+  it('duplicates a frame on a static tile and promotes it to animated', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Hero',
+      type: 'static',
+      spriteIds: [11],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false, ySort: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Hero 1',
+      width: 16,
+      height: 16,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    await component.selectSprite(11);
+
+    await component.onDuplicateFrame(11);
+    expect(component.currentTile()?.spriteIds).toHaveLength(2);
+    expect(component.currentTile()?.type).toBe('animated');
+    expect((await db.tiles.get(1))!.type).toBe('animated');
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await flushUndo();
+    expect(component.currentTile()?.spriteIds).toEqual([11]);
+    expect(component.currentTile()?.type).toBe('static');
+  });
+
+  it('defers switching an animated tile to static until the reduction is confirmed', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Water',
+      type: 'animated',
+      spriteIds: [11, 12],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false, ySort: false },
+    } as Tile);
+    await db.sprites.bulkAdd([
+      {
+        id: 11,
+        projectId: 'test-proj',
+        tileId: 1,
+        name: 'Water 1',
+        width: 16,
+        height: 16,
+        pixelData: '',
+        paletteIndices: [],
+      } as Sprite,
+      {
+        id: 12,
+        projectId: 'test-proj',
+        tileId: 1,
+        name: 'Water 2',
+        width: 16,
+        height: 16,
+        pixelData: '',
+        paletteIndices: [],
+      } as Sprite,
+    ]);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.selectedTileId.set(1);
+
+    await component.onUpdateTileType('static');
+    expect(component.pendingStaticSwitch()).toBe(true);
+    const before = await db.tiles.get(1);
+    expect(before?.type).toBe('animated');
+    expect(before?.spriteIds).toEqual([11, 12]);
+
+    await component.confirmStaticSwitch();
+    await new Promise((r) => setTimeout(r, 50));
+    const after = await db.tiles.get(1);
+    expect(after?.type).toBe('static');
+    expect(after?.spriteIds).toEqual([11]);
+    expect(await db.sprites.get(12)).toBeUndefined();
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await flushUndo();
+    expect((await db.tiles.get(1))?.type).toBe('animated');
+    expect((await db.tiles.get(1))?.spriteIds).toEqual([11, 12]);
+    expect(await db.sprites.get(12)).toBeDefined();
+  });
+
+  it('persists a clamped anchor when the canvas emits one', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Tree',
+      type: 'static',
+      spriteIds: [11],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false, ySort: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Tree 1',
+      width: 16,
+      height: 32,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    await fixture.componentInstance.selectSprite(11);
+
+    await fixture.componentInstance.onAnchorChange({ x: 40, y: 99 });
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect((await db.tiles.get(1))!.anchor).toEqual({ x: 0, y: 16 });
+  });
+
+  it('clears the anchor when Auto is used', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Tree',
+      type: 'static',
+      spriteIds: [11],
+      animationSpeed: 4,
+      anchor: { x: 8, y: 16 },
+      properties: { blocking: false, interactable: false, ySort: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Tree 1',
+      width: 16,
+      height: 32,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    await fixture.componentInstance.selectSprite(11);
+    fixture.componentInstance.selectedTool.set('anchor');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const autoBtn = compiled.querySelector('[data-testid="auto-anchor"]') as HTMLButtonElement;
+    expect(autoBtn).toBeTruthy();
+    autoBtn.click();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect((await db.tiles.get(1))!.anchor).toBeNull();
+  });
+
+  it('shows the anchor coordinates in the status bar', async () => {
+    fixture = TestBed.createComponent(SpriteEditorComponent);
+    fixture.componentInstance.sprites.set([
+      { id: 11, name: 'Tree 1', tileId: 10, width: 16, height: 32, pixelData: 'A' } as Sprite,
+    ]);
+    fixture.componentInstance.tiles.set([
+      {
+        id: 10,
+        name: 'Tree',
+        type: 'static',
+        spriteIds: [11],
+        animationSpeed: 4,
+        anchor: { x: 8, y: 16 },
+        properties: { blocking: false, interactable: false, ySort: false },
+      } as Tile,
+    ]);
+    fixture.componentInstance.selectedTileId.set(10);
+    fixture.componentInstance.selectedSpriteId.set(11);
+    fixture.componentInstance.selectedSprite.set(fixture.componentInstance.sprites()[0]);
+    fixture.componentInstance.selectedTool.set('anchor');
+    const statusBar = TestBed.inject(StatusBarService);
+    const spy = vi.spyOn(statusBar, 'setContext');
+    fixture.detectChanges();
+
+    const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
+    expect(lastCall?.[0]).toContain('Anchor');
+  });
+
   it('undo persists the previous pixels back to the sprite', async () => {
     const { spriteService, existingSpriteId } = await seedTwoSprites();
     const updateSpy = vi

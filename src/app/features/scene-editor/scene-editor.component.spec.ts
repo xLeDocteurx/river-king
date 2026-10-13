@@ -334,7 +334,7 @@ describe('SceneEditorComponent', () => {
     const scene = await sceneService.createScene('p1', 'Footprint', 4, 4);
     await component.loadScenes();
     await component.selectScene(scene.id);
-    component.tileFootprints.set({ 1: { w: 2, h: 2 } });
+    component.tileFootprints.set({ 1: { left: 0, up: 0, right: 1, down: 1 } });
 
     await component.onTilePlaced({ x: 2, y: 1, tileId: 9 });
     await component.onTilePlaced({ x: 1, y: 1, tileId: 1 });
@@ -348,6 +348,24 @@ describe('SceneEditorComponent', () => {
     expect(component.selectedScene()?.layers[0].tileData).toEqual(expected);
     const stored = await db.scenes.get(scene.id);
     expect(stored?.layers[0].tileData).toEqual(expected);
+  });
+
+  it('places a bottom-anchored tile by its anchor cell without growing when it fits', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const scene = await sceneService.createScene('p1', 'Overhang', 3, 3);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+    component.tileFootprints.set({ 1: { left: 0, up: 1, right: 0, down: 0 } });
+
+    await component.onTilePlaced({ x: 1, y: 1, tileId: 1 });
+
+    const updated = component.selectedScene();
+    expect(updated?.width).toBe(3);
+    expect(updated?.height).toBe(3);
+    expect(updated?.layers[0].tileData[1][1]).toBe(1);
+    expect(updated?.layers[0].tileData[0][1]).toBe(-1);
   });
 
   it('grows the scene to the right when placing at the far edge', async () => {
@@ -378,7 +396,7 @@ describe('SceneEditorComponent', () => {
     const scene = await sceneService.createScene('p1', 'Grow', 4, 4);
     await component.loadScenes();
     await component.selectScene(scene.id);
-    component.tileFootprints.set({ 9: { w: 1, h: 1 } });
+    component.tileFootprints.set({ 9: { left: 0, up: 0, right: 0, down: 0 } });
 
     await component.onTilePlaced({ x: 0, y: 0, tileId: 2 });
     await component.onTilePlaced({ x: -1, y: 0, tileId: 9 });

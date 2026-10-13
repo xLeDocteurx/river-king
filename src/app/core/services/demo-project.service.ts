@@ -24,8 +24,7 @@ import {
   SIGN_CELL,
   grassIndices,
   waterIndices,
-  trunkIndices,
-  foliageIndices,
+  treeIndices,
   boulderIndices,
   signIndices,
 } from './demo-art';
@@ -37,7 +36,8 @@ export const DEMO_SEED_MARKER = 'rk-demo-seeded';
  * Seeds a single « Demo » showcase project on the first run of an empty
  * database. Runs once per browser: the marker is set whether the seed ran
  * (empty DB) or the base was already populated, so deleting the demo later
- * never resurrects it. Writes happen inside one atomic Dexie transaction.
+ * never resurrects it. The emptiness check and all writes happen inside one
+ * readwrite Dexie transaction so concurrent tabs cannot both seed.
  */
 @Injectable({ providedIn: 'root' })
 export class DemoProjectService {
@@ -47,22 +47,33 @@ export class DemoProjectService {
 
   /**
    * Seeds the demo project when this is the browser's first run over an
-   * empty database, then stores the marker. Failure leaves the marker unset
-   * so the next session retries, and surfaces a toast.
+   * empty database, then stores the marker. The emptiness check is performed
+   * inside the write transaction, so two tabs seeding simultaneously still
+   * produce exactly one demo project. Failure leaves the marker unset so the
+   * next session retries, and surfaces a toast.
    * @returns Whether this call created the demo project.
    */
   async ensureDemo(): Promise<boolean> {
-    if (localStorage.getItem(DEMO_SEED_MARKER)) return false;
     if (this.inFlight) return false;
+    if (this.hasSeedingMarker()) return false;
     this.inFlight = true;
     let seeded = false;
     try {
-      const count = await this.db.projects.count();
-      if (count === 0) {
-        await this.seed();
-        seeded = true;
-      }
-      localStorage.setItem(DEMO_SEED_MARKER, 'true');
+      seeded =
+        (await this.db.transaction(
+          'rw',
+          this.db.projects,
+          this.db.scenes,
+          this.db.sprites,
+          this.db.tiles,
+          async () => {
+            const count = await this.db.projects.count();
+            if (count > 0) return false;
+            await this.seed();
+            return true;
+          },
+        )) ?? false;
+      this.rememberSeeding();
     } catch {
       this.notify.error('Failed to set up the demo project');
     } finally {
@@ -72,8 +83,35 @@ export class DemoProjectService {
   }
 
   /**
-   * Creates the demo project, scene, sprites, and tiles in one transaction.
-   * Tiles are inserted first with empty `spriteIds`, sprites then reference
+   * Reads the first-run marker, tolerating unavailable storage.
+   * @returns Whether the marker is present.
+   */
+  private hasSeedingMarker(): boolean {
+    try {
+      return localStorage.getItem(DEMO_SEED_MARKER) !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Writes the first-run marker, tolerating unavailable storage. When
+   * storage is broken the populated-database guard still prevents reseeding.
+   */
+  private rememberSeeding(): void {
+    try {
+      localStorage.setItem(DEMO_SEED_MARKER, 'true');
+    } catch {
+      // Storage unavailable: the database is now populated, so the
+      // count-based guard above keeps future runs from reseeding.
+    }
+  }
+
+  /**
+   * Creates the demo project, scene, sprites, and tiles. When called inside
+   * an ongoing readwrite transaction its writes join it atomically; the
+   * standalone transaction wrapper keeps the method safe on its own. Tiles
+   * are inserted first with empty `spriteIds`, sprites then reference
    * their owning tile, and tiles are patched with their frame lists.
    * @throws When any table write or the palette lookup fails.
    */
@@ -138,13 +176,19 @@ export class DemoProjectService {
           },
         });
 
-        const sprite = (tileId: number, name: string, indices: number[][]): Sprite =>
+        const sprite = (
+          tileId: number,
+          name: string,
+          indices: number[][],
+          width = DEMO_TILE_SIZE,
+          height = DEMO_TILE_SIZE,
+        ): Sprite =>
           ({
             projectId,
             tileId,
             name,
-            width: DEMO_TILE_SIZE,
-            height: DEMO_TILE_SIZE,
+            width,
+            height,
             pixelData: encodePixelData(indices, palette),
             paletteIndices: indices,
           }) as Sprite;
@@ -154,9 +198,8 @@ export class DemoProjectService {
         );
         const water1Id = await this.db.sprites.add(sprite(waterTileId, 'Water 1', waterIndices(1)));
         const water2Id = await this.db.sprites.add(sprite(waterTileId, 'Water 2', waterIndices(2)));
-        const trunkId = await this.db.sprites.add(sprite(treeTileId, 'Trunk', trunkIndices()));
-        const foliageId = await this.db.sprites.add(
-          sprite(treeTileId, 'Foliage', foliageIndices()),
+        const treeSpriteId = await this.db.sprites.add(
+          sprite(treeTileId, 'Tree', treeIndices(), DEMO_TILE_SIZE, DEMO_TILE_SIZE * 2),
         );
         const boulderSpriteId = await this.db.sprites.add(
           sprite(boulderTileId, 'Boulder', boulderIndices()),
@@ -165,7 +208,7 @@ export class DemoProjectService {
 
         await this.db.tiles.update(grassTileId, { spriteIds: [grassSpriteId] });
         await this.db.tiles.update(waterTileId, { spriteIds: [water1Id, water2Id] });
-        await this.db.tiles.update(treeTileId, { spriteIds: [trunkId, foliageId] });
+        await this.db.tiles.update(treeTileId, { spriteIds: [treeSpriteId] });
         await this.db.tiles.update(boulderTileId, { spriteIds: [boulderSpriteId] });
         await this.db.tiles.update(signTileId, { spriteIds: [signSpriteId] });
 

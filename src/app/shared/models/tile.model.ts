@@ -1,3 +1,5 @@
+import type { TileAnchor } from './tile-anchor';
+
 /**
  * A tile definition stored in the project database.
  *
@@ -21,6 +23,12 @@ export interface Tile {
   properties: TileProperties;
   /** Optional folder path for hierarchical organisation (empty string = root). */
   folderPath?: string;
+  /**
+   * Optional ground-cell anchor in pixels (top-left of the `ts×ts` zone,
+   * relative to the frame). Shared by all frames. When absent or `null`, the
+   * anchor is derived as bottom-center (see `deriveAnchor`).
+   */
+  anchor?: TileAnchor | null;
 }
 
 /**

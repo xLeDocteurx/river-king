@@ -3,6 +3,7 @@ import { DatabaseService } from '../../../core/services/database.service';
 import type { Sprite } from '../../../shared/models/sprite.model';
 import type { Tile } from '../../../shared/models/tile.model';
 import type { TileFootprintMap } from '../map-footprint';
+import { deriveAnchor, deriveFootprint } from '../../../shared/models/tile-anchor';
 
 /** Animation metadata for a tile that has more than one frame. */
 export interface TileAnimationMeta {
@@ -15,7 +16,7 @@ export interface TileAnimationMeta {
 /**
  * Feature-private service responsible for loading the visual data of every
  * tile in a project: all animation frame image sources, animation metadata,
- * and each tile's footprint expressed in grid cells.
+ * and each tile's directional footprint (relative to its anchor cell).
  */
 @Injectable()
 export class MapTilesService {
@@ -31,7 +32,7 @@ export class MapTilesService {
    *
    * @param projectId - The project whose tiles should be loaded.
    * @param tileSizePx - Size of one grid cell in pixels (project setting).
-   * @returns Frame images, animation metadata, and footprints keyed by tileId.
+   * @returns Frame images, animation metadata, and directional footprints.
    * @throws When the underlying database query fails.
    */
   async loadTileVisuals(
@@ -81,12 +82,10 @@ export class MapTilesService {
         };
       }
 
-      // Footprint derived from the first sprite.
+      // Footprint from the first frame; the anchor is shared by all frames.
       const first = sprites[0];
-      footprints[tileId] = {
-        w: Math.max(1, Math.ceil(first.width / tileSizePx)),
-        h: Math.max(1, Math.ceil(first.height / tileSizePx)),
-      };
+      const anchor = tile?.anchor ?? deriveAnchor(first.width, first.height, tileSizePx);
+      footprints[tileId] = deriveFootprint(first.width, first.height, tileSizePx, anchor);
     }
 
     return { images, animations, footprints };

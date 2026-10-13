@@ -62,8 +62,7 @@ export class ProjectCardComponent {
     try {
       const json = await this.projectIo.exportProject(project.id);
       this.download(json, project.name);
-    } catch (error) {
-      console.error('Failed to export project:', error);
+    } catch {
       this.notification.error('Failed to export project');
     }
   }

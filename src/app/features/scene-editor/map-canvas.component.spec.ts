@@ -47,7 +47,10 @@ describe('MapCanvasComponent', () => {
     sessionStorage.clear();
   });
 
-  function setup(scene: Scene, footprints: Record<number, { w: number; h: number }> = {}): void {
+  function setup(
+    scene: Scene,
+    footprints: Record<number, { left: number; up: number; right: number; down: number }> = {},
+  ): void {
     TestBed.configureTestingModule({
       imports: [MapCanvasComponent],
       providers: [PlayerController],
@@ -75,7 +78,7 @@ describe('MapCanvasComponent', () => {
   });
 
   it('emits when the footprint exceeds the scene bounds within the grow reach', () => {
-    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    setup(makeScene(4, 4), { 1: { left: 0, up: 0, right: 1, down: 1 } });
     // Anchor cell (3,0): 3 + 2 > width 4, but within the auto-grow guard (1 tile).
     click(fixture.componentInstance, 55, 10);
 
@@ -83,7 +86,7 @@ describe('MapCanvasComponent', () => {
   });
 
   it('does not emit when the placement is beyond the auto-grow guard', () => {
-    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    setup(makeScene(4, 4), { 1: { left: 0, up: 0, right: 1, down: 1 } });
     // Anchor cell (20,0): 20 + 2 - width 4 = 18 > MAX_EXPAND_TILES (16).
     click(fixture.componentInstance, 330, 10);
 
@@ -91,11 +94,47 @@ describe('MapCanvasComponent', () => {
   });
 
   it('emits when the same footprint fits flush against the edge', () => {
-    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    setup(makeScene(4, 4), { 1: { left: 0, up: 0, right: 1, down: 1 } });
     // Click lands on cell (2,1): 2 + 2 <= 4 and 1 + 2 <= 4.
     click(fixture.componentInstance, 33, 20);
 
     expect(placed).toEqual([{ x: 2, y: 1, tileId: 1 }]);
+  });
+
+  it('draws an upward-overhanging tile at its absolute rect and emits its anchor cell', () => {
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      const scene = makeScene(4, 4);
+      scene.layers[0].tileData[1][1] = 1;
+      setup(scene, { 1: { left: 0, up: 1, right: 0, down: 0 } });
+
+      // The anchor cell (1,1) draws a 1x2 rect one row above itself.
+      expect(ctx.fillRect).toHaveBeenCalledWith(16, 0, 16, 32);
+
+      const instance = fixture.componentInstance;
+      instance.onMouseMove(new MouseEvent('mousemove', { clientX: 24, clientY: 24 }));
+      expect(instance.hoverCell()).toEqual({ x: 1, y: 0, w: 1, h: 2 });
+
+      click(instance, 24, 24);
+      expect(placed).toEqual([{ x: 1, y: 1, tileId: 1 }]);
+    } finally {
+      getContextSpy.mockRestore();
+    }
   });
 
   it('disables image smoothing so upscaled tiles render pixel-perfect', () => {
@@ -134,7 +173,7 @@ describe('MapCanvasComponent', () => {
   });
 
   it('clears the preview when the pointer leaves the canvas', () => {
-    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    setup(makeScene(4, 4), { 1: { left: 0, up: 0, right: 1, down: 1 } });
     const instance = fixture.componentInstance;
 
     instance.onMouseMove(new MouseEvent('mousemove', { clientX: 33, clientY: 20 }));
@@ -153,7 +192,7 @@ describe('MapCanvasComponent', () => {
   });
 
   it('shows a preview when the footprint exceeds the scene bounds within the grow reach', () => {
-    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    setup(makeScene(4, 4), { 1: { left: 0, up: 0, right: 1, down: 1 } });
     const instance = fixture.componentInstance;
 
     // Anchor cell (3,0): within the auto-grow guard, so the preview stays.
@@ -163,7 +202,7 @@ describe('MapCanvasComponent', () => {
   });
 
   it('shows no preview when the placement is beyond the auto-grow guard', () => {
-    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    setup(makeScene(4, 4), { 1: { left: 0, up: 0, right: 1, down: 1 } });
     const instance = fixture.componentInstance;
 
     // Anchor cell (20,0): 20 + 2 - width 4 = 18 > MAX_EXPAND_TILES (16).
@@ -173,7 +212,7 @@ describe('MapCanvasComponent', () => {
   });
 
   it('clears the preview when the pointer leaves the canvas', () => {
-    setup(makeScene(4, 4), { 1: { w: 2, h: 2 } });
+    setup(makeScene(4, 4), { 1: { left: 0, up: 0, right: 1, down: 1 } });
     const instance = fixture.componentInstance;
     instance.onMouseMove(new MouseEvent('mousemove', { clientX: 33, clientY: 20 }));
     expect(instance.hoverCell()).not.toBeNull();
@@ -448,6 +487,28 @@ describe('MapCanvasComponent', () => {
       expect(instance['rafId']).toBe(0);
     } finally {
       getContextSpy.mockRestore();
+    }
+  });
+
+  it('disconnects the ResizeObserver on destroy', () => {
+    const observe = vi.fn();
+    const disconnect = vi.fn();
+    class TrackingObserver {
+      observe = observe;
+      unobserve = vi.fn();
+      disconnect = disconnect;
+    }
+    const original = globalThis.ResizeObserver;
+    (globalThis as unknown as Record<string, unknown>)['ResizeObserver'] = TrackingObserver;
+    try {
+      setup(makeScene());
+      expect(observe).toHaveBeenCalledTimes(1);
+
+      fixture.destroy();
+
+      expect(disconnect).toHaveBeenCalledTimes(1);
+    } finally {
+      (globalThis as unknown as Record<string, unknown>)['ResizeObserver'] = original;
     }
   });
 });

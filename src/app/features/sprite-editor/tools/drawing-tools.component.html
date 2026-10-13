@@ -38,5 +38,16 @@
     >
       <span class="material-symbols" aria-hidden="true">format_color_fill</span>
     </button>
+    <button
+      type="button"
+      data-testid="tool-anchor"
+      (click)="selectTool('anchor')"
+      [class.tw-bg-primary/10]="tool() === 'anchor'"
+      [class.tw-border-primary]="tool() === 'anchor'"
+      class="tw-p-1.5 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
+      title="Anchor"
+    >
+      <span class="material-symbols" aria-hidden="true">center_focus_strong</span>
+    </button>
   </div>
 </div>

@@ -10,6 +10,7 @@ import {
   ElementRef,
   HostListener,
   ViewChild,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -18,6 +19,10 @@ import { PixelCanvasComponent } from './canvas/pixel-canvas.component';
 import { PaletteManagerComponent } from './palette/palette-manager.component';
 import { DrawingToolsComponent, type DrawingTool } from './tools/drawing-tools.component';
 import { FrameStripComponent } from './frame-strip/frame-strip.component';
+import {
+  ConfirmDialogComponent,
+  type ConfirmDialogData,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ProjectService } from '../dashboard/services/project.service';
 import { TileService } from '../tile-manager/services/tile.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -30,12 +35,14 @@ import {
 } from '../../core/services/keyboard-shortcuts.service';
 import type { Sprite } from '../../shared/models/sprite.model';
 import type { Tile } from '../../shared/models/tile.model';
+import { clampAnchor, type TileAnchor } from '../../shared/models/tile-anchor';
 
 /** Human-readable labels for the drawing tools, keyed by tool id. */
 const TOOL_LABELS: Record<DrawingTool, string> = {
   brush: 'Brush',
   eraser: 'Eraser',
   fill: 'Fill',
+  anchor: 'Anchor',
 };
 
 /**
@@ -53,6 +60,7 @@ const TOOL_LABELS: Record<DrawingTool, string> = {
     PaletteManagerComponent,
     DrawingToolsComponent,
     FrameStripComponent,
+    ConfirmDialogComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sprite-editor.component.html',
@@ -72,6 +80,9 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Reference to the wrapper anchoring the onion popover (button + panel). */
   @ViewChild('onionAnchor', { static: false }) onionAnchor?: ElementRef<HTMLElement>;
+
+  /** Reference to the dialog confirming the animated→static frame reduction. */
+  private readonly framesDialog = viewChild.required<ConfirmDialogComponent>('framesDialog');
 
   /** Reactive signal holding the current project ID. */
   projectId = signal<string>('');
@@ -142,6 +153,9 @@ export class SpriteEditorComponent implements OnInit {
     return tile.spriteIds.map((id) => spritesById.get(id)).filter((s): s is Sprite => !!s);
   });
 
+  /** Ground-cell anchor of the current tile, or null when derived (bottom-center). */
+  readonly tileAnchor = computed<TileAnchor | null>(() => this.currentTile()?.anchor ?? null);
+
   /** Whether previous-frame onion skin is enabled. */
   readonly onionSkinPrevEnabled = signal(false);
 
@@ -160,6 +174,18 @@ export class SpriteEditorComponent implements OnInit {
   readonly leftPanelOpen = signal(true);
   /** Whether the right palette/tools panel is visible (mobile-only toggle; not persisted). */
   readonly rightPanelOpen = signal(true);
+
+  /** Whether an animated→static switch is awaiting frame-reduction confirmation. */
+  readonly pendingStaticSwitch = signal(false);
+
+  /** Static configuration for the frame-reduction confirmation dialog. */
+  readonly framesDialogData: ConfirmDialogData = {
+    title: 'Delete Frames',
+    message:
+      'Switching to static keeps only the first frame and permanently deletes the rest. This action cannot be undone.',
+    confirmLabel: 'Delete',
+    cancelLabel: 'Cancel',
+  };
 
   /** Computed pixel data for the previous frame onion skin, or null. */
   readonly onionSkinPrevData = computed(() => {
@@ -242,9 +268,21 @@ export class SpriteEditorComponent implements OnInit {
     const frames = this.currentFrames();
     const frameIdx = frames.findIndex((f) => f.id === sprite.id);
     const frameStr = frames.length > 0 ? ` | Frame ${frameIdx + 1}/${frames.length}` : '';
+    const anchor = this.tileAnchor();
+    const anchorSuffix =
+      this.selectedTool() === 'anchor'
+        ? ` | Anchor — ${anchor ? `${anchor.x}, ${anchor.y}` : 'Auto'}`
+        : '';
     this.statusBar.setContext(
-      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool} | Color #${colorNumber} | Zoom ${zoomPercent}${frameStr}`,
+      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool} | Color #${colorNumber} | Zoom ${zoomPercent}${frameStr}${anchorSuffix}`,
     );
+  });
+
+  /** Effect opening the frame-reduction dialog when a static switch is pending. */
+  private readonly framesDialogEffect = effect(() => {
+    if (this.pendingStaticSwitch()) {
+      this.framesDialog().open();
+    }
   });
 
   constructor() {
@@ -252,7 +290,6 @@ export class SpriteEditorComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((id) => this.onShortcut(id));
   }
-
   /** Initializes component, subscribing to route params to load project data. */
   ngOnInit() {
     this.destroyRef.onDestroy(() => void this.flushPersist());
@@ -283,8 +320,7 @@ export class SpriteEditorComponent implements OnInit {
         }
         this.selectedTileId.set(sprite.tileId);
         await this.selectSprite(sprite.id);
-      } catch (e) {
-        console.error('Failed to load sprite:', e);
+      } catch {
         this.notification.error('Failed to load sprite');
       }
     });
@@ -335,9 +371,8 @@ export class SpriteEditorComponent implements OnInit {
         (await this.projectService.getById(this.projectId()));
       this.projectPalette.set(project?.palette ?? []);
       this.projectTileSize.set(project?.tileSize ?? 16);
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load project');
-      console.error(e);
     }
   }
 
@@ -346,9 +381,8 @@ export class SpriteEditorComponent implements OnInit {
     try {
       const sprites = await this.spriteService.getSprites(this.projectId());
       this.sprites.set(sprites);
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load sprites');
-      console.error(e);
     }
   }
 
@@ -356,9 +390,8 @@ export class SpriteEditorComponent implements OnInit {
   async loadTiles(): Promise<void> {
     try {
       this.tiles.set(await this.tileService.getTiles(this.projectId()));
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load tiles');
-      console.error(e);
     }
   }
 
@@ -411,9 +444,8 @@ export class SpriteEditorComponent implements OnInit {
         this.paletteIndices.set(null);
       }
       void this.sessions.updateSession(this.projectId(), { lastSpriteId: spriteId });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to load sprite');
-      console.error(e);
     }
   }
 
@@ -433,9 +465,8 @@ export class SpriteEditorComponent implements OnInit {
         s ? { ...s, paletteIndices: updatedIndices.map((row) => [...row]), pixelData } : null,
       );
       this.schedulePersist(sprite.id, updatedIndices, pixelData);
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to save sprite');
-      console.error(e);
     }
   }
 
@@ -512,9 +543,8 @@ export class SpriteEditorComponent implements OnInit {
         paletteIndices: payload.indices,
         pixelData: payload.pixelData,
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to save sprite');
-      console.error(e);
     }
   }
 
@@ -550,9 +580,8 @@ export class SpriteEditorComponent implements OnInit {
             await this.loadSprites();
             await this.loadTiles();
             await this.selectSprite(newSprite.id);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo add frame');
-            console.error(e);
           }
         },
         undo: async () => {
@@ -561,15 +590,13 @@ export class SpriteEditorComponent implements OnInit {
             await this.spriteService.deleteSprite(newSprite.id);
             await this.loadSprites();
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo add frame');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to add frame');
-      console.error(e);
     }
   }
 
@@ -604,9 +631,8 @@ export class SpriteEditorComponent implements OnInit {
             await this.loadSprites();
             await this.loadTiles();
             if (adjacentIdx >= 0) await this.selectSprite(newSpriteIds[adjacentIdx]);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo delete frame');
-            console.error(e);
           }
         },
         undo: async () => {
@@ -616,15 +642,13 @@ export class SpriteEditorComponent implements OnInit {
             await this.loadSprites();
             await this.loadTiles();
             await this.selectSprite(frameId);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo delete frame');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to delete frame');
-      console.error(e);
     }
   }
 
@@ -651,9 +675,12 @@ export class SpriteEditorComponent implements OnInit {
       const idx = tile.spriteIds.indexOf(frameId);
       const newSpriteIds = [...tile.spriteIds];
       newSpriteIds.splice(idx + 1, 0, newSprite.id);
+      const newType = newSpriteIds.length > 1 ? 'animated' : tile.type;
       const prevSpriteIds = [...tile.spriteIds];
-      await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds });
+      const prevType = tile.type;
+      await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds, type: newType });
       await this.loadSprites();
+      await this.loadTiles();
       await this.selectSprite(newSprite.id);
 
       const tileId = tile.id;
@@ -663,32 +690,29 @@ export class SpriteEditorComponent implements OnInit {
         label: 'Duplicate frame',
         execute: async () => {
           try {
-            await this.tileService.updateTile(tileId, { spriteIds: newSpriteIds });
+            await this.tileService.updateTile(tileId, { spriteIds: newSpriteIds, type: newType });
             await this.spriteService.restoreSprite(sprite);
             await this.loadSprites();
             await this.loadTiles();
             await this.selectSprite(removedId);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo duplicate frame');
-            console.error(e);
           }
         },
         undo: async () => {
           try {
-            await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds });
+            await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds, type: prevType });
             await this.spriteService.deleteSprite(removedId);
             await this.loadSprites();
             await this.loadTiles();
             await this.selectSprite(prevSpriteIds[0]);
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo duplicate frame');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to duplicate frame');
-      console.error(e);
     }
   }
 
@@ -714,34 +738,39 @@ export class SpriteEditorComponent implements OnInit {
           try {
             await this.tileService.updateTile(tileId, { spriteIds: newSpriteIds });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo reorder frame');
-            console.error(e);
           }
         },
         undo: async () => {
           try {
             await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo reorder frame');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to reorder frame');
-      console.error(e);
     }
   }
 
   /**
    * Updates the current tile's type and refreshes local state.
+   * Switching an animated tile that holds several frames to `static` opens a
+   * confirmation dialog first so the extra frames are reduced atomically.
    * @param type The new tile type.
+   * @param select Optional select element, reset when the switch is deferred.
    */
-  async onUpdateTileType(type: 'static' | 'animated'): Promise<void> {
+  async onUpdateTileType(type: 'static' | 'animated', select?: HTMLSelectElement): Promise<void> {
     const tile = this.currentTile();
     if (!tile || tile.type === type) return;
+    if (type === 'static' && tile.spriteIds.length > 1) {
+      if (select) select.value = tile.type;
+      this.pendingStaticSwitch.set(true);
+      return;
+    }
     try {
       const prevType = tile.type;
       await this.tileService.updateTile(tile.id, { type });
@@ -754,25 +783,84 @@ export class SpriteEditorComponent implements OnInit {
           try {
             await this.tileService.updateTile(tileId, { type });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo type change');
-            console.error(e);
           }
         },
         undo: async () => {
           try {
             await this.tileService.updateTile(tileId, { type: prevType });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo type change');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to update tile type');
-      console.error(e);
     }
+  }
+
+  /**
+   * Confirms the deferred animated→static switch by keeping the first frame
+   * and deleting the rest, then records an undo entry.
+   */
+  async confirmStaticSwitch(): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile) {
+      this.pendingStaticSwitch.set(false);
+      return;
+    }
+    const keepId = tile.spriteIds[0];
+    const removedIds = tile.spriteIds.slice(1);
+    const prevSpriteIds = [...tile.spriteIds];
+    const prevType = tile.type;
+    try {
+      const removedSprites = (
+        await Promise.all(removedIds.map((id) => this.spriteService.getSprite(id)))
+      ).filter((s): s is Sprite => !!s);
+      await this.tileService.updateTile(tile.id, { spriteIds: [keepId], type: 'static' });
+      for (const id of removedIds) await this.spriteService.deleteSprite(id);
+      await this.loadSprites();
+      await this.loadTiles();
+      await this.selectSprite(keepId);
+
+      const tileId = tile.id;
+      this.undo.push({
+        label: 'Change tile type',
+        execute: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: [keepId], type: 'static' });
+            for (const id of removedIds) await this.spriteService.deleteSprite(id);
+            await this.loadSprites();
+            await this.loadTiles();
+            await this.selectSprite(keepId);
+          } catch {
+            this.notification.error('Failed to redo type change');
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds, type: prevType });
+            for (const sprite of removedSprites) await this.spriteService.restoreSprite(sprite);
+            await this.loadSprites();
+            await this.loadTiles();
+            await this.selectSprite(keepId);
+          } catch {
+            this.notification.error('Failed to undo type change');
+          }
+        },
+      });
+    } catch {
+      this.notification.error('Failed to update tile type');
+    } finally {
+      this.pendingStaticSwitch.set(false);
+    }
+  }
+
+  /** Cancels the deferred animated→static switch (no changes applied). */
+  cancelStaticSwitch(): void {
+    this.pendingStaticSwitch.set(false);
   }
 
   /**
@@ -796,24 +884,53 @@ export class SpriteEditorComponent implements OnInit {
           try {
             await this.tileService.updateTile(tileId, { animationSpeed: clamped });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to redo speed change');
-            console.error(e);
           }
         },
         undo: async () => {
           try {
             await this.tileService.updateTile(tileId, { animationSpeed: prevSpeed });
             await this.loadTiles();
-          } catch (e) {
+          } catch {
             this.notification.error('Failed to undo speed change');
-            console.error(e);
           }
         },
       });
-    } catch (e) {
+    } catch {
       this.notification.error('Failed to update animation speed');
-      console.error(e);
+    }
+  }
+
+  /**
+   * Persists a new ground-zone anchor for the current tile, clamped to the
+   * active frame's bounds.
+   * @param anchor - The anchor emitted by the pixel canvas.
+   */
+  async onAnchorChange(anchor: TileAnchor): Promise<void> {
+    const tile = this.currentTile();
+    const frame = this.selectedSprite();
+    if (!tile || !frame) return;
+    try {
+      const clamped = clampAnchor(anchor, frame.width, frame.height, this.projectTileSize());
+      await this.tileService.updateTile(tile.id, { anchor: clamped });
+      await this.loadTiles();
+    } catch (e) {
+      console.error('Failed to save anchor:', e);
+      this.notification.error('Failed to save anchor');
+    }
+  }
+
+  /** Resets the current tile's anchor to the derived bottom-center position. */
+  async onAutoAnchor(): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile) return;
+    try {
+      await this.tileService.updateTile(tile.id, { anchor: null });
+      await this.loadTiles();
+    } catch (e) {
+      console.error('Failed to reset anchor:', e);
+      this.notification.error('Failed to save anchor');
     }
   }
 

@@ -10,6 +10,8 @@ import {
   AfterViewInit,
   effect,
 } from '@angular/core';
+import type { TileAnchor } from '../../../shared/models/tile-anchor';
+import type { DrawingTool } from '../tools/drawing-tools.component';
 
 /** Session storage key used to persist the sprite canvas grid visibility. */
 export const GRID_VISIBLE_STORAGE_KEY = 'rk-sprite-editor.show-grid';
@@ -19,8 +21,12 @@ export const GRID_VISIBLE_STORAGE_KEY = 'rk-sprite-editor.show-grid';
  *
  * Renders a grid matching the sprite dimensions derived from the
  * `paletteIndices` input (any width/height), with an adaptive cell scale that
- * keeps the canvas around 256px. Supports brush, eraser, and flood-fill
+ * keeps the canvas around 256px. Supports brush, eraser, flood-fill, and anchor
  * tools. Emits updated palette indices on change.
+ *
+ * With the anchor tool active the pointer snaps to the tile grid (`tileSize`)
+ * and clicking emits the chosen ground cell through `anchorChange` without
+ * painting; under the paint tools a stored anchor is drawn as a subtle outline.
  *
  * Zoom is controlled via mouse wheel and applied natively through the canvas
  * 2D context's `scale()` transform. The zoom factor multiplies the adaptive
@@ -48,7 +54,19 @@ export class PixelCanvasComponent implements AfterViewInit {
   selectedColorIndex = input.required<number>();
 
   /** Required active drawing tool. */
-  tool = input.required<'brush' | 'eraser' | 'fill'>();
+  tool = input.required<DrawingTool>();
+
+  /** Side length in pixels of one map grid cell, used to snap the anchor zone. */
+  tileSize = input<number>(16);
+
+  /** Stored ground-cell anchor of the current tile, or null when derived. */
+  anchor = input<TileAnchor | null>(null);
+
+  /** Emits the snapped anchor chosen with the anchor tool. */
+  anchorChange = output<TileAnchor>();
+
+  /** @internal Snapped ground zone under the pointer while the anchor tool is active. */
+  private readonly hoverZone = signal<TileAnchor | null>(null);
 
   /** Emits updated palette indices whenever the canvas is modified. */
   indicesChange = output<number[][]>();
@@ -117,6 +135,10 @@ export class PixelCanvasComponent implements AfterViewInit {
       this.gridRows.set(Math.max(1, indices.length));
       this.gridCols.set(Math.max(1, ...indices.map((row) => row.length)));
       this.syncCanvasSize();
+
+      // Track the anchor inputs so a change re-renders the ground-zone marker.
+      this.tileSize();
+      this.anchor();
 
       // Track onion-skin inputs so load + re-render happens when they change.
       this.onionSkinPrev();
@@ -240,6 +262,19 @@ export class PixelCanvasComponent implements AfterViewInit {
       ctx.restore();
     }
 
+    // Ground-zone marker: bright highlight while the anchor tool is active,
+    // otherwise a subtle dashed outline of the stored zone.
+    const ts = this.tileSize();
+    const zone = this.tool() === 'anchor' ? (this.hoverZone() ?? this.anchor()) : this.anchor();
+    if (zone) {
+      ctx.save();
+      ctx.strokeStyle = this.tool() === 'anchor' ? '#ffffff' : '#555555';
+      ctx.lineWidth = 1;
+      ctx.setLineDash(this.tool() === 'anchor' ? [] : [3, 3]);
+      ctx.strokeRect(zone.x * scale, zone.y * scale, ts * scale, ts * scale);
+      ctx.restore();
+    }
+
     // Draw grid LAST so it stays visible over painted pixels.
     // Skip when zoomed out far enough that lines would create moiré
     // (threshold: rendered cell < 8 screen pixels).
@@ -280,24 +315,57 @@ export class PixelCanvasComponent implements AfterViewInit {
   }
 
   /**
+   * @internal Snaps a pointer position to the `ts` grid, clamped so the ground
+   * zone stays inside the frame.
+   * @param event - The mouse event.
+   * @returns The snapped anchor, or null when the pointer is off-canvas.
+   */
+  private snappedAnchor(event: MouseEvent): TileAnchor | null {
+    const px = this.getPixelCoordinates(event);
+    if (px.x < 0 || px.y < 0) return null;
+    const ts = this.tileSize();
+    const maxX = Math.max(0, this.gridCols() - ts);
+    const maxY = Math.max(0, this.gridRows() - ts);
+    const x = Math.min(Math.max(0, Math.floor(px.x / ts) * ts), maxX);
+    const y = Math.min(Math.max(0, Math.floor(px.y / ts) * ts), maxY);
+    return { x, y };
+  }
+
+  /**
    * Handles mouse down on the canvas to start drawing.
    * @param event - The mouse down event.
    */
   onMouseDown(event: MouseEvent) {
-    this.isDrawing = true;
-    this.strokeStart.emit();
     const ref = this.canvasRef();
     if (ref) {
       this.rectCache = ref.nativeElement.getBoundingClientRect();
     }
+    if (this.tool() === 'anchor') {
+      const snapped = this.snappedAnchor(event);
+      if (snapped) {
+        this.hoverZone.set(snapped);
+        this.anchorChange.emit(snapped);
+        this.render();
+      }
+      return;
+    }
+    this.isDrawing = true;
+    this.strokeStart.emit();
     this.applyTool(event);
   }
 
   /**
-   * Handles mouse move to continue drawing while dragging.
+   * Handles mouse move to continue drawing while dragging, or to follow the
+   * pointer with the ground-zone highlight while the anchor tool is active.
    * @param event - The mouse move event.
    */
   onMouseMove(event: MouseEvent) {
+    if (this.tool() === 'anchor') {
+      const snapped = this.snappedAnchor(event);
+      this.hoverZone.set(snapped);
+      this.render();
+      return;
+    }
     if (!this.isDrawing) return;
     this.applyTool(event);
   }
@@ -311,6 +379,7 @@ export class PixelCanvasComponent implements AfterViewInit {
   /** Handles mouse leaving the canvas to stop drawing. */
   onMouseLeave() {
     this.isDrawing = false;
+    this.hoverZone.set(null);
     this.strokeEnd.emit(this.localPaletteIndices.map((row) => [...row]));
     this.rectCache = null;
   }

@@ -11,6 +11,7 @@ import {
   type SpriteArchiveItem,
   type TileArchiveItem,
 } from '../../shared/models/project-archive.model';
+import { clampAnchor } from '../../shared/models/tile-anchor';
 
 /**
  * Import target choice: a brand-new project or an in-place replacement.
@@ -98,6 +99,7 @@ export class ProjectIoService {
         animationSpeed: t.animationSpeed,
         properties: { ...t.properties },
         folderPath: t.folderPath ?? '',
+        anchor: t.anchor ?? undefined,
       })),
       sprites: sprites.map((s): SpriteArchiveItem => ({
         sourceId: s.id,
@@ -176,7 +178,15 @@ export class ProjectIoService {
         if (mode.kind === 'replace') {
           await this.purgeProject(projectId);
         }
-        for (const t of archive.tiles) {
+        const normalizedTiles = archive.tiles.map((t) => {
+          if (t.type === 'static' && t.spriteIds.length > 1) {
+            const kept = [...t.spriteIds].sort((a, b) => a - b)[0];
+            return { ...t, spriteIds: [kept] };
+          }
+          return t;
+        });
+        const keptSpriteIds = new Set(normalizedTiles.flatMap((t) => t.spriteIds));
+        for (const t of normalizedTiles) {
           const newId = await this.db.tiles.add({
             projectId,
             name: t.name,
@@ -185,10 +195,12 @@ export class ProjectIoService {
             animationSpeed: t.animationSpeed,
             properties: { ...t.properties },
             folderPath: t.folderPath,
+            anchor: t.anchor,
           } as Tile);
           tileIdMap.set(t.sourceId, newId);
         }
         for (const s of archive.sprites) {
+          if (!keptSpriteIds.has(s.sourceId)) continue;
           const newId = await this.db.sprites.add({
             projectId,
             tileId: tileIdMap.get(s.tileSourceId)!,
@@ -200,11 +212,26 @@ export class ProjectIoService {
           } as Sprite);
           spriteIdMap.set(s.sourceId, newId);
         }
-        for (const t of archive.tiles) {
+        for (const t of normalizedTiles) {
           const newId = tileIdMap.get(t.sourceId)!;
           await this.db.tiles.update(newId, {
             spriteIds: t.spriteIds.map((sid) => spriteIdMap.get(sid)!),
           });
+        }
+        const frameSizes = new Map<number, { width: number; height: number }>();
+        for (const s of archive.sprites) {
+          if (!keptSpriteIds.has(s.sourceId)) continue;
+          if (!frameSizes.has(s.tileSourceId)) {
+            frameSizes.set(s.tileSourceId, { width: s.width, height: s.height });
+          }
+        }
+        for (const t of normalizedTiles) {
+          if (!t.anchor) continue;
+          const size = frameSizes.get(t.sourceId);
+          if (!size) continue;
+          const newId = tileIdMap.get(t.sourceId)!;
+          const clamped = clampAnchor(t.anchor, size.width, size.height, archive.project.tileSize);
+          await this.db.tiles.update(newId, { anchor: clamped });
         }
         for (const sc of archive.scenes) {
           await this.db.scenes.add({

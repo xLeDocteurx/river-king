@@ -40,10 +40,11 @@ export class DialogComponent {
   dialogClass = input<string>('');
 
   /**
-   * Emitted when the dialog is closed (programmatically, via Escape, or backdrop click).
-   * Carries the optional `returnValue` set by `close(value?)`.
+   * Emitted when the dialog is closed (programmatically or via Escape).
+   * Backdrop click does not close a native `<dialog>`.
+   * Carries the `returnValue` set by `close(value?)` (empty string when unset).
    */
-  closed = output<string | undefined>();
+  closed = output<string>();
 
   /**
    * Opens the dialog as a modal (with backdrop and focus trap).
