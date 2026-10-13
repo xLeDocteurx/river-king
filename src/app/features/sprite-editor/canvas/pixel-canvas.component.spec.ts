@@ -350,7 +350,9 @@ describe('PixelCanvasComponent', () => {
     vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(rect as DOMRect);
 
     // effective scale = cellScale(8) * zoom(1) = 8 => pixel (30, 40) snaps (16, 16).
-    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 240, clientY: 320, bubbles: true }));
+    canvas.dispatchEvent(
+      new MouseEvent('mousedown', { clientX: 240, clientY: 320, bubbles: true }),
+    );
 
     expect(spy).toHaveBeenCalledWith({ x: 16, y: 16 });
   });
