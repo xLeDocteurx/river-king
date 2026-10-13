@@ -10,6 +10,7 @@ import {
   ElementRef,
   HostListener,
   ViewChild,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -18,6 +19,10 @@ import { PixelCanvasComponent } from './canvas/pixel-canvas.component';
 import { PaletteManagerComponent } from './palette/palette-manager.component';
 import { DrawingToolsComponent, type DrawingTool } from './tools/drawing-tools.component';
 import { FrameStripComponent } from './frame-strip/frame-strip.component';
+import {
+  ConfirmDialogComponent,
+  type ConfirmDialogData,
+} from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ProjectService } from '../dashboard/services/project.service';
 import { TileService } from '../tile-manager/services/tile.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -55,6 +60,7 @@ const TOOL_LABELS: Record<DrawingTool, string> = {
     PaletteManagerComponent,
     DrawingToolsComponent,
     FrameStripComponent,
+    ConfirmDialogComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sprite-editor.component.html',
@@ -74,6 +80,9 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Reference to the wrapper anchoring the onion popover (button + panel). */
   @ViewChild('onionAnchor', { static: false }) onionAnchor?: ElementRef<HTMLElement>;
+
+  /** Reference to the dialog confirming the animated→static frame reduction. */
+  private readonly framesDialog = viewChild.required<ConfirmDialogComponent>('framesDialog');
 
   /** Reactive signal holding the current project ID. */
   projectId = signal<string>('');
@@ -166,6 +175,18 @@ export class SpriteEditorComponent implements OnInit {
   /** Whether the right palette/tools panel is visible (mobile-only toggle; not persisted). */
   readonly rightPanelOpen = signal(true);
 
+  /** Whether an animated→static switch is awaiting frame-reduction confirmation. */
+  readonly pendingStaticSwitch = signal(false);
+
+  /** Static configuration for the frame-reduction confirmation dialog. */
+  readonly framesDialogData: ConfirmDialogData = {
+    title: 'Delete Frames',
+    message:
+      'Switching to static keeps only the first frame and permanently deletes the rest. This action cannot be undone.',
+    confirmLabel: 'Delete',
+    cancelLabel: 'Cancel',
+  };
+
   /** Computed pixel data for the previous frame onion skin, or null. */
   readonly onionSkinPrevData = computed(() => {
     const frames = this.currentFrames();
@@ -257,12 +278,18 @@ export class SpriteEditorComponent implements OnInit {
     );
   });
 
+  /** Effect opening the frame-reduction dialog when a static switch is pending. */
+  private readonly framesDialogEffect = effect(() => {
+    if (this.pendingStaticSwitch()) {
+      this.framesDialog().open();
+    }
+  });
+
   constructor() {
     this.shortcuts.shortcuts
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((id) => this.onShortcut(id));
   }
-
   /** Initializes component, subscribing to route params to load project data. */
   ngOnInit() {
     this.destroyRef.onDestroy(() => void this.flushPersist());
@@ -731,11 +758,19 @@ export class SpriteEditorComponent implements OnInit {
 
   /**
    * Updates the current tile's type and refreshes local state.
+   * Switching an animated tile that holds several frames to `static` opens a
+   * confirmation dialog first so the extra frames are reduced atomically.
    * @param type The new tile type.
+   * @param select Optional select element, reset when the switch is deferred.
    */
-  async onUpdateTileType(type: 'static' | 'animated'): Promise<void> {
+  async onUpdateTileType(type: 'static' | 'animated', select?: HTMLSelectElement): Promise<void> {
     const tile = this.currentTile();
     if (!tile || tile.type === type) return;
+    if (type === 'static' && tile.spriteIds.length > 1) {
+      if (select) select.value = tile.type;
+      this.pendingStaticSwitch.set(true);
+      return;
+    }
     try {
       const prevType = tile.type;
       await this.tileService.updateTile(tile.id, { type });
@@ -764,6 +799,68 @@ export class SpriteEditorComponent implements OnInit {
     } catch {
       this.notification.error('Failed to update tile type');
     }
+  }
+
+  /**
+   * Confirms the deferred animated→static switch by keeping the first frame
+   * and deleting the rest, then records an undo entry.
+   */
+  async confirmStaticSwitch(): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile) {
+      this.pendingStaticSwitch.set(false);
+      return;
+    }
+    const keepId = tile.spriteIds[0];
+    const removedIds = tile.spriteIds.slice(1);
+    const prevSpriteIds = [...tile.spriteIds];
+    const prevType = tile.type;
+    try {
+      const removedSprites = (
+        await Promise.all(removedIds.map((id) => this.spriteService.getSprite(id)))
+      ).filter((s): s is Sprite => !!s);
+      await this.tileService.updateTile(tile.id, { spriteIds: [keepId], type: 'static' });
+      for (const id of removedIds) await this.spriteService.deleteSprite(id);
+      await this.loadSprites();
+      await this.loadTiles();
+      await this.selectSprite(keepId);
+
+      const tileId = tile.id;
+      this.undo.push({
+        label: 'Change tile type',
+        execute: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: [keepId], type: 'static' });
+            for (const id of removedIds) await this.spriteService.deleteSprite(id);
+            await this.loadSprites();
+            await this.loadTiles();
+            await this.selectSprite(keepId);
+          } catch {
+            this.notification.error('Failed to redo type change');
+          }
+        },
+        undo: async () => {
+          try {
+            await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds, type: prevType });
+            for (const sprite of removedSprites) await this.spriteService.restoreSprite(sprite);
+            await this.loadSprites();
+            await this.loadTiles();
+            await this.selectSprite(keepId);
+          } catch {
+            this.notification.error('Failed to undo type change');
+          }
+        },
+      });
+    } catch {
+      this.notification.error('Failed to update tile type');
+    } finally {
+      this.pendingStaticSwitch.set(false);
+    }
+  }
+
+  /** Cancels the deferred animated→static switch (no changes applied). */
+  cancelStaticSwitch(): void {
+    this.pendingStaticSwitch.set(false);
   }
 
   /**
