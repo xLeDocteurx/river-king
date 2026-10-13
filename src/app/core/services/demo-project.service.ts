@@ -24,8 +24,7 @@ import {
   SIGN_CELL,
   grassIndices,
   waterIndices,
-  trunkIndices,
-  foliageIndices,
+  treeIndices,
   boulderIndices,
   signIndices,
 } from './demo-art';
@@ -177,13 +176,19 @@ export class DemoProjectService {
           },
         });
 
-        const sprite = (tileId: number, name: string, indices: number[][]): Sprite =>
+        const sprite = (
+          tileId: number,
+          name: string,
+          indices: number[][],
+          width = DEMO_TILE_SIZE,
+          height = DEMO_TILE_SIZE,
+        ): Sprite =>
           ({
             projectId,
             tileId,
             name,
-            width: DEMO_TILE_SIZE,
-            height: DEMO_TILE_SIZE,
+            width,
+            height,
             pixelData: encodePixelData(indices, palette),
             paletteIndices: indices,
           }) as Sprite;
@@ -193,18 +198,19 @@ export class DemoProjectService {
         );
         const water1Id = await this.db.sprites.add(sprite(waterTileId, 'Water 1', waterIndices(1)));
         const water2Id = await this.db.sprites.add(sprite(waterTileId, 'Water 2', waterIndices(2)));
-        const trunkId = await this.db.sprites.add(sprite(treeTileId, 'Trunk', trunkIndices()));
-        const foliageId = await this.db.sprites.add(
-          sprite(treeTileId, 'Foliage', foliageIndices()),
+        const treeSpriteId = await this.db.sprites.add(
+          sprite(treeTileId, 'Tree', treeIndices(), DEMO_TILE_SIZE, DEMO_TILE_SIZE * 2),
         );
         const boulderSpriteId = await this.db.sprites.add(
           sprite(boulderTileId, 'Boulder', boulderIndices()),
         );
-        const signSpriteId = await this.db.sprites.add(sprite(signTileId, 'Sign', signIndices()));
+        const signSpriteId = await this.db.sprites.add(
+          sprite(signTileId, 'Sign', signIndices()),
+        );
 
         await this.db.tiles.update(grassTileId, { spriteIds: [grassSpriteId] });
         await this.db.tiles.update(waterTileId, { spriteIds: [water1Id, water2Id] });
-        await this.db.tiles.update(treeTileId, { spriteIds: [trunkId, foliageId] });
+        await this.db.tiles.update(treeTileId, { spriteIds: [treeSpriteId] });
         await this.db.tiles.update(boulderTileId, { spriteIds: [boulderSpriteId] });
         await this.db.tiles.update(signTileId, { spriteIds: [signSpriteId] });
 

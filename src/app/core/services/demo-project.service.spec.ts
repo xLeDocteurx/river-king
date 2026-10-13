@@ -81,7 +81,7 @@ describe('DemoProjectService', () => {
     expect(water.animationSpeed).toBe(4);
     expect(water.properties.blocking).toBe(true);
 
-    expect(tree.spriteIds.length).toBe(2);
+    expect(tree.spriteIds.length).toBe(1);
     expect(tree.properties.blocking).toBe(true);
     expect(tree.properties.ySort).toBe(true);
 
@@ -116,10 +116,13 @@ describe('DemoProjectService', () => {
     expect(overhead.tileData[SIGN_CELL.y][SIGN_CELL.x]).toBe(sign.id);
 
     const sprites = await db.sprites.toArray();
-    expect(sprites.length).toBe(7);
+    expect(sprites.length).toBe(6);
+    const treeSprite = sprites.find((s) => s.name === 'Tree')!;
+    expect(treeSprite.width).toBe(16);
+    expect(treeSprite.height).toBe(32);
     for (const sprite of sprites) {
       expect(sprite.width).toBe(DEMO_TILE_SIZE);
-      expect(sprite.height).toBe(DEMO_TILE_SIZE);
+      expect(sprite.height).toBe(sprite.name === 'Tree' ? DEMO_TILE_SIZE * 2 : DEMO_TILE_SIZE);
       expect(sprite.pixelData.startsWith('data:image/png')).toBe(true);
       expect(sprite.paletteIndices).toBeDefined();
     }

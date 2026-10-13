@@ -1,9 +1,10 @@
 /**
  * Content definition for the seedable « Demo » project.
  *
- * All artwork is generated procedurally as palette-index grids (16×16, the
- * project tile size). Index `0` is transparent; index `k > 0` maps to
- * `palette[k - 1]` of the project palette (see `encodePixelData`).
+ * All artwork is generated procedurally as palette-index grids (mostly 16×16,
+ * the project tile size; the tree is a single 16×32 ground-anchored sprite).
+ * Index `0` is transparent; index `k > 0` maps to `palette[k - 1]` of the
+ * project palette (see `encodePixelData`).
  */
 
 /** Display name of the seeded demo project. */
@@ -21,8 +22,8 @@ export const DEMO_TILE_SIZE = 16;
 
 /** Water pond rectangle (grid cells) on the Overhead layer. */
 export const POND = { x: 14, y: 8, w: 4, h: 3 };
-/** Row of ySort trees along the top edge. */
-export const TREE_ROW_Y = 0;
+/** Row of ySort trees (canopy overhangs one cell above the ground row). */
+export const TREE_ROW_Y = 2;
 export const TREE_ROW_START_X = 2;
 export const TREE_ROW_STEP_X = 2;
 export const TREE_ROW_END_X = 20;
@@ -96,6 +97,11 @@ export function foliageIndices(): number[][] {
   }
   drawRect(grid, 4, 12, 8, 1, 6);
   return grid;
+}
+
+/** Single 16×32 tree: canopy on top (rows 0-15), ground-anchored trunk below. */
+export function treeIndices(): number[][] {
+  return [...foliageIndices(), ...trunkIndices()];
 }
 
 /** Rounded boulder with a bottom shadow line. */
