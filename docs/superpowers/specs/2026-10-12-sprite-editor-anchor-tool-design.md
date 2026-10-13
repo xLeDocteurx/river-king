@@ -9,7 +9,7 @@ Related: Spec A — `2026-10-12-tile-anchor-single-frame-design.md` (machinery t
 
 Spec A stores an optional `Tile.anchor` (`{x,y}` px, top-left of the `ts×ts` ground zone)
 with a `bottom-center` derived default. Without authoring UI, an artist cannot control
-*where* the ground cell sits inside a frame — needed as soon as a tile's art is offset (a
+_where_ the ground cell sits inside a frame — needed as soon as a tile's art is offset (a
 tree whose trunk is not dead-center-bottom, tall grass planted off-center, etc.). This US
 adds an **Anchor** tool to the sprite editor so the ground zone can be picked visually.
 

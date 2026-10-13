@@ -71,10 +71,10 @@ export interface TileAnchor {
 
 /** Grid-cell extents of a tile footprint, relative to its anchor cell. */
 export type AnchorFootprint = {
-  left: number;  // cells the art overhangs to the LEFT of the anchor cell
-  up: number;    // cells above
+  left: number; // cells the art overhangs to the LEFT of the anchor cell
+  up: number; // cells above
   right: number; // cells to the right
-  down: number;  // cells below
+  down: number; // cells below
 };
 
 export type TileFootprintMap = Record<number, AnchorFootprint>;
@@ -134,7 +134,7 @@ Invariant: **a persisted tile of `type: 'static'` has at most one sprite.**
   `sprite-editor.component.ts` `onAddFrame` and `tile-properties.component.ts`
   `createFramesFrom`/`onFrameCountInput` growth send `{ type: 'animated', spriteIds }` in
   the same `updateTile` call when the current type is `'static'`. (Adding a second frame to
-  a static tile *is* making an animation.)
+  a static tile _is_ making an animation.)
 - `animated → static` keeps the existing frames-deletion dialog
   (`pendingFrameReduction`, `confirmFrameReduction`).
 - **Guard boundary:** the guard lives only in `TileService.updateTile`. The demo seed and the
