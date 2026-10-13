@@ -47,7 +47,10 @@ describe('MapCanvasComponent', () => {
     sessionStorage.clear();
   });
 
-  function setup(scene: Scene, footprints: Record<number, { left: number; up: number; right: number; down: number }> = {}): void {
+  function setup(
+    scene: Scene,
+    footprints: Record<number, { left: number; up: number; right: number; down: number }> = {},
+  ): void {
     TestBed.configureTestingModule({
       imports: [MapCanvasComponent],
       providers: [PlayerController],

@@ -204,9 +204,7 @@ export class DemoProjectService {
         const boulderSpriteId = await this.db.sprites.add(
           sprite(boulderTileId, 'Boulder', boulderIndices()),
         );
-        const signSpriteId = await this.db.sprites.add(
-          sprite(signTileId, 'Sign', signIndices()),
-        );
+        const signSpriteId = await this.db.sprites.add(sprite(signTileId, 'Sign', signIndices()));
 
         await this.db.tiles.update(grassTileId, { spriteIds: [grassSpriteId] });
         await this.db.tiles.update(waterTileId, { spriteIds: [water1Id, water2Id] });

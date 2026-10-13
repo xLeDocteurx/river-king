@@ -281,18 +281,18 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
         }
       }
 
-    for (const { x, y, tileId } of anchors) {
-      const rect = footprintRect(x, y, tileId, this.tileFootprints());
-      const frames = tileImages[tileId];
-      const frameIdx = this.frameIndices.get(tileId) ?? 0;
-      const img = frames?.[frameIdx];
-      if (img) {
-        ctx.drawImage(img, rect.x * cell, rect.y * cell, rect.w * cell, rect.h * cell);
-      } else {
-        ctx.fillStyle = this.getTileColor(tileId);
-        ctx.fillRect(rect.x * cell, rect.y * cell, rect.w * cell, rect.h * cell);
+      for (const { x, y, tileId } of anchors) {
+        const rect = footprintRect(x, y, tileId, this.tileFootprints());
+        const frames = tileImages[tileId];
+        const frameIdx = this.frameIndices.get(tileId) ?? 0;
+        const img = frames?.[frameIdx];
+        if (img) {
+          ctx.drawImage(img, rect.x * cell, rect.y * cell, rect.w * cell, rect.h * cell);
+        } else {
+          ctx.fillStyle = this.getTileColor(tileId);
+          ctx.fillRect(rect.x * cell, rect.y * cell, rect.w * cell, rect.h * cell);
+        }
       }
-    }
       if (layer.opacity < 1) {
         ctx.globalAlpha = 1;
       }
