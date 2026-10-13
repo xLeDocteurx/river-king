@@ -21,6 +21,7 @@ function createMockCanvasContext() {
     restore: vi.fn(),
     translate: vi.fn(),
     scale: vi.fn(),
+    setLineDash: vi.fn(),
   };
 }
 
@@ -334,5 +335,50 @@ describe('PixelCanvasComponent', () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(fixture.componentInstance.showGrid()).toBe(false);
     expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('0');
+  });
+
+  it('emits a grid-snapped anchor when the anchor tool is clicked', () => {
+    setupInputs(Array.from({ length: 32 }, () => Array(32).fill(0)));
+    fixture.componentRef.setInput('tool', 'anchor');
+    fixture.componentRef.setInput('tileSize', 16);
+    fixture.detectChanges();
+    const spy = vi.fn();
+    fixture.componentInstance.anchorChange.subscribe(spy);
+
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    const rect = { left: 0, top: 0, width: 256, height: 256 };
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(rect as DOMRect);
+
+    // effective scale = cellScale(8) * zoom(1) = 8 => pixel (30, 40) snaps (16, 16).
+    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 240, clientY: 320, bubbles: true }));
+
+    expect(spy).toHaveBeenCalledWith({ x: 16, y: 16 });
+  });
+
+  it('does not emit indicesChange while the anchor tool is active', () => {
+    setupInputs(Array.from({ length: 16 }, () => Array(16).fill(0)));
+    fixture.componentRef.setInput('tool', 'anchor');
+    fixture.detectChanges();
+    const spy = vi.fn();
+    fixture.componentInstance.indicesChange.subscribe(spy);
+
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    const rect = { left: 0, top: 0, width: 256, height: 256 };
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(rect as DOMRect);
+
+    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 16, clientY: 16, bubbles: true }));
+    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('renders a stored anchor outline for a non-anchor tool', () => {
+    setupInputs(Array.from({ length: 32 }, () => Array(32).fill(0)));
+    fixture.componentRef.setInput('tileSize', 16);
+    fixture.componentRef.setInput('anchor', { x: 16, y: 0 });
+    fixture.detectChanges();
+
+    // cellScale = 8, ts = 16 => outline at (16*8, 0, 16*8, 16*8).
+    expect(mockCtx.strokeRect).toHaveBeenCalledWith(128, 0, 128, 128);
   });
 });

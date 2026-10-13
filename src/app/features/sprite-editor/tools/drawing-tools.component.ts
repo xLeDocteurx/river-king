@@ -1,12 +1,12 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 
 /** Supported drawing tool identifiers for the sprite canvas. */
-export type DrawingTool = 'brush' | 'eraser' | 'fill';
+export type DrawingTool = 'brush' | 'eraser' | 'fill' | 'anchor';
 
 /**
  * Drawing tools component for selecting the active tool in the sprite editor.
  *
- * Provides buttons for brush, eraser, and fill tools.
+ * Provides buttons for brush, eraser, fill, and anchor tools.
  */
 @Component({
   selector: 'rk-drawing-tools',

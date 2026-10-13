@@ -36,6 +36,7 @@ const TOOL_LABELS: Record<DrawingTool, string> = {
   brush: 'Brush',
   eraser: 'Eraser',
   fill: 'Fill',
+  anchor: 'Anchor',
 };
 
 /**

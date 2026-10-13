@@ -57,4 +57,22 @@ describe('DrawingToolsComponent', () => {
     const eraserBtn = fixture.nativeElement.querySelector('[data-testid="tool-eraser"]');
     expect(eraserBtn.classList.contains('tw-bg-primary/10')).toBe(true);
   });
+
+  it('should emit anchor tool on anchor button click', () => {
+    fixture.componentRef.setInput('tool', 'brush');
+    fixture.detectChanges();
+    const spy = vi.fn();
+    fixture.componentInstance.toolChange.subscribe(spy);
+
+    const anchorBtn = fixture.nativeElement.querySelector('[data-testid="tool-anchor"]');
+    anchorBtn.click();
+    expect(spy).toHaveBeenCalledWith('anchor');
+  });
+
+  it('should highlight the anchor tool when active', () => {
+    fixture.componentRef.setInput('tool', 'anchor');
+    fixture.detectChanges();
+    const anchorBtn = fixture.nativeElement.querySelector('[data-testid="tool-anchor"]');
+    expect(anchorBtn.classList.contains('tw-bg-primary/10')).toBe(true);
+  });
 });
