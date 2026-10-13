@@ -100,8 +100,8 @@ export class DashboardComponent {
     try {
       const projects = await this.projectService.getAll();
       this.projects.set(projects);
-    } catch (error) {
-      console.error('Failed to load projects:', error);
+    } catch {
+      this.notification.error('Failed to load projects');
     }
   }
 
@@ -130,8 +130,8 @@ export class DashboardComponent {
       await this.projectService.delete(id);
       this.projectToDelete.set(null);
       this.loadProjects();
-    } catch (error) {
-      console.error('Failed to delete project:', error);
+    } catch {
+      this.notification.error('Failed to delete project');
     }
   }
 
@@ -165,7 +165,6 @@ export class DashboardComponent {
       if (error instanceof ProjectImportError) {
         this.notification.error(error.message);
       } else {
-        console.error('Failed to read import file:', error);
         this.notification.error('Failed to read the file');
       }
     } finally {
@@ -192,7 +191,6 @@ export class DashboardComponent {
       if (error instanceof ProjectImportError) {
         this.notification.error(error.message);
       } else {
-        console.error('Failed to import project:', error);
         this.notification.error('Failed to import project');
       }
     }
