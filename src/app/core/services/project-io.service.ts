@@ -99,7 +99,7 @@ export class ProjectIoService {
         animationSpeed: t.animationSpeed,
         properties: { ...t.properties },
         folderPath: t.folderPath ?? '',
-        anchor: t.anchor,
+        anchor: t.anchor ?? undefined,
       })),
       sprites: sprites.map((s): SpriteArchiveItem => ({
         sourceId: s.id,

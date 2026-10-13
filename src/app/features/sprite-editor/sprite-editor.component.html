@@ -63,6 +63,9 @@
           (strokeStart)="onStrokeStart()"
           (strokeEnd)="onStrokeEnd($event)"
           (zoomChange)="zoomLevel.set($event)"
+          [tileSize]="projectTileSize()"
+          [anchor]="tileAnchor()"
+          (anchorChange)="onAnchorChange($event)"
         />
         @if (currentTile()?.type === 'animated' && currentFrames().length > 1) {
           <button
@@ -161,6 +164,18 @@
               (change)="onUpdateAnimationSpeed($any($event.target).valueAsNumber)"
             />
             <span class="tw-text-muted-foreground">fps</span>
+          }
+          @if (selectedTool() === 'anchor') {
+            <button
+              type="button"
+              data-testid="auto-anchor"
+              (click)="onAutoAnchor()"
+              [disabled]="!tileAnchor()"
+              title="Reset anchor to bottom-center"
+              class="tw-px-2 tw-py-0.5 tw-text-xs tw-rounded-sm tw-border tw-border-border tw-bg-card-bg tw-text-foreground tw-cursor-pointer hover:tw-bg-accent disabled:tw-opacity-40"
+            >
+              Auto
+            </button>
           }
         </div>
         @if (tile.type === 'animated') {

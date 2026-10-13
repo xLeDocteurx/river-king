@@ -30,12 +30,14 @@ import {
 } from '../../core/services/keyboard-shortcuts.service';
 import type { Sprite } from '../../shared/models/sprite.model';
 import type { Tile } from '../../shared/models/tile.model';
+import { clampAnchor, type TileAnchor } from '../../shared/models/tile-anchor';
 
 /** Human-readable labels for the drawing tools, keyed by tool id. */
 const TOOL_LABELS: Record<DrawingTool, string> = {
   brush: 'Brush',
   eraser: 'Eraser',
   fill: 'Fill',
+  anchor: 'Anchor',
 };
 
 /**
@@ -142,6 +144,9 @@ export class SpriteEditorComponent implements OnInit {
     return tile.spriteIds.map((id) => spritesById.get(id)).filter((s): s is Sprite => !!s);
   });
 
+  /** Ground-cell anchor of the current tile, or null when derived (bottom-center). */
+  readonly tileAnchor = computed<TileAnchor | null>(() => this.currentTile()?.anchor ?? null);
+
   /** Whether previous-frame onion skin is enabled. */
   readonly onionSkinPrevEnabled = signal(false);
 
@@ -242,8 +247,13 @@ export class SpriteEditorComponent implements OnInit {
     const frames = this.currentFrames();
     const frameIdx = frames.findIndex((f) => f.id === sprite.id);
     const frameStr = frames.length > 0 ? ` | Frame ${frameIdx + 1}/${frames.length}` : '';
+    const anchor = this.tileAnchor();
+    const anchorSuffix =
+      this.selectedTool() === 'anchor'
+        ? ` | Anchor — ${anchor ? `${anchor.x}, ${anchor.y}` : 'Auto'}`
+        : '';
     this.statusBar.setContext(
-      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool} | Color #${colorNumber} | Zoom ${zoomPercent}${frameStr}`,
+      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool} | Color #${colorNumber} | Zoom ${zoomPercent}${frameStr}${anchorSuffix}`,
     );
   });
 
@@ -792,6 +802,38 @@ export class SpriteEditorComponent implements OnInit {
       });
     } catch {
       this.notification.error('Failed to update animation speed');
+    }
+  }
+
+  /**
+   * Persists a new ground-zone anchor for the current tile, clamped to the
+   * active frame's bounds.
+   * @param anchor - The anchor emitted by the pixel canvas.
+   */
+  async onAnchorChange(anchor: TileAnchor): Promise<void> {
+    const tile = this.currentTile();
+    const frame = this.selectedSprite();
+    if (!tile || !frame) return;
+    try {
+      const clamped = clampAnchor(anchor, frame.width, frame.height, this.projectTileSize());
+      await this.tileService.updateTile(tile.id, { anchor: clamped });
+      await this.loadTiles();
+    } catch (e) {
+      console.error('Failed to save anchor:', e);
+      this.notification.error('Failed to save anchor');
+    }
+  }
+
+  /** Resets the current tile's anchor to the derived bottom-center position. */
+  async onAutoAnchor(): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile) return;
+    try {
+      await this.tileService.updateTile(tile.id, { anchor: null });
+      await this.loadTiles();
+    } catch (e) {
+      console.error('Failed to reset anchor:', e);
+      this.notification.error('Failed to save anchor');
     }
   }
 
