@@ -105,6 +105,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   private lastMouseX = 0;
   /** @internal Last mouse Y position for pan delta calculation. */
   private lastMouseY = 0;
+  /** @internal Observer tracking parent-container size changes; disconnected on destroy. */
+  private resizeObserver: ResizeObserver | null = null;
 
   /**
    * Grid area under the cursor that the selected tile would occupy:
@@ -227,14 +229,14 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     this.render();
 
     /** Resize the canvas bitmap whenever the parent container changes size. */
-    const resizeObserver = new ResizeObserver(() => {
+    this.resizeObserver = new ResizeObserver(() => {
       canvas.width = parent.clientWidth;
       canvas.height = parent.clientHeight;
       this.viewportWidth.set(parent.clientWidth);
       this.viewportHeight.set(parent.clientHeight);
       this.render();
     });
-    resizeObserver.observe(parent);
+    this.resizeObserver.observe(parent);
   }
 
   /**
@@ -439,13 +441,15 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     this.cameraY.update((v) => v + (targetY - v) * k);
   }
 
-  /** Cleans up the animation loop on component destruction. */
+  /** Cleans up the animation loop and resize observer on component destruction. */
   ngOnDestroy(): void {
     this.loopRunning = false;
     if (this.rafId) {
       cancelAnimationFrame(this.rafId);
       this.rafId = 0;
     }
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
   }
 
   /**
