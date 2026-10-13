@@ -232,10 +232,44 @@ describe('TilePropertiesComponent', () => {
     component.onSizeInput('height', 2);
     fixture.detectChanges();
     await new Promise((r) => setTimeout(r, 500));
-    await fixture.whenStable();
     const stored = await db.sprites.get(s.id);
     expect(stored?.width).toBe(32);
     expect(stored?.height).toBe(32);
+  });
+
+  it('promotes a static tile to animated when a second frame is added', async () => {
+    const a = await seedSprite({ name: 'a' });
+    const tile = await seedTile({ type: 'static', spriteIds: [a.id] });
+    await setup(tile);
+    await component.onFrameCountInput(2);
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r, 50));
+    const stored = await db.tiles.get(tile.id);
+    expect(stored?.type).toBe('animated');
+    expect(stored?.spriteIds).toHaveLength(2);
+  });
+
+  it('clamps the stored anchor after a resize', async () => {
+    const big: number[][] = Array.from({ length: 32 }, () => Array<number>(32).fill(0));
+    const s = await seedSprite({ width: 32, height: 32, paletteIndices: big });
+    const tile = await seedTile({
+      type: 'animated',
+      spriteIds: [s.id],
+      anchor: { x: 24, y: 48 },
+    });
+    await setup(tile);
+    component.onSizeInput('width', 1);
+    component.onSizeInput('height', 1);
+    fixture.detectChanges();
+    await new Promise((r) => setTimeout(r, 500));
+    fixture.detectChanges();
+    const btn = confirmButtonFor('Crop');
+    expect(btn).toBeTruthy();
+    btn!.click();
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r, 50));
+    const stored = await db.tiles.get(tile.id);
+    expect(stored?.anchor).toEqual({ x: 0, y: 0 });
   });
 
   it('unchecking interactable auto-saves actionId undefined', async () => {

@@ -15,6 +15,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { SearchableSelectComponent } from '../../../shared/components/searchable-select/searchable-select.component';
+import { clampAnchor } from '../../../shared/models/tile-anchor';
 import { NotificationService } from '../../../core/services/notification.service';
 import { listGameActions } from '../../../core/actions/game-actions';
 import type { ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -330,6 +331,11 @@ export class TilePropertiesComponent {
     const palette = this.projectPalette() ?? [];
     try {
       await this.spriteService.resizeSprites(this.tileSprites(), w * ts, h * ts, palette);
+      const currentTile = this.tile();
+      if (currentTile?.anchor) {
+        const clamped = clampAnchor(currentTile.anchor, w * ts, h * ts, ts);
+        await this.tileService.updateTile(currentTile.id, { anchor: clamped });
+      }
       await this.spriteService.markMutated();
     } catch {
       this.notification.error('Failed to resize frames');
@@ -471,8 +477,10 @@ export class TilePropertiesComponent {
       );
       ids.push(sprite.id);
     }
+    const total = t.spriteIds.length + ids.length;
     await this.tileService.updateTile(t.id, {
       spriteIds: [...t.spriteIds, ...ids],
+      type: total > 1 ? 'animated' : t.type,
     });
   }
 }
