@@ -7,6 +7,29 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-14
+
+### Added
+
+- Tile anchor system with directional (4-way) footprints: tiles render and block across
+  their full footprint, and anchors round-trip through project export/import (#92).
+- Anchor tool in the sprite editor to set a tile's ground zone, with an Auto reset button
+  and a status-bar readout (#93).
+
+### Changed
+
+- Adding a frame now promotes a tile from static to animated; resizing a tile clamps its
+  stored anchor (#92).
+- The demo tree is re-authored as a single 16x32 sprite overhanging the cell above; the demo
+  project is seeded at bootstrap and the app root adopts OnPush with clearer error toasts
+  (#90, #92).
+
+### Fixed
+
+- Static tiles are guaranteed to hold a single frame: `TileService` rejects static tiles
+  with multiple frames, and the sprite editor asks for confirmation before dropping frames
+  when switching to static (#92, #97).
+
 ## [0.1.0] - 2026-10-06
 
 First versioned release. Everything shipped up to this tag is listed below, since no
