@@ -372,6 +372,43 @@ describe('ProjectIoService', () => {
     expect(scenesCount).toBe(0);
   });
 
+  it('round-trips a stored anchor', async () => {
+    const { projectId, groundId } = await seedProject();
+    await db.sprites.update(groundId, { width: 32, height: 32 });
+    await db.tiles.update(groundId, { anchor: { x: 8, y: 16 } });
+    const json = await service.exportProject(projectId);
+    const result = await service.importProject(json, { kind: 'new' });
+    const imported = await db.tiles.where('projectId').equals(result.projectId).toArray();
+    const ground = imported.find((t) => t.name === 'Ground');
+    expect(ground?.anchor).toEqual({ x: 8, y: 16 });
+  });
+
+  it('trims a static archive tile to its oldest frame on import', async () => {
+    const json = validJsonOverrides({
+      tiles: [{ ...validTile(), spriteIds: [13, 11] }],
+      sprites: [
+        validSprite(),
+        { ...validSprite(), sourceId: 13, pixelData: 'data:image/png;base64,DDD' },
+      ],
+    });
+    const result = await service.importProject(json, { kind: 'new' });
+    const imported = await db.tiles.where('projectId').equals(result.projectId).toArray();
+    expect(imported[0].spriteIds).toHaveLength(1);
+    const kept = await db.sprites.get(imported[0].spriteIds[0]);
+    expect(kept?.pixelData).toBe('data:image/png;base64,AAA');
+    expect(await db.sprites.where('projectId').equals(result.projectId).count()).toBe(1);
+  });
+
+  it('clamps the imported anchor to the kept frame bounds', async () => {
+    const json = validJsonOverrides({
+      tiles: [{ ...validTile(), anchor: { x: 40, y: 40 } }],
+      sprites: [{ ...validSprite(), width: 16, height: 32 }],
+    });
+    const result = await service.importProject(json, { kind: 'new' });
+    const imported = await db.tiles.where('projectId').equals(result.projectId).toArray();
+    expect(imported[0].anchor).toEqual({ x: 0, y: 16 });
+  });
+
   function validTile() {
     return {
       sourceId: 1,
