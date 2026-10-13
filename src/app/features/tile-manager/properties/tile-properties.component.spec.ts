@@ -179,6 +179,28 @@ describe('TilePropertiesComponent', () => {
     expect(frames[0].name).toBe('a');
   });
 
+  it('keeps an animated tile unchanged until the static switch is confirmed', async () => {
+    const a = await seedSprite({ name: 'a' });
+    const b = await seedSprite({ name: 'b' });
+    const tile = await seedTile({ type: 'animated', spriteIds: [a.id, b.id] });
+    await setup(tile);
+    const typeSelect = fixture.debugElement.query(By.css('select[name="type"]'));
+    typeSelect.triggerEventHandler('change', { target: { value: 'static' } });
+    fixture.detectChanges();
+    await new Promise((r) => setTimeout(r, 50));
+    const before = await db.tiles.get(tile.id);
+    expect(before?.type).toBe('animated');
+    expect(before?.spriteIds).toEqual([a.id, b.id]);
+    const btn = confirmButtonFor('Delete Frames');
+    expect(btn).toBeTruthy();
+    btn!.click();
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r, 300));
+    const after = await db.tiles.get(tile.id);
+    expect(after?.type).toBe('static');
+    expect(after?.spriteIds).toEqual([a.id]);
+  });
+
   it('shrinking size opens Crop dialog then resizes all frames', async () => {
     const big: number[][] = Array.from({ length: 32 }, () => Array<number>(32).fill(0));
     big[10][10] = 5;

@@ -63,18 +63,20 @@ export class TileService {
 
   /**
    * Partially updates a tile by id, enforcing the static single-frame invariant.
-   * A `static` tile may hold at most one sprite; pass `type: 'animated'` in the
-   * same call to promote a tile while adding frames.
+   * A `static` tile may hold at most one sprite, whether the frame list is changed
+   * directly or the type flips to `static`; pass `type: 'animated'` in the same
+   * call to promote a tile while adding frames.
    * @param id - The tile id to update.
    * @param changes - Partial tile fields to apply.
-   * @throws {StaticTileFramesError} When the effective type stays `static` while
-   *     `changes.spriteIds` holds more than one frame.
+   * @throws {StaticTileFramesError} When the effective type is `static` and the
+   *     effective frame list would hold more than one sprite.
    */
   async updateTile(id: number, changes: Partial<Omit<Tile, 'id'>>): Promise<void> {
-    if (changes.spriteIds && changes.spriteIds.length > 1) {
+    if (changes.type !== undefined || changes.spriteIds !== undefined) {
       const current = await this.db.tiles.get(id);
       const effectiveType = changes.type ?? current?.type ?? 'static';
-      if (effectiveType === 'static') {
+      const effectiveSpriteIds = changes.spriteIds ?? current?.spriteIds ?? [];
+      if (effectiveType === 'static' && effectiveSpriteIds.length > 1) {
         throw new StaticTileFramesError(id);
       }
     }

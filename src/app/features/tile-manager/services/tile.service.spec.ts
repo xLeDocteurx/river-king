@@ -69,6 +69,17 @@ describe('TileService', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('rejects switching an animated tile with several frames to static', async () => {
+    const tile = await service.createTile('p1', 'Water');
+    await service.updateTile(tile.id, { type: 'animated', spriteIds: [1, 2] });
+    await expect(service.updateTile(tile.id, { type: 'static' })).rejects.toBeInstanceOf(
+      StaticTileFramesError,
+    );
+    const stored = await service.getTile(tile.id);
+    expect(stored?.type).toBe('animated');
+    expect(stored?.spriteIds).toEqual([1, 2]);
+  });
+
   it('should delete a tile', async () => {
     const tile = await service.createTile('proj-1', 'To Delete');
     await service.deleteTile(tile.id);

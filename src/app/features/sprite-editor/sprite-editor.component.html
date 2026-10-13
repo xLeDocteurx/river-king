@@ -148,7 +148,7 @@
           <select
             class="tw-bg-card-bg tw-border tw-border-border tw-rounded-sm tw-text-foreground tw-text-xs tw-px-1 tw-py-0.5"
             [value]="tile.type"
-            (change)="onUpdateTileType($any($event.target).value)"
+            (change)="onUpdateTileType($any($event.target).value, $any($event.target))"
           >
             <option value="static">Static</option>
             <option value="animated">Animated</option>
@@ -223,4 +223,11 @@
   >
     <span class="material-symbols" aria-hidden="true">chevron_right</span>
   </button>
+
+  <rk-confirm-dialog
+    #framesDialog
+    [data]="framesDialogData"
+    (confirmed)="confirmStaticSwitch()"
+    (cancelled)="cancelStaticSwitch()"
+  />
 </div>

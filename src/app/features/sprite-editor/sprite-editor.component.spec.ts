@@ -589,6 +589,67 @@ describe('SpriteEditorComponent', () => {
     expect(component.currentTile()?.type).toBe('static');
   });
 
+  it('defers switching an animated tile to static until the reduction is confirmed', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Water',
+      type: 'animated',
+      spriteIds: [11, 12],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false, ySort: false },
+    } as Tile);
+    await db.sprites.bulkAdd([
+      {
+        id: 11,
+        projectId: 'test-proj',
+        tileId: 1,
+        name: 'Water 1',
+        width: 16,
+        height: 16,
+        pixelData: '',
+        paletteIndices: [],
+      } as Sprite,
+      {
+        id: 12,
+        projectId: 'test-proj',
+        tileId: 1,
+        name: 'Water 2',
+        width: 16,
+        height: 16,
+        pixelData: '',
+        paletteIndices: [],
+      } as Sprite,
+    ]);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.selectedTileId.set(1);
+
+    await component.onUpdateTileType('static');
+    expect(component.pendingStaticSwitch()).toBe(true);
+    const before = await db.tiles.get(1);
+    expect(before?.type).toBe('animated');
+    expect(before?.spriteIds).toEqual([11, 12]);
+
+    await component.confirmStaticSwitch();
+    await new Promise((r) => setTimeout(r, 50));
+    const after = await db.tiles.get(1);
+    expect(after?.type).toBe('static');
+    expect(after?.spriteIds).toEqual([11]);
+    expect(await db.sprites.get(12)).toBeUndefined();
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await flushUndo();
+    expect((await db.tiles.get(1))?.type).toBe('animated');
+    expect((await db.tiles.get(1))?.spriteIds).toEqual([11, 12]);
+    expect(await db.sprites.get(12)).toBeDefined();
+  });
+
   it('persists a clamped anchor when the canvas emits one', async () => {
     await createProjectWithPalette();
     const db = TestBed.inject(DatabaseService);

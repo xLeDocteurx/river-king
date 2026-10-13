@@ -113,6 +113,9 @@ export class TilePropertiesComponent {
   /** Target frame count awaiting deletion confirmation (null = none). */
   pendingFrameReduction = signal<number | null>(null);
 
+  /** Whether the pending frame reduction is part of an animated→static switch. */
+  private pendingStaticType = signal(false);
+
   /** Pending shrink dimensions awaiting crop confirmation (null = none). */
   pendingSizeShrink = signal<{ w: number; h: number } | null>(null);
 
@@ -223,8 +226,9 @@ export class TilePropertiesComponent {
    */
   async onTypeChange(type: string): Promise<void> {
     const value = type as 'static' | 'animated';
-    this.typeSelected.set(value);
     if (value === 'animated') {
+      this.pendingStaticType.set(false);
+      this.typeSelected.set('animated');
       const sprites = this.tileSprites();
       if (sprites.length === 0) {
         try {
@@ -235,7 +239,16 @@ export class TilePropertiesComponent {
         }
       }
     } else if (this.tileSprites().length > 1) {
+      // Defer the switch until the user confirms the frame reduction: keep the
+      // stored (animated) type so an invalid static + multiple-frames write is
+      // never auto-saved before confirmation.
+      this.form.get('type')?.setValue('animated', { emitEvent: false });
+      this.typeSelected.set('animated');
+      this.pendingStaticType.set(true);
       this.pendingFrameReduction.set(1);
+    } else {
+      this.pendingStaticType.set(false);
+      this.typeSelected.set('static');
     }
   }
 
@@ -284,22 +297,30 @@ export class TilePropertiesComponent {
     const sprites = this.tileSprites();
     const keep = sprites.slice(0, target);
     const extras = sprites.slice(target);
+    const toStatic = this.pendingStaticType();
     try {
       await this.spriteService.deleteSprites(extras.map((s) => s.id));
       await this.tileService.updateTile(t.id, {
         spriteIds: keep.map((s) => s.id),
+        ...(toStatic ? { type: 'static' as const } : {}),
       });
+      if (toStatic) {
+        this.form.get('type')?.setValue('static', { emitEvent: false });
+        this.typeSelected.set('static');
+      }
       await this.spriteService.markMutated();
     } catch {
       this.notification.error('Failed to delete frames');
     } finally {
       this.pendingFrameReduction.set(null);
+      this.pendingStaticType.set(false);
     }
   }
 
   /** Cancels the pending frame reduction and closes the dialog. */
   cancelFrameReduction(): void {
     this.pendingFrameReduction.set(null);
+    this.pendingStaticType.set(false);
   }
 
   /**
