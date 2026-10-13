@@ -5,6 +5,18 @@ import type { Tile } from '../../../shared/models/tile.model';
 import type { Sprite } from '../../../shared/models/sprite.model';
 
 /**
+ * Raised when an update would leave a `static` tile with more than one frame.
+ * Callers promote the tile to `animated` in the same {@link TileService.updateTile}
+ * call, or reduce the frame list.
+ */
+export class StaticTileFramesError extends Error {
+  constructor(id: number) {
+    super(`Tile ${id} is static and cannot hold more than one frame`);
+    this.name = 'StaticTileFramesError';
+  }
+}
+
+/**
  * Feature-private service providing CRUD operations for tiles.
  *
  * Each tile belongs to a project and carries metadata (name, type,
@@ -50,11 +62,22 @@ export class TileService {
   }
 
   /**
-   * Partially updates a tile by id.
+   * Partially updates a tile by id, enforcing the static single-frame invariant.
+   * A `static` tile may hold at most one sprite; pass `type: 'animated'` in the
+   * same call to promote a tile while adding frames.
    * @param id - The tile id to update.
    * @param changes - Partial tile fields to apply.
+   * @throws {StaticTileFramesError} When the effective type stays `static` while
+   *     `changes.spriteIds` holds more than one frame.
    */
   async updateTile(id: number, changes: Partial<Omit<Tile, 'id'>>): Promise<void> {
+    if (changes.spriteIds && changes.spriteIds.length > 1) {
+      const current = await this.db.tiles.get(id);
+      const effectiveType = changes.type ?? current?.type ?? 'static';
+      if (effectiveType === 'static') {
+        throw new StaticTileFramesError(id);
+      }
+    }
     await this.db.tiles.update(id, changes);
   }
 

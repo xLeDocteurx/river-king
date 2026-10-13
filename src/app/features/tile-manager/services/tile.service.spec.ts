@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import 'fake-indexeddb/auto';
-import { TileService } from './tile.service';
+import { StaticTileFramesError, TileService } from './tile.service';
 import { SpriteService } from '../../sprite-editor/services/sprite.service';
 import { DatabaseService } from '../../../core/services/database.service';
 
@@ -51,6 +51,22 @@ describe('TileService', () => {
     const updated = await service.getTile(tile.id);
     expect(updated?.name).toBe('Updated');
     expect(updated?.type).toBe('animated');
+  });
+
+  it('rejects saving more than one frame on a static tile', async () => {
+    const tile = await service.createTile('p1', 'Tree');
+    await expect(service.updateTile(tile.id, { spriteIds: [1, 2] })).rejects.toBeInstanceOf(
+      StaticTileFramesError,
+    );
+    const stored = await service.getTiles('p1');
+    expect(stored[0].spriteIds).toEqual([]);
+  });
+
+  it('allows multiple frames when the same call promotes to animated', async () => {
+    const tile = await service.createTile('p1', 'Water');
+    await expect(
+      service.updateTile(tile.id, { type: 'animated', spriteIds: [1, 2] }),
+    ).resolves.toBeUndefined();
   });
 
   it('should delete a tile', async () => {
