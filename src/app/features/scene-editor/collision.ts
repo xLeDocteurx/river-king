@@ -34,9 +34,11 @@ export function buildBlockingGrid(
       for (let x = 0; x < row.length; x++) {
         const tileId = row[x];
         if (tileId < 0 || !blockingById.get(tileId)) continue;
-        const { w, h } = getFootprint(tileId, footprints);
-        for (let fy = y; fy < y + h && fy < height; fy++) {
-          for (let fx = x; fx < x + w && fx < width; fx++) {
+        const { left, up, right, down } = getFootprint(tileId, footprints);
+        for (let fy = y - up; fy <= y + down; fy++) {
+          if (fy < 0 || fy >= height) continue;
+          for (let fx = x - left; fx <= x + right; fx++) {
+            if (fx < 0 || fx >= width) continue;
             grid[fy][fx] = true;
           }
         }

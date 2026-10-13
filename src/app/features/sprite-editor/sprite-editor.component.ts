@@ -638,9 +638,12 @@ export class SpriteEditorComponent implements OnInit {
       const idx = tile.spriteIds.indexOf(frameId);
       const newSpriteIds = [...tile.spriteIds];
       newSpriteIds.splice(idx + 1, 0, newSprite.id);
+      const newType = newSpriteIds.length > 1 ? 'animated' : tile.type;
       const prevSpriteIds = [...tile.spriteIds];
-      await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds });
+      const prevType = tile.type;
+      await this.tileService.updateTile(tile.id, { spriteIds: newSpriteIds, type: newType });
       await this.loadSprites();
+      await this.loadTiles();
       await this.selectSprite(newSprite.id);
 
       const tileId = tile.id;
@@ -650,7 +653,7 @@ export class SpriteEditorComponent implements OnInit {
         label: 'Duplicate frame',
         execute: async () => {
           try {
-            await this.tileService.updateTile(tileId, { spriteIds: newSpriteIds });
+            await this.tileService.updateTile(tileId, { spriteIds: newSpriteIds, type: newType });
             await this.spriteService.restoreSprite(sprite);
             await this.loadSprites();
             await this.loadTiles();
@@ -661,7 +664,7 @@ export class SpriteEditorComponent implements OnInit {
         },
         undo: async () => {
           try {
-            await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds });
+            await this.tileService.updateTile(tileId, { spriteIds: prevSpriteIds, type: prevType });
             await this.spriteService.deleteSprite(removedId);
             await this.loadSprites();
             await this.loadTiles();

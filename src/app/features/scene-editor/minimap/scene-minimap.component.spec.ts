@@ -94,7 +94,7 @@ describe('SceneMinimapComponent', () => {
     inputs: {
       tileImages?: Record<number, string[]>;
       tileSize?: number;
-      tileFootprints?: Record<number, { w: number; h: number }>;
+      tileFootprints?: Record<number, { left: number; up: number; right: number; down: number }>;
       viewportWidth?: number;
       viewportHeight?: number;
       cameraX?: number;
@@ -167,6 +167,26 @@ describe('SceneMinimapComponent', () => {
       const scale = Math.min(100 / (4 * 16), 100 / (4 * 16));
       const cell = 16 * scale;
       expect(ctx.fillRect).toHaveBeenCalledWith(cell, 2 * cell, cell, cell);
+      expect(ctx.fillStyle).toBe('#94b0c2');
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('draws an upward-overhanging tile at its absolute rect across two cells', () => {
+    const tileData = [
+      [-1, -1, -1, -1],
+      [-1, 1, -1, -1],
+      [-1, -1, -1, -1],
+      [-1, -1, -1, -1],
+    ];
+    const { ctx, getContextSpy } = setup(makeScene(4, 4), [makeLayer('l1', true, 1, tileData)], {
+      tileFootprints: { 1: { left: 0, up: 1, right: 0, down: 0 } },
+    });
+    try {
+      const scale = Math.min(100 / (4 * 16), 100 / (4 * 16));
+      const cell = 16 * scale;
+      expect(ctx.fillRect).toHaveBeenCalledWith(cell, 0, cell, 2 * cell);
       expect(ctx.fillStyle).toBe('#94b0c2');
     } finally {
       getContextSpy.mockRestore();

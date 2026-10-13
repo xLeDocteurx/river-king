@@ -1,5 +1,6 @@
 import type { TileProperties } from './tile.model';
 import type { Layer } from './scene.model';
+import type { TileAnchor } from './tile-anchor';
 
 /**
  * Identifies a River King project archive file.
@@ -71,6 +72,11 @@ export interface TileArchiveItem {
    * Folder path the tile lives in (`''` = root).
    */
   folderPath: string;
+  /**
+   * Optional ground-cell anchor in pixels. Absent in v1 archives created before
+   * the anchor feature; the importer derives the default when absent.
+   */
+  anchor?: TileAnchor;
 }
 
 /**

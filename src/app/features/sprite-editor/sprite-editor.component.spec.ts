@@ -549,6 +549,46 @@ describe('SpriteEditorComponent', () => {
     expect(await db.sprites.get(12)).toBeUndefined();
   });
 
+  it('duplicates a frame on a static tile and promotes it to animated', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Hero',
+      type: 'static',
+      spriteIds: [11],
+      animationSpeed: 4,
+      properties: { blocking: false, interactable: false, ySort: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Hero 1',
+      width: 16,
+      height: 16,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    await component.selectSprite(11);
+
+    await component.onDuplicateFrame(11);
+    expect(component.currentTile()?.spriteIds).toHaveLength(2);
+    expect(component.currentTile()?.type).toBe('animated');
+    expect((await db.tiles.get(1))!.type).toBe('animated');
+
+    const undo = TestBed.inject(UndoService);
+    undo.undo();
+    await flushUndo();
+    expect(component.currentTile()?.spriteIds).toEqual([11]);
+    expect(component.currentTile()?.type).toBe('static');
+  });
+
   it('undo persists the previous pixels back to the sprite', async () => {
     const { spriteService, existingSpriteId } = await seedTwoSprites();
     const updateSpy = vi

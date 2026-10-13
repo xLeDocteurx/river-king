@@ -33,7 +33,7 @@ describe('buildBlockingGrid', () => {
   });
 
   it('blocks the full footprint of multi-cell tiles', () => {
-    const footprints: TileFootprintMap = { 1: { w: 2, h: 2 } };
+    const footprints: TileFootprintMap = { 1: { left: 0, up: 0, right: 1, down: 1 } };
     const scene = [
       [-1, -1, -1, -1],
       [-1, 1, -1, -1],
@@ -45,6 +45,29 @@ describe('buildBlockingGrid', () => {
     expect(grid[1][2]).toBe(true);
     expect(grid[2][1]).toBe(true);
     expect(grid[2][2]).toBe(true);
+    expect(grid[0][0]).toBe(false);
+  });
+
+  it('marks the cell above a bottom-anchored overhanging tile', () => {
+    const footprints = { 1: { left: 0, up: 1, right: 0, down: 0 } };
+    const layers = [
+      {
+        id: 'l1',
+        name: 'L',
+        visible: true,
+        opacity: 1,
+        tileData: [
+          [-1, -1],
+          [-1, 1],
+        ],
+      },
+    ];
+    const blocking = new Map<number, boolean>([[1, true]]);
+
+    const grid = buildBlockingGrid(2, 2, layers, blocking, footprints);
+
+    expect(grid[1][1]).toBe(true);
+    expect(grid[0][1]).toBe(true);
     expect(grid[0][0]).toBe(false);
   });
 });

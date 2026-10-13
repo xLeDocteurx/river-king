@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import type { Scene } from '../../shared/models/scene.model';
 import type { Layer } from '../../shared/models/scene.model';
-import { getFootprint } from './map-footprint';
+import { footprintRect, getFootprint } from './map-footprint';
 import type { TileFootprintMap } from './map-footprint';
 import { cssTokenColor, gridStrokeColor } from './grid-color';
 import { GRID_EXT_ALPHA, MAX_EXPAND_TILES } from './autogrow.consts';
@@ -282,15 +282,15 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       }
 
       for (const { x, y, tileId } of anchors) {
-        const { w, h } = getFootprint(tileId, this.tileFootprints());
+        const rect = footprintRect(x, y, tileId, this.tileFootprints());
         const frames = tileImages[tileId];
         const frameIdx = this.frameIndices.get(tileId) ?? 0;
         const img = frames?.[frameIdx];
         if (img) {
-          ctx.drawImage(img, x * cell, y * cell, w * cell, h * cell);
+          ctx.drawImage(img, rect.x * cell, rect.y * cell, rect.w * cell, rect.h * cell);
         } else {
           ctx.fillStyle = this.getTileColor(tileId);
-          ctx.fillRect(x * cell, y * cell, w * cell, h * cell);
+          ctx.fillRect(rect.x * cell, rect.y * cell, rect.w * cell, rect.h * cell);
         }
       }
       if (layer.opacity < 1) {
@@ -745,7 +745,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
    * required growth stays within `MAX_EXPAND_TILES` in every direction (the scene can
    * auto-grow to include it).
    * @param event The native mouse event.
-   * @returns Anchor cell plus footprint size, or null when no tile is selected,
+   * @returns The absolute footprint rectangle, or null when no tile is selected,
    *     the pointer is beyond the auto-grow guard, or the tile would not fit.
    */
   private footprintRectFor(
@@ -760,11 +760,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const cell = this.tileSize();
     const x = Math.floor((event.clientX - rect.left - this.cameraX()) / (cell * this.zoom()));
     const y = Math.floor((event.clientY - rect.top - this.cameraY()) / (cell * this.zoom()));
-    const { w, h } = getFootprint(tileId, this.tileFootprints());
-    const padLeft = Math.max(0, -x);
-    const padRight = Math.max(0, x + w - scene.width);
-    const padTop = Math.max(0, -y);
-    const padBottom = Math.max(0, y + h - scene.height);
+    const placement = footprintRect(x, y, tileId, this.tileFootprints());
+    const padLeft = Math.max(0, -placement.x);
+    const padRight = Math.max(0, placement.x + placement.w - scene.width);
+    const padTop = Math.max(0, -placement.y);
+    const padBottom = Math.max(0, placement.y + placement.h - scene.height);
     if (
       padLeft > MAX_EXPAND_TILES ||
       padRight > MAX_EXPAND_TILES ||
@@ -773,7 +773,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     ) {
       return null;
     }
-    return { x, y, w, h };
+    return placement;
   }
 
   /** @internal Calculates grid coordinates and emits a tilePlaced event. The whole footprint must fit inside the scene. */
@@ -782,6 +782,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     if (this.scene() === null || tileId === null) return;
     const rect = this.footprintRectFor(event);
     if (!rect) return;
-    this.tilePlaced.emit({ x: rect.x, y: rect.y, tileId });
+    const fp = getFootprint(tileId, this.tileFootprints());
+    this.tilePlaced.emit({ x: rect.x + fp.left, y: rect.y + fp.up, tileId });
   }
 }
