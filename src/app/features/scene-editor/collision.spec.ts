@@ -1,4 +1,10 @@
-import { buildBlockingGrid, resolveCollision, HALF_CELL_HITBOX } from './collision';
+import {
+  buildBlockingGrid,
+  buildCollisionField,
+  resolveCollision,
+  HALF_CELL_HITBOX,
+} from './collision';
+import type { CellRect } from './collision';
 import type { Layer } from '../../shared/models/scene.model';
 import type { TileFootprintMap } from './map-footprint';
 
@@ -176,3 +182,90 @@ describe('resolveCollision', () => {
     });
   });
 });
+
+describe('buildCollisionField', () => {
+  it('marks unmasked blocking tiles over their full footprint', () => {
+    const field = buildCollisionField(
+      3,
+      1,
+      [layer([[1, -1, -1]])],
+      new Map([[1, { blocking: true }]]),
+      {},
+    );
+    expect(field.full[0]).toEqual([true, false, false]);
+    expect(field.sub[0]).toEqual([null, null, null]);
+  });
+
+  it('maps solid mask pixels to sub-cell rects and leaves empty pixels walkable', () => {
+    const mask = [
+      [1, 0],
+      [0, 1],
+    ];
+    const field = buildCollisionField(
+      1,
+      1,
+      [layer([[1]])],
+      new Map([[1, { blocking: true, mask }]]),
+      {},
+    );
+    expect(field.full[0][0]).toBe(false);
+    const rects = field.sub[0][0]!;
+    expect(rects).toHaveLength(2);
+    expect(rects).toContainEqual({ x0: 0, y0: 0, x1: 0.5, y1: 0.5 });
+    expect(rects).toContainEqual({ x0: 0.5, y0: 0.5, x1: 1, y1: 1 });
+  });
+
+  it('treats an all-zero mask as fully passable', () => {
+    const field = buildCollisionField(
+      1,
+      1,
+      [layer([[1]])],
+      new Map([[1, { blocking: true, mask: [[0, 0], [0, 0]] }]]),
+      {},
+    );
+    expect(field.full[0][0]).toBe(false);
+    expect(field.sub[0][0]).toBeNull();
+  });
+});
+
+describe('resolveCollision with masked sub-rects', () => {
+  const bounds = { width: 3, height: 1 };
+  const half = HALF_CELL_HITBOX;
+
+  function emptyGrid(): boolean[][] {
+    return buildBlockingGrid(3, 1, [], new Map(), {});
+  }
+
+  function subGrid(): (CellRect[] | null)[][] {
+    return [[null, [{ x0: 1, y0: 0, x1: 1.5, y1: 0.5 }], null]];
+  }
+
+  it('lets the hitbox pass a masked cell where the mask is empty', () => {
+    // Player center y=0.75 -> span [0.5,1] which misses the solid rect [0,0.5].
+    expect(resolveCollision({ x: 0.5, y: 0.75 }, { x: 1, y: 0 }, half, emptyGrid(), bounds, subGrid())).toEqual(
+      { x: 1.5, y: 0.75 },
+    );
+  });
+
+  it('stops the hitbox at a masked cell where the mask is solid', () => {
+    const result = resolveCollision(
+      { x: 0.5, y: 0.25 },
+      { x: 1, y: 0 },
+      half,
+      emptyGrid(),
+      bounds,
+      subGrid(),
+    );
+    expect(result).toEqual({ x: 0.75, y: 0.25 });
+  });
+
+  it('keeps the #51 behaviour when no sub-rects are provided', () => {
+    const wall = emptyGrid();
+    wall[0][1] = true;
+    expect(resolveCollision({ x: 0.5, y: 0.5 }, { x: 1, y: 0 }, half, wall, bounds)).toEqual({
+      x: 0.75,
+      y: 0.5,
+    });
+  });
+});
+
