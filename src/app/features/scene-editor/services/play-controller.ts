@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import type { Layer } from '../../../shared/models/scene.model';
-import { buildBlockingGrid, resolveCollision, HALF_CELL_HITBOX } from '../collision';
+import { buildCollisionField, resolveCollision, HALF_CELL_HITBOX } from '../collision';
+import type { CollisionField, TileCollision } from '../collision';
 import type { TileFootprintMap } from '../map-footprint';
 import { findInteractableTarget } from '../interaction';
 import type { InteractionTarget } from '../interaction';
@@ -59,7 +60,7 @@ export class PlayerController {
   private sceneWidth = 0;
   private sceneHeight = 0;
   private sceneLayers: Layer[] = [];
-  private blockingGrid: boolean[][] = [];
+  private collisionField: CollisionField = { full: [], sub: [] };
   private interactableById = new Map<number, string>();
 
   /** @internal Records a held key and fires the interaction on an E press. */
@@ -83,31 +84,31 @@ export class PlayerController {
   };
 
   /**
-   * Begins a Play session: attaches input listeners, builds the blocking grid
+   * Begins a Play session: attaches input listeners, builds the collision field
    * from the scene's visible layers, resets the player to the given spawn cell
    * (position signals hold the center, offset by half a cell), and derives the
    * initial interaction target.
    * @param scene - The scene being played, with its width/height bounds and layers.
    * @param spawn - The spawn cell to start at (the player centers on it).
-   * @param blockingById - Per-tile blocking flags.
+   * @param collisionById - Per-tile blocking flag and optional collision mask.
    * @param footprints - Grid-cell footprint per tile id.
    * @param interactableById - Per-tile action id for interactable tiles.
    */
   start(
     scene: { width: number; height: number; layers: Layer[] },
     spawn: { x: number; y: number },
-    blockingById: Map<number, boolean>,
+    collisionById: Map<number, TileCollision>,
     footprints: TileFootprintMap,
     interactableById: Map<number, string>,
   ): void {
     this.sceneWidth = scene.width;
     this.sceneHeight = scene.height;
     this.sceneLayers = scene.layers;
-    this.blockingGrid = buildBlockingGrid(
+    this.collisionField = buildCollisionField(
       scene.width,
       scene.height,
       scene.layers,
-      blockingById,
+      collisionById,
       footprints,
     );
     this.interactableById = interactableById;
@@ -162,8 +163,9 @@ export class PlayerController {
         { x: this.x(), y: this.y() },
         { x: dx * this.speed * dt, y: dy * this.speed * dt },
         HALF_CELL_HITBOX,
-        this.blockingGrid,
+        this.collisionField.full,
         { width: this.sceneWidth, height: this.sceneHeight },
+        this.collisionField.sub,
       );
       this.x.set(resolved.x);
       this.y.set(resolved.y);

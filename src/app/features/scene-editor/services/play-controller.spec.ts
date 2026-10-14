@@ -3,6 +3,7 @@ import { PlayerController } from './play-controller';
 import { registerGameAction } from '../../../core/actions/game-actions';
 import { NotificationService } from '../../../core/services/notification.service';
 import type { Layer } from '../../../shared/models/scene.model';
+import type { TileCollision } from '../collision';
 
 function press(key: string): void {
   window.dispatchEvent(new KeyboardEvent('keydown', { key }));
@@ -37,7 +38,7 @@ function wallScene(): { width: number; height: number; layers: Layer[] } {
   };
 }
 
-const WALL = new Map<number, boolean>([[0, true]]);
+const WALL = new Map<number, TileCollision>([[0, { blocking: true }]]);
 
 /** 4x4 scene where the listed cells hold tile id 7. */
 function sceneWithBell(cells: [number, number][]): {
@@ -213,5 +214,33 @@ describe('PlayerController', () => {
     press('s');
     player.update(0.4);
     expect(player.interactionTarget()).toEqual({ x: 2, y: 3, actionId: 'bell' });
+  });
+
+  it('crosses a blocking tile where its collision mask is empty', () => {
+    const scene: { width: number; height: number; layers: Layer[] } = {
+      width: 3,
+      height: 1,
+      layers: [{ id: 'l1', name: 't', visible: true, opacity: 1, tileData: [[0, 0, -1]] }],
+    };
+    const mask = new Map<number, TileCollision>([[0, { blocking: true, mask: [[0]] }]]);
+    player.start(scene, { x: 0, y: 0 }, mask, {}, new Map());
+    press('d');
+    for (let i = 0; i < 20; i++) player.update(0.05);
+    expect(player.x()).toBeGreaterThan(1);
+    release('d');
+  });
+
+  it('stops at a blocking tile whose collision mask is solid', () => {
+    const scene: { width: number; height: number; layers: Layer[] } = {
+      width: 3,
+      height: 1,
+      layers: [{ id: 'l1', name: 't', visible: true, opacity: 1, tileData: [[-1, 0, -1]] }],
+    };
+    const mask = new Map<number, TileCollision>([[0, { blocking: true, mask: [[1]] }]]);
+    player.start(scene, { x: 0, y: 0 }, mask, {}, new Map());
+    press('d');
+    player.update(1);
+    expect(player.x()).toBe(0.75);
+    release('d');
   });
 });
