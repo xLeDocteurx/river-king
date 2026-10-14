@@ -42,20 +42,20 @@
 Append to `drawing-tools.component.spec.ts` (before the closing `});`):
 
 ```ts
-  it('does not render the collision tool buttons', () => {
-    fixture.componentRef.setInput('tool', 'brush');
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[data-testid="tool-collision"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="tool-collision-erase"]')).toBeNull();
-  });
+it('does not render the collision tool buttons', () => {
+  fixture.componentRef.setInput('tool', 'brush');
+  fixture.detectChanges();
+  expect(fixture.nativeElement.querySelector('[data-testid="tool-collision"]')).toBeNull();
+  expect(fixture.nativeElement.querySelector('[data-testid="tool-collision-erase"]')).toBeNull();
+});
 
-  it('hides the anchor tool while collision mode is on', () => {
-    fixture.componentRef.setInput('tool', 'brush');
-    fixture.componentRef.setInput('collisionMode', true);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[data-testid="tool-anchor"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="tool-brush"]')).toBeTruthy();
-  });
+it('hides the anchor tool while collision mode is on', () => {
+  fixture.componentRef.setInput('tool', 'brush');
+  fixture.componentRef.setInput('collisionMode', true);
+  fixture.detectChanges();
+  expect(fixture.nativeElement.querySelector('[data-testid="tool-anchor"]')).toBeNull();
+  expect(fixture.nativeElement.querySelector('[data-testid="tool-brush"]')).toBeTruthy();
+});
 ```
 
 - [ ] **Step 2: Run the tests (expect failure)**
@@ -68,8 +68,8 @@ Expected: FAIL — `collisionMode` input unknown / collision buttons still prese
 In `drawing-tools.component.ts`, after `selectedTool`… actually after `tool` add:
 
 ```ts
-  /** Whether the sprite editor is in collision-mask painting mode. */
-  collisionMode = input(false);
+/** Whether the sprite editor is in collision-mask painting mode. */
+collisionMode = input(false);
 ```
 
 Update the class JSDoc line 9 to: `Provides buttons for brush, eraser, fill, and anchor tools.`
@@ -112,88 +112,88 @@ git commit -m "feature-105: drop the collision tool buttons and hide Anchor in c
 In `pixel-canvas.component.spec.ts`, delete the two tests `'paints solid collision pixels with the collision tool'` and `'clears collision pixels with the erase tool'` (the ones dispatching with `tool: 'collision'` / `'collisionErase'`), and add:
 
 ```ts
-  it('paints solid mask pixels with the brush in collision mode', () => {
-    setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
-    fixture.componentRef.setInput('collisionMode', true);
-    fixture.detectChanges();
-    const spy = vi.fn();
-    fixture.componentInstance.collisionMaskChange.subscribe(spy);
+it('paints solid mask pixels with the brush in collision mode', () => {
+  setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
+  fixture.componentRef.setInput('collisionMode', true);
+  fixture.detectChanges();
+  const spy = vi.fn();
+  fixture.componentInstance.collisionMaskChange.subscribe(spy);
 
-    const canvas = fixture.nativeElement.querySelector('canvas');
-    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
-      left: 0,
-      top: 0,
-      width: 256,
-      height: 256,
-    } as DOMRect);
+  const canvas = fixture.nativeElement.querySelector('canvas');
+  vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 256,
+    height: 256,
+  } as DOMRect);
 
-    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
-    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+  canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
+  canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
 
-    const emitted = spy.mock.calls.at(-1)?.[0] as number[][];
-    expect(emitted[0][0]).toBe(1);
-  });
+  const emitted = spy.mock.calls.at(-1)?.[0] as number[][];
+  expect(emitted[0][0]).toBe(1);
+});
 
-  it('erases mask pixels with the eraser in collision mode', () => {
-    setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
-    fixture.componentRef.setInput('collisionMask', [
-      [1, 1],
-      [1, 1],
-    ]);
-    fixture.componentRef.setInput('collisionMode', true);
-    fixture.componentRef.setInput('tool', 'eraser');
-    fixture.detectChanges();
-    const spy = vi.fn();
-    fixture.componentInstance.collisionMaskChange.subscribe(spy);
+it('erases mask pixels with the eraser in collision mode', () => {
+  setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
+  fixture.componentRef.setInput('collisionMask', [
+    [1, 1],
+    [1, 1],
+  ]);
+  fixture.componentRef.setInput('collisionMode', true);
+  fixture.componentRef.setInput('tool', 'eraser');
+  fixture.detectChanges();
+  const spy = vi.fn();
+  fixture.componentInstance.collisionMaskChange.subscribe(spy);
 
-    const canvas = fixture.nativeElement.querySelector('canvas');
-    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
-      left: 0,
-      top: 0,
-      width: 256,
-      height: 256,
-    } as DOMRect);
+  const canvas = fixture.nativeElement.querySelector('canvas');
+  vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 256,
+    height: 256,
+  } as DOMRect);
 
-    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
-    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+  canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
+  canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
 
-    const emitted = spy.mock.calls.at(-1)?.[0] as number[][];
-    expect(emitted[0][0]).toBe(0);
-  });
+  const emitted = spy.mock.calls.at(-1)?.[0] as number[][];
+  expect(emitted[0][0]).toBe(0);
+});
 
-  it('does not emit indicesChange while in collision mode', () => {
-    setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
-    fixture.componentRef.setInput('collisionMode', true);
-    fixture.detectChanges();
-    const spy = vi.fn();
-    fixture.componentInstance.indicesChange.subscribe(spy);
+it('does not emit indicesChange while in collision mode', () => {
+  setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
+  fixture.componentRef.setInput('collisionMode', true);
+  fixture.detectChanges();
+  const spy = vi.fn();
+  fixture.componentInstance.indicesChange.subscribe(spy);
 
-    const canvas = fixture.nativeElement.querySelector('canvas');
-    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
-      left: 0,
-      top: 0,
-      width: 256,
-      height: 256,
-    } as DOMRect);
+  const canvas = fixture.nativeElement.querySelector('canvas');
+  vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 256,
+    height: 256,
+  } as DOMRect);
 
-    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
-    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+  canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
+  canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
 
-    expect(spy).not.toHaveBeenCalled();
-  });
+  expect(spy).not.toHaveBeenCalled();
+});
 
-  it('draws the collision overlay for solid cells in collision mode', () => {
-    setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
-    fixture.componentRef.setInput('collisionMask', [
-      [1, 1],
-      [1, 1],
-    ]);
-    fixture.componentRef.setInput('collisionMode', true);
-    fixture.detectChanges();
+it('draws the collision overlay for solid cells in collision mode', () => {
+  setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
+  fixture.componentRef.setInput('collisionMask', [
+    [1, 1],
+    [1, 1],
+  ]);
+  fixture.componentRef.setInput('collisionMode', true);
+  fixture.detectChanges();
 
-    // cellScale = 128 for a 2x2 grid; the bottom-right overlay cell is at (128,128).
-    expect(mockCtx.fillRect).toHaveBeenCalledWith(128, 128, 128, 128);
-  });
+  // cellScale = 128 for a 2x2 grid; the bottom-right overlay cell is at (128,128).
+  expect(mockCtx.fillRect).toHaveBeenCalledWith(128, 128, 128, 128);
+});
 ```
 
 - [ ] **Step 2: Run the tests (expect failure)**
@@ -206,8 +206,8 @@ Expected: FAIL — `collisionMode` input missing / overlay not drawn.
 In `pixel-canvas.component.ts`, after the `collisionMask` input (line 66) add:
 
 ```ts
-  /** Whether the canvas is in collision-mask painting mode. */
-  collisionMode = input(false);
+/** Whether the canvas is in collision-mask painting mode. */
+collisionMode = input(false);
 ```
 
 - [ ] **Step 3b: Track the mode for re-render**
@@ -215,8 +215,8 @@ In `pixel-canvas.component.ts`, after the `collisionMask` input (line 66) add:
 In the constructor effect (after `this.anchor();`, ~line 149) add:
 
 ```ts
-      // Track collision mode so toggling it repaints the overlay.
-      this.collisionMode();
+// Track collision mode so toggling it repaints the overlay.
+this.collisionMode();
 ```
 
 - [ ] **Step 3c: Gate the overlay on the mode**
@@ -235,11 +235,11 @@ Replace the overlay block (lines 273-284) opening lines:
 Replace line 289 (`const zone = ...`) with:
 
 ```ts
-    const zone = this.collisionMode()
-      ? null
-      : this.tool() === 'anchor'
-        ? (this.hoverZone() ?? this.anchor())
-        : this.anchor();
+const zone = this.collisionMode()
+  ? null
+  : this.tool() === 'anchor'
+    ? (this.hoverZone() ?? this.anchor())
+    : this.anchor();
 ```
 
 - [ ] **Step 3e: Route painting through the mode**
@@ -369,146 +369,146 @@ git commit -m "feature-105: paint the collision mask through the canvas collisio
 In `sprite-editor.component.spec.ts`, **replace** the existing `'persists a painted collision mask and resets it to null'` test with the following block (the fixtures for tile 1 / sprite 11 are reused):
 
 ```ts
-  it('persists a painted collision mask and resets the visibility to full', async () => {
-    await createProjectWithPalette();
-    const db = TestBed.inject(DatabaseService);
-    await db.tiles.add({
-      id: 1,
-      projectId: 'test-proj',
-      name: 'Wall',
-      type: 'static',
-      spriteIds: [11],
-      animationSpeed: 4,
-      properties: { blocking: true, interactable: false, ySort: false },
-    } as Tile);
-    await db.sprites.add({
-      id: 11,
-      projectId: 'test-proj',
-      tileId: 1,
-      name: 'Wall 1',
-      width: 2,
-      height: 2,
-      pixelData: '',
-      paletteIndices: [],
-    } as Sprite);
-    await setupWithProject();
-    await flushRouteWork();
-    fixture.detectChanges();
-    const component = fixture.componentInstance;
-    await component.selectSprite(11);
+it('persists a painted collision mask and resets the visibility to full', async () => {
+  await createProjectWithPalette();
+  const db = TestBed.inject(DatabaseService);
+  await db.tiles.add({
+    id: 1,
+    projectId: 'test-proj',
+    name: 'Wall',
+    type: 'static',
+    spriteIds: [11],
+    animationSpeed: 4,
+    properties: { blocking: true, interactable: false, ySort: false },
+  } as Tile);
+  await db.sprites.add({
+    id: 11,
+    projectId: 'test-proj',
+    tileId: 1,
+    name: 'Wall 1',
+    width: 2,
+    height: 2,
+    pixelData: '',
+    paletteIndices: [],
+  } as Sprite);
+  await setupWithProject();
+  await flushRouteWork();
+  fixture.detectChanges();
+  const component = fixture.componentInstance;
+  await component.selectSprite(11);
 
-    component.toggleCollisionMode();
-    expect(component.collisionMode()).toBe(true);
-    expect(component.collisionMask()).toEqual([
-      [1, 1],
-      [1, 1],
-    ]);
+  component.toggleCollisionMode();
+  expect(component.collisionMode()).toBe(true);
+  expect(component.collisionMask()).toEqual([
+    [1, 1],
+    [1, 1],
+  ]);
 
-    component.onStrokeStart();
-    component.onCollisionMaskChange([
-      [1, 0],
-      [0, 0],
-    ]);
-    component.onStrokeEnd([
-      [0, 0],
-      [0, 0],
-    ]);
-    await new Promise((r) => setTimeout(r, 50));
+  component.onStrokeStart();
+  component.onCollisionMaskChange([
+    [1, 0],
+    [0, 0],
+  ]);
+  component.onStrokeEnd([
+    [0, 0],
+    [0, 0],
+  ]);
+  await new Promise((r) => setTimeout(r, 50));
 
-    expect((await db.tiles.get(1))!.collisionMask).toEqual([
-      [1, 0],
-      [0, 0],
-    ]);
+  expect((await db.tiles.get(1))!.collisionMask).toEqual([
+    [1, 0],
+    [0, 0],
+  ]);
 
-    await component.onResetCollisionMask();
-    expect(component.collisionMask()).toEqual([
-      [1, 1],
-      [1, 1],
-    ]);
-    expect((await db.tiles.get(1))!.collisionMask).toBeNull();
-  });
+  await component.onResetCollisionMask();
+  expect(component.collisionMask()).toEqual([
+    [1, 1],
+    [1, 1],
+  ]);
+  expect((await db.tiles.get(1))!.collisionMask).toBeNull();
+});
 
-  it('persists an all-zero mask so a blocking tile becomes fully passable', async () => {
-    await createProjectWithPalette();
-    const db = TestBed.inject(DatabaseService);
-    await db.tiles.add({
-      id: 1,
-      projectId: 'test-proj',
-      name: 'Wall',
-      type: 'static',
-      spriteIds: [11],
-      animationSpeed: 4,
-      properties: { blocking: true, interactable: false, ySort: false },
-    } as Tile);
-    await db.sprites.add({
-      id: 11,
-      projectId: 'test-proj',
-      tileId: 1,
-      name: 'Wall 1',
-      width: 2,
-      height: 2,
-      pixelData: '',
-      paletteIndices: [],
-    } as Sprite);
-    await setupWithProject();
-    await flushRouteWork();
-    fixture.detectChanges();
-    const component = fixture.componentInstance;
-    await component.selectSprite(11);
+it('persists an all-zero mask so a blocking tile becomes fully passable', async () => {
+  await createProjectWithPalette();
+  const db = TestBed.inject(DatabaseService);
+  await db.tiles.add({
+    id: 1,
+    projectId: 'test-proj',
+    name: 'Wall',
+    type: 'static',
+    spriteIds: [11],
+    animationSpeed: 4,
+    properties: { blocking: true, interactable: false, ySort: false },
+  } as Tile);
+  await db.sprites.add({
+    id: 11,
+    projectId: 'test-proj',
+    tileId: 1,
+    name: 'Wall 1',
+    width: 2,
+    height: 2,
+    pixelData: '',
+    paletteIndices: [],
+  } as Sprite);
+  await setupWithProject();
+  await flushRouteWork();
+  fixture.detectChanges();
+  const component = fixture.componentInstance;
+  await component.selectSprite(11);
 
-    component.toggleCollisionMode();
-    component.onStrokeStart();
-    component.onCollisionMaskChange([
-      [0, 0],
-      [0, 0],
-    ]);
-    component.onStrokeEnd([
-      [0, 0],
-      [0, 0],
-    ]);
-    await new Promise((r) => setTimeout(r, 50));
+  component.toggleCollisionMode();
+  component.onStrokeStart();
+  component.onCollisionMaskChange([
+    [0, 0],
+    [0, 0],
+  ]);
+  component.onStrokeEnd([
+    [0, 0],
+    [0, 0],
+  ]);
+  await new Promise((r) => setTimeout(r, 50));
 
-    expect((await db.tiles.get(1))!.collisionMask).toEqual([
-      [0, 0],
-      [0, 0],
-    ]);
-  });
+  expect((await db.tiles.get(1))!.collisionMask).toEqual([
+    [0, 0],
+    [0, 0],
+  ]);
+});
 
-  it('hides the palette and reports Collision in the status bar in collision mode', async () => {
-    await createProjectWithPalette();
-    const db = TestBed.inject(DatabaseService);
-    await db.tiles.add({
-      id: 1,
-      projectId: 'test-proj',
-      name: 'Wall',
-      type: 'static',
-      spriteIds: [11],
-      animationSpeed: 4,
-      properties: { blocking: true, interactable: false, ySort: false },
-    } as Tile);
-    await db.sprites.add({
-      id: 11,
-      projectId: 'test-proj',
-      tileId: 1,
-      name: 'Wall 1',
-      width: 2,
-      height: 2,
-      pixelData: '',
-      paletteIndices: [],
-    } as Sprite);
-    await setupWithProject();
-    await flushRouteWork();
-    fixture.detectChanges();
-    const component = fixture.componentInstance;
-    await component.selectSprite(11);
+it('hides the palette and reports Collision in the status bar in collision mode', async () => {
+  await createProjectWithPalette();
+  const db = TestBed.inject(DatabaseService);
+  await db.tiles.add({
+    id: 1,
+    projectId: 'test-proj',
+    name: 'Wall',
+    type: 'static',
+    spriteIds: [11],
+    animationSpeed: 4,
+    properties: { blocking: true, interactable: false, ySort: false },
+  } as Tile);
+  await db.sprites.add({
+    id: 11,
+    projectId: 'test-proj',
+    tileId: 1,
+    name: 'Wall 1',
+    width: 2,
+    height: 2,
+    pixelData: '',
+    paletteIndices: [],
+  } as Sprite);
+  await setupWithProject();
+  await flushRouteWork();
+  fixture.detectChanges();
+  const component = fixture.componentInstance;
+  await component.selectSprite(11);
 
-    component.toggleCollisionMode();
-    fixture.detectChanges();
+  component.toggleCollisionMode();
+  fixture.detectChanges();
 
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('rk-palette-manager')).toBeNull();
-    expect(statusBarSpy).toHaveBeenCalledWith(expect.stringContaining('Collision'));
-  });
+  const compiled = fixture.nativeElement as HTMLElement;
+  expect(compiled.querySelector('rk-palette-manager')).toBeNull();
+  expect(statusBarSpy).toHaveBeenCalledWith(expect.stringContaining('Collision'));
+});
 ```
 
 > Adapt `createProjectWithPalette`, `setupWithProject`, `flushRouteWork`, and `statusBarSpy` to the helpers/spies already present in this spec (the status-bar spy used by the other status-bar tests).
@@ -619,17 +619,17 @@ Replace `onStrokeStart` (lines 487-490 branch) with:
 Replace the `onStrokeEnd` guard (lines 501-504) with:
 
 ```ts
-    if (this.collisionMode()) {
-      void this.commitCollisionMask();
-      return;
-    }
+if (this.collisionMode()) {
+  void this.commitCollisionMask();
+  return;
+}
 ```
 
 In `commitCollisionMask`, replace lines 552-554:
 
 ```ts
-    const next = this.storedFromMask(this.collisionMask());
-    const prev = this.storedFromMask(previous);
+const next = this.storedFromMask(this.collisionMask());
+const prev = this.storedFromMask(previous);
 ```
 
 Replace `onResetCollisionMask` (lines 572-590) with:
@@ -663,7 +663,7 @@ Delete `maskHasSolid` (lines 592-599) — no longer referenced.
 In `selectTile` (after line 413) and in `selectSprite` (after `this.onionPanelOpen.set(false);`), add:
 
 ```ts
-    this.collisionMode.set(false);
+this.collisionMode.set(false);
 ```
 
 - [ ] **Step 3f: Status bar**
@@ -671,13 +671,13 @@ In `selectTile` (after line 413) and in `selectSprite` (after `this.onionPanelOp
 In `statusBarEffect`, replace line 273:
 
 ```ts
-    const tool = this.collisionMode() ? 'Collision' : TOOL_LABELS[this.selectedTool()];
+const tool = this.collisionMode() ? 'Collision' : TOOL_LABELS[this.selectedTool()];
 ```
 
 and line 274:
 
 ```ts
-    const colorSegment = this.collisionMode() ? '' : ` | Color #${colorNumber}`;
+const colorSegment = this.collisionMode() ? '' : ` | Color #${colorNumber}`;
 ```
 
 Then update the final concatenation (line 286) to use `${colorSegment}`:
@@ -694,43 +694,43 @@ In `sprite-editor.component.html`:
 2. Add the toolbar overlay inside `#onionAnchor`, right after the `<rk-pixel-canvas ... />` element (line 71):
 
 ```html
-        <div class="tw-absolute tw-top-1 tw-right-1 tw-z-10 tw-flex tw-items-center tw-gap-1">
-          <button
-            type="button"
-            data-testid="toggle-grid"
-            (click)="pixelCanvasRef()?.toggleGrid()"
-            [attr.aria-label]="showGrid() ? 'Hide grid' : 'Show grid'"
-            [title]="showGrid() ? 'Hide grid' : 'Show grid'"
-            class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
-          >
-            <span class="material-symbols tw-text-sm" aria-hidden="true">{{
-              showGrid() ? 'grid_on' : 'grid_off'
-            }}</span>
-          </button>
-          <button
-            type="button"
-            data-testid="toggle-collision-mode"
-            (click)="toggleCollisionMode()"
-            [attr.aria-pressed]="collisionMode()"
-            [class.tw-bg-primary/10]="collisionMode()"
-            [class.tw-border-primary]="collisionMode()"
-            title="Edit collision mask"
-            class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
-          >
-            <span class="material-symbols tw-text-sm" aria-hidden="true">block</span>
-          </button>
-          @if (collisionMode()) {
-            <button
-              type="button"
-              data-testid="reset-collision-mask"
-              (click)="onResetCollisionMask()"
-              title="Reset collision mask to full footprint"
-              class="tw-px-2 tw-h-6 tw-text-xs tw-rounded-sm tw-border tw-border-border tw-bg-card-bg tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
-            >
-              Reset
-            </button>
-          }
-        </div>
+<div class="tw-absolute tw-top-1 tw-right-1 tw-z-10 tw-flex tw-items-center tw-gap-1">
+  <button
+    type="button"
+    data-testid="toggle-grid"
+    (click)="pixelCanvasRef()?.toggleGrid()"
+    [attr.aria-label]="showGrid() ? 'Hide grid' : 'Show grid'"
+    [title]="showGrid() ? 'Hide grid' : 'Show grid'"
+    class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+  >
+    <span class="material-symbols tw-text-sm" aria-hidden="true"
+      >{{ showGrid() ? 'grid_on' : 'grid_off' }}</span
+    >
+  </button>
+  <button
+    type="button"
+    data-testid="toggle-collision-mode"
+    (click)="toggleCollisionMode()"
+    [attr.aria-pressed]="collisionMode()"
+    [class.tw-bg-primary/10]="collisionMode()"
+    [class.tw-border-primary]="collisionMode()"
+    title="Edit collision mask"
+    class="tw-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+  >
+    <span class="material-symbols tw-text-sm" aria-hidden="true">block</span>
+  </button>
+  @if (collisionMode()) {
+  <button
+    type="button"
+    data-testid="reset-collision-mask"
+    (click)="onResetCollisionMask()"
+    title="Reset collision mask to full footprint"
+    class="tw-px-2 tw-h-6 tw-text-xs tw-rounded-sm tw-border tw-border-border tw-bg-card-bg tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+  >
+    Reset
+  </button>
+  }
+</div>
 ```
 
 Pass the mode into the canvas and the tools, and hide the palette:
@@ -738,18 +738,18 @@ Pass the mode into the canvas and the tools, and hide the palette:
 - On `rk-pixel-canvas` (after the `[collisionMask]` binding, line 69-70), add:
 
 ```html
-          [collisionMode]="collisionMode()"
+[collisionMode]="collisionMode()"
 ```
 
 - Wrap `<rk-palette-manager ... />` (lines 224-228) in `@if (!collisionMode()) { ... }`.
 - Pass the mode into the tools (line 229):
 
 ```html
-    <rk-drawing-tools
-      [tool]="selectedTool()"
-      [collisionMode]="collisionMode()"
-      (toolChange)="selectedTool.set($event)"
-    />
+<rk-drawing-tools
+  [tool]="selectedTool()"
+  [collisionMode]="collisionMode()"
+  (toolChange)="selectedTool.set($event)"
+/>
 ```
 
 - [ ] **Step 3h: Remove the grid button from the canvas**

@@ -10,8 +10,8 @@
 #58 shipped per-pixel tile collision masks, exposed as two extra tools
 (`collision` / `collisionErase`) in the sprite editor toolbox. Two problems:
 
-1. Collision painting reads as *one tool among many* (next to Brush/Eraser/Fill/Anchor)
-   instead of a distinct *mode*.
+1. Collision painting reads as _one tool among many_ (next to Brush/Eraser/Fill/Anchor)
+   instead of a distinct _mode_.
 2. You can paint but never fully **clear** a mask: `commitCollisionMask` collapses an
    all-zero mask to `null`, and the runtime treats `null` as "full footprint". Erasing
    everything silently re-blocks the tile.
@@ -50,14 +50,14 @@
 
 A tile's effective collision is `mask ?? full footprint`:
 
-| `properties.blocking` | `collisionMask`     | Effective collision          |
-| --------------------- | ------------------- | ---------------------------- |
-| `false`               | any                 | none                         |
-| `true`                | `null` / `undefined`| full footprint (naive default) |
-| `true`                | explicit grid       | exact `1` pixels             |
+| `properties.blocking` | `collisionMask`      | Effective collision            |
+| --------------------- | -------------------- | ------------------------------ |
+| `false`               | any                  | none                           |
+| `true`                | `null` / `undefined` | full footprint (naive default) |
+| `true`                | explicit grid        | exact `1` pixels               |
 
 - **Entering** the mode with a `null` mask initialises the working mask to **full**
-   (all `1`s, sprite grid dimensions): you hollow it out with the Eraser.
+  (all `1`s, sprite grid dimensions): you hollow it out with the Eraser.
 - **Commit** (on stroke end) stores the mask **unless it is fully solid**, in which case it
   stores `null` (canonical "full footprint"). An **all-zero** mask is a valid, distinct value
   ("nothing blocks") and **is persisted** — it must not collapse to `null`.
