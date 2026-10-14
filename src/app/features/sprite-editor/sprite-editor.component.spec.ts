@@ -1024,4 +1024,95 @@ describe('SpriteEditorComponent', () => {
     fixture.detectChanges();
     expect(component.onionSkinNextEnabled()).toBe(true);
   });
+
+  it('loads the current tile collision mask on selection', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    const storedMask = [
+      [1, 0],
+      [0, 1],
+    ];
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Wall',
+      type: 'static',
+      spriteIds: [11],
+      animationSpeed: 4,
+      collisionMask: storedMask,
+      properties: { blocking: true, interactable: false, ySort: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Wall 1',
+      width: 2,
+      height: 2,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+
+    await fixture.componentInstance.selectSprite(11);
+
+    expect(fixture.componentInstance.collisionMask()).toEqual([
+      [1, 0],
+      [0, 1],
+    ]);
+  });
+
+  it('persists a painted collision mask and resets it to null', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Wall',
+      type: 'static',
+      spriteIds: [11],
+      animationSpeed: 4,
+      properties: { blocking: true, interactable: false, ySort: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Wall 1',
+      width: 2,
+      height: 2,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    await component.selectSprite(11);
+    component.selectedTool.set('collision');
+
+    component.onStrokeStart();
+    component.onCollisionMaskChange([
+      [1, 0],
+      [0, 0],
+    ]);
+    component.onStrokeEnd([
+      [0, 0],
+      [0, 0],
+    ]);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect((await db.tiles.get(1))!.collisionMask).toEqual([
+      [1, 0],
+      [0, 0],
+    ]);
+
+    await component.onResetCollisionMask();
+
+    expect(component.collisionMask()).toBeNull();
+    expect((await db.tiles.get(1))!.collisionMask).toBeNull();
+  });
 });
+

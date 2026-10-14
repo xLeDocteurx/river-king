@@ -124,6 +124,13 @@ export class SpriteEditorComponent implements OnInit {
   /** Palette indices snapshot before the current stroke, used for undo. */
   private previousIndices: number[][] | null = null;
 
+  /** Per-pixel collision mask of the current tile, or null when unset. */
+  readonly collisionMask = signal<number[][] | null>(null);
+  /** @internal Mask snapshot at stroke start, for undo/compare. */
+  private previousCollisionMask: number[][] | null = null;
+  /** @internal Whether the active stroke is editing the collision mask. */
+  private collisionStrokeActive = false;
+
   /** @internal Handle of the scheduled trailing save timer (null when idle). */
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -405,6 +412,7 @@ export class SpriteEditorComponent implements OnInit {
     this.stopPlayback();
     this.onionPanelOpen.set(false);
     this.selectedTileId.set(tileId);
+    this.collisionMask.set(this.tiles().find((t) => t.id === tileId)?.collisionMask ?? null);
     const tile = this.tiles().find((t) => t.id === tileId);
     if (tile && tile.spriteIds.length > 0) {
       await this.selectSprite(tile.spriteIds[0]);
@@ -430,6 +438,9 @@ export class SpriteEditorComponent implements OnInit {
 
       if (sprite) {
         this.selectedTileId.set(sprite.tileId);
+        this.collisionMask.set(
+          this.tiles().find((t) => t.id === sprite.tileId)?.collisionMask ?? null,
+        );
       }
 
       if (sprite?.paletteIndices && sprite.paletteIndices.length > 0) {
@@ -474,6 +485,11 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Captures the pixel state before a stroke begins, for undo. */
   onStrokeStart(): void {
+    if (this.selectedTool() === 'collision' || this.selectedTool() === 'collisionErase') {
+      this.collisionStrokeActive = true;
+      this.previousCollisionMask = this.collisionMask()?.map((row) => [...row]) ?? null;
+      return;
+    }
     const current = this.paletteIndices();
     if (current) {
       this.previousIndices = current.map((row) => [...row]);
@@ -482,6 +498,10 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Pushes an undo action when a stroke ends. */
   onStrokeEnd(finalIndices: number[][]): void {
+    if (this.selectedTool() === 'collision' || this.selectedTool() === 'collisionErase') {
+      void this.commitCollisionMask();
+      return;
+    }
     if (!this.previousIndices) return;
     const sprite = this.selectedSprite();
     if (!sprite) return;
@@ -511,6 +531,71 @@ export class SpriteEditorComponent implements OnInit {
         void svc.updateSprite(spriteId, { paletteIndices: grid, pixelData: pd });
       },
     });
+  }
+
+  /**
+   * Records a painted collision mask from the canvas.
+   * @param mask - The updated mask grid (1 = solid).
+   */
+  onCollisionMaskChange(mask: number[][]): void {
+    this.collisionMask.set(mask.map((row) => [...row]));
+  }
+
+  /** @internal Persists the painted mask (null when empty) with an undo entry. */
+  private async commitCollisionMask(): Promise<void> {
+    if (!this.collisionStrokeActive) return;
+    this.collisionStrokeActive = false;
+    const previous = this.previousCollisionMask;
+    this.previousCollisionMask = null;
+    const tile = this.currentTile();
+    if (!tile) return;
+    const nextMask = this.collisionMask();
+    const next = nextMask && this.maskHasSolid(nextMask) ? nextMask : null;
+    const prev = previous && this.maskHasSolid(previous) ? previous : null;
+    if (JSON.stringify(next) === JSON.stringify(prev)) return;
+    try {
+      await this.tileService.updateTile(tile.id, { collisionMask: next });
+      this.undo.push({
+        label: 'Paint collision mask',
+        execute: () => void this.tileService.updateTile(tile.id, { collisionMask: next }),
+        undo: () => void this.tileService.updateTile(tile.id, { collisionMask: prev }),
+      });
+      await this.loadTiles();
+    } catch {
+      this.notification.error('Failed to save the collision mask.');
+    }
+  }
+
+  /**
+   * Clears the current tile collision mask so it blocks its full footprint again.
+   */
+  async onResetCollisionMask(): Promise<void> {
+    const tile = this.currentTile();
+    if (!tile) return;
+    const previous = this.collisionMask();
+    this.collisionMask.set(null);
+    try {
+      await this.tileService.updateTile(tile.id, { collisionMask: null });
+      if (previous && this.maskHasSolid(previous)) {
+        this.undo.push({
+          label: 'Reset collision mask',
+          execute: () => void this.tileService.updateTile(tile.id, { collisionMask: null }),
+          undo: () => void this.tileService.updateTile(tile.id, { collisionMask: previous }),
+        });
+      }
+      await this.loadTiles();
+    } catch {
+      this.notification.error('Failed to reset the collision mask.');
+    }
+  }
+
+  /**
+   * @internal Whether a mask has at least one solid pixel.
+   * @param mask - The mask grid to inspect.
+   * @returns True when any cell is >= 1.
+   */
+  private maskHasSolid(mask: number[][]): boolean {
+    return mask.some((row) => row.some((v) => v >= 1));
   }
 
   /**
