@@ -805,6 +805,29 @@ describe('SceneEditorComponent', () => {
     expect(footprints).toEqual({});
   });
 
+  it('derives per-tile blocking flags from the project tiles', () => {
+    component.projectTiles.set([
+      { id: 1, properties: { blocking: true } } as unknown as Tile,
+      { id: 2, properties: { blocking: false } } as unknown as Tile,
+    ]);
+
+    expect(component.blockingById().get(1)).toBe(true);
+    expect(component.blockingById().get(2)).toBe(false);
+  });
+
+  it('toggles the collision overlay from the toolbar button', () => {
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector(
+      'button[title="Show collisions"]',
+    ) as HTMLButtonElement | null;
+    expect(button).toBeTruthy();
+
+    button?.click();
+    fixture.detectChanges();
+
+    expect(component.mapCanvasRef()?.showCollision()).toBe(true);
+  });
+
   it('passes only interactable tiles with an actionId to the player on enterPlay', async () => {
     const bellId = await db.tiles.add({
       projectId: 'p1',

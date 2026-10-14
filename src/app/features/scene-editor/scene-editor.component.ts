@@ -129,6 +129,11 @@ export class SceneEditorComponent implements OnInit {
   /** The layers of the currently selected scene. */
   readonly sceneLayers = computed(() => this.selectedScene()?.layers ?? []);
 
+  /** Per-tile blocking flags, derived from the project's tiles. */
+  readonly blockingById = computed(
+    () => new Map(this.projectTiles().map((t) => [t.id, t.properties.blocking])),
+  );
+
   /** The currently active layer object. */
   readonly activeLayer = computed(() => {
     const layers = this.sceneLayers();
@@ -279,7 +284,7 @@ export class SceneEditorComponent implements OnInit {
   enterPlay(): void {
     const scene = this.selectedScene();
     if (!scene) return;
-    const blockingById = new Map(this.projectTiles().map((t) => [t.id, t.properties.blocking]));
+    const blockingById = this.blockingById();
     const interactableById = new Map(
       this.projectTiles()
         .filter((t) => t.properties.interactable && !!t.properties.actionId)
