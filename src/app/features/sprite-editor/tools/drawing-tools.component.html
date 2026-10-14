@@ -49,5 +49,27 @@
     >
       <span class="material-symbols" aria-hidden="true">center_focus_strong</span>
     </button>
+    <button
+      type="button"
+      data-testid="tool-collision"
+      title="Collision"
+      (click)="selectTool('collision')"
+      [class.tw-bg-primary/10]="tool() === 'collision'"
+      [class.tw-border-primary]="tool() === 'collision'"
+      class="tw-p-1.5 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
+    >
+      <span class="material-symbols" aria-hidden="true">check_box</span>
+    </button>
+    <button
+      type="button"
+      data-testid="tool-collision-erase"
+      title="Erase collision"
+      (click)="selectTool('collisionErase')"
+      [class.tw-bg-primary/10]="tool() === 'collisionErase'"
+      [class.tw-border-primary]="tool() === 'collisionErase'"
+      class="tw-p-1.5 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
+    >
+      <span class="material-symbols" aria-hidden="true">check_box_outline_blank</span>
+    </button>
   </div>
 </div>

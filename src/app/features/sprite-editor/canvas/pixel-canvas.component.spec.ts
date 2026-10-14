@@ -383,4 +383,46 @@ describe('PixelCanvasComponent', () => {
     // cellScale = 8, ts = 16 => outline at (16*8, 0, 16*8, 16*8).
     expect(mockCtx.strokeRect).toHaveBeenCalledWith(128, 0, 128, 128);
   });
+
+  it('paints solid collision pixels with the collision tool', () => {
+    setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
+    fixture.componentRef.setInput('tool', 'collision');
+    fixture.detectChanges();
+    const spy = vi.fn();
+    fixture.componentInstance.collisionMaskChange.subscribe(spy);
+
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    const rect = { left: 0, top: 0, width: 256, height: 256 };
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(rect as DOMRect);
+
+    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
+    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+
+    expect(spy).toHaveBeenCalled();
+    const emitted = spy.mock.calls.at(-1)?.[0] as number[][];
+    expect(emitted[0][0]).toBe(1);
+  });
+
+  it('clears collision pixels with the erase tool', () => {
+    setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
+    fixture.componentRef.setInput('collisionMask', [
+      [1, 1],
+      [1, 1],
+    ]);
+    fixture.componentRef.setInput('tool', 'collisionErase');
+    fixture.detectChanges();
+    const spy = vi.fn();
+    fixture.componentInstance.collisionMaskChange.subscribe(spy);
+
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    const rect = { left: 0, top: 0, width: 256, height: 256 };
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(rect as DOMRect);
+
+    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
+    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+
+    expect(spy).toHaveBeenCalled();
+    const emitted = spy.mock.calls.at(-1)?.[0] as number[][];
+    expect(emitted[0][0]).toBe(0);
+  });
 });
