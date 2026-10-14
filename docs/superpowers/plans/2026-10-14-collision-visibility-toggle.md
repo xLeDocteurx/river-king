@@ -25,10 +25,12 @@
 ### Task 1: Canvas collision overlay (`MapCanvasComponent`)
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/map-canvas.component.ts`
 - Test: `src/app/features/scene-editor/map-canvas.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `footprintRect(x, y, tileId, footprints)` and `cssTokenColor(element, token, fallback)` (already imported).
 - Produces: `export const COLLISION_VISIBLE_STORAGE_KEY`; input `blockingById = input<Map<number, boolean>>(new Map())`; signal `showCollision = signal(...)` (public, writable); method `drawCollisionOverlay(cell: number): void`.
 
@@ -37,7 +39,11 @@
 In `map-canvas.component.spec.ts`, update the import on line 2 to include the new key:
 
 ```ts
-import { MapCanvasComponent, GRID_VISIBLE_STORAGE_KEY, COLLISION_VISIBLE_STORAGE_KEY } from './map-canvas.component';
+import {
+  MapCanvasComponent,
+  GRID_VISIBLE_STORAGE_KEY,
+  COLLISION_VISIBLE_STORAGE_KEY,
+} from './map-canvas.component';
 ```
 
 Add a recording-context helper after the `makeScene` helper (after line 27):
@@ -80,132 +86,132 @@ function makeRecordingCtx(): { ctx: CanvasRenderingContext2D; fills: FillCall[] 
 Add the following tests (place them right after the grid-persistence test, after line 245):
 
 ```ts
-  it('defaults to hiding the collision overlay when no session preference is stored', () => {
-    setup(makeScene(4, 4));
-    expect(fixture.componentInstance.showCollision()).toBe(false);
-  });
+it('defaults to hiding the collision overlay when no session preference is stored', () => {
+  setup(makeScene(4, 4));
+  expect(fixture.componentInstance.showCollision()).toBe(false);
+});
 
-  it('restores the collision overlay visibility from the session when enabled', () => {
-    sessionStorage.setItem(COLLISION_VISIBLE_STORAGE_KEY, '1');
-    setup(makeScene(4, 4));
-    expect(fixture.componentInstance.showCollision()).toBe(true);
-  });
+it('restores the collision overlay visibility from the session when enabled', () => {
+  sessionStorage.setItem(COLLISION_VISIBLE_STORAGE_KEY, '1');
+  setup(makeScene(4, 4));
+  expect(fixture.componentInstance.showCollision()).toBe(true);
+});
 
-  it('persists collision overlay visibility changes to the session storage', async () => {
-    setup(makeScene(4, 4));
-    const instance = fixture.componentInstance;
-    instance.showCollision.set(true);
-    await new Promise((r) => setTimeout(r, 50));
-    expect(sessionStorage.getItem(COLLISION_VISIBLE_STORAGE_KEY)).toBe('1');
-    instance.showCollision.set(false);
-    await new Promise((r) => setTimeout(r, 50));
-    expect(sessionStorage.getItem(COLLISION_VISIBLE_STORAGE_KEY)).toBe('0');
-  });
+it('persists collision overlay visibility changes to the session storage', async () => {
+  setup(makeScene(4, 4));
+  const instance = fixture.componentInstance;
+  instance.showCollision.set(true);
+  await new Promise((r) => setTimeout(r, 50));
+  expect(sessionStorage.getItem(COLLISION_VISIBLE_STORAGE_KEY)).toBe('1');
+  instance.showCollision.set(false);
+  await new Promise((r) => setTimeout(r, 50));
+  expect(sessionStorage.getItem(COLLISION_VISIBLE_STORAGE_KEY)).toBe('0');
+});
 
-  it('marks a blocking tile with a translucent fill over its footprint when enabled', () => {
-    const { ctx, fills } = makeRecordingCtx();
-    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    try {
-      const scene = makeScene(4, 4);
-      scene.layers[0].tileData[0][0] = 1;
-      setup(scene);
-      fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
-      fixture.componentInstance.showCollision.set(true);
-      fixture.detectChanges();
+it('marks a blocking tile with a translucent fill over its footprint when enabled', () => {
+  const { ctx, fills } = makeRecordingCtx();
+  const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+  try {
+    const scene = makeScene(4, 4);
+    scene.layers[0].tileData[0][0] = 1;
+    setup(scene);
+    fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
+    fixture.componentInstance.showCollision.set(true);
+    fixture.detectChanges();
 
-      expect(fills).toContainEqual({ args: [0, 0, 16, 16], alpha: 0.3 });
-    } finally {
-      getContextSpy.mockRestore();
-    }
-  });
+    expect(fills).toContainEqual({ args: [0, 0, 16, 16], alpha: 0.3 });
+  } finally {
+    getContextSpy.mockRestore();
+  }
+});
 
-  it('does not mark a non-blocking tile', () => {
-    const { ctx, fills } = makeRecordingCtx();
-    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    try {
-      const scene = makeScene(4, 4);
-      scene.layers[0].tileData[0][0] = 1;
-      setup(scene);
-      fixture.componentRef.setInput('blockingById', new Map([[1, false]]));
-      fixture.componentInstance.showCollision.set(true);
-      fixture.detectChanges();
+it('does not mark a non-blocking tile', () => {
+  const { ctx, fills } = makeRecordingCtx();
+  const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+  try {
+    const scene = makeScene(4, 4);
+    scene.layers[0].tileData[0][0] = 1;
+    setup(scene);
+    fixture.componentRef.setInput('blockingById', new Map([[1, false]]));
+    fixture.componentInstance.showCollision.set(true);
+    fixture.detectChanges();
 
-      expect(fills.some((f) => f.alpha === 0.3)).toBe(false);
-    } finally {
-      getContextSpy.mockRestore();
-    }
-  });
+    expect(fills.some((f) => f.alpha === 0.3)).toBe(false);
+  } finally {
+    getContextSpy.mockRestore();
+  }
+});
 
-  it('does not mark blocking tiles on hidden layers', () => {
-    const { ctx, fills } = makeRecordingCtx();
-    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    try {
-      const scene = makeScene(4, 4);
-      scene.layers[0].visible = false;
-      scene.layers[0].tileData[0][0] = 1;
-      setup(scene);
-      fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
-      fixture.componentInstance.showCollision.set(true);
-      fixture.detectChanges();
+it('does not mark blocking tiles on hidden layers', () => {
+  const { ctx, fills } = makeRecordingCtx();
+  const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+  try {
+    const scene = makeScene(4, 4);
+    scene.layers[0].visible = false;
+    scene.layers[0].tileData[0][0] = 1;
+    setup(scene);
+    fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
+    fixture.componentInstance.showCollision.set(true);
+    fixture.detectChanges();
 
-      expect(fills.some((f) => f.alpha === 0.3)).toBe(false);
-    } finally {
-      getContextSpy.mockRestore();
-    }
-  });
+    expect(fills.some((f) => f.alpha === 0.3)).toBe(false);
+  } finally {
+    getContextSpy.mockRestore();
+  }
+});
 
-  it('marks blocking tiles on a visible opacity-0 layer', () => {
-    const { ctx, fills } = makeRecordingCtx();
-    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    try {
-      const scene = makeScene(4, 4);
-      scene.layers[0].opacity = 0;
-      scene.layers[0].tileData[0][0] = 1;
-      setup(scene);
-      fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
-      fixture.componentInstance.showCollision.set(true);
-      fixture.detectChanges();
+it('marks blocking tiles on a visible opacity-0 layer', () => {
+  const { ctx, fills } = makeRecordingCtx();
+  const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+  try {
+    const scene = makeScene(4, 4);
+    scene.layers[0].opacity = 0;
+    scene.layers[0].tileData[0][0] = 1;
+    setup(scene);
+    fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
+    fixture.componentInstance.showCollision.set(true);
+    fixture.detectChanges();
 
-      expect(fills).toContainEqual({ args: [0, 0, 16, 16], alpha: 0.3 });
-    } finally {
-      getContextSpy.mockRestore();
-    }
-  });
+    expect(fills).toContainEqual({ args: [0, 0, 16, 16], alpha: 0.3 });
+  } finally {
+    getContextSpy.mockRestore();
+  }
+});
 
-  it('marks a multi-cell blocking footprint across its full rect', () => {
-    const { ctx, fills } = makeRecordingCtx();
-    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    try {
-      const scene = makeScene(4, 4);
-      scene.layers[0].tileData[0][0] = 1;
-      setup(scene, { 1: { left: 0, up: 0, right: 1, down: 0 } });
-      fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
-      fixture.componentInstance.showCollision.set(true);
-      fixture.detectChanges();
+it('marks a multi-cell blocking footprint across its full rect', () => {
+  const { ctx, fills } = makeRecordingCtx();
+  const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+  try {
+    const scene = makeScene(4, 4);
+    scene.layers[0].tileData[0][0] = 1;
+    setup(scene, { 1: { left: 0, up: 0, right: 1, down: 0 } });
+    fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
+    fixture.componentInstance.showCollision.set(true);
+    fixture.detectChanges();
 
-      expect(fills).toContainEqual({ args: [0, 0, 32, 16], alpha: 0.3 });
-    } finally {
-      getContextSpy.mockRestore();
-    }
-  });
+    expect(fills).toContainEqual({ args: [0, 0, 32, 16], alpha: 0.3 });
+  } finally {
+    getContextSpy.mockRestore();
+  }
+});
 
-  it('does not draw the collision overlay in play mode', () => {
-    const { ctx, fills } = makeRecordingCtx();
-    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    try {
-      const scene = makeScene(4, 4);
-      scene.layers[0].tileData[0][0] = 1;
-      setup(scene);
-      fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
-      fixture.componentInstance.showCollision.set(true);
-      fixture.componentRef.setInput('playMode', true);
-      fixture.detectChanges();
+it('does not draw the collision overlay in play mode', () => {
+  const { ctx, fills } = makeRecordingCtx();
+  const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+  try {
+    const scene = makeScene(4, 4);
+    scene.layers[0].tileData[0][0] = 1;
+    setup(scene);
+    fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
+    fixture.componentInstance.showCollision.set(true);
+    fixture.componentRef.setInput('playMode', true);
+    fixture.detectChanges();
 
-      expect(fills.some((f) => f.alpha === 0.3)).toBe(false);
-    } finally {
-      getContextSpy.mockRestore();
-    }
-  });
+    expect(fills.some((f) => f.alpha === 0.3)).toBe(false);
+  } finally {
+    getContextSpy.mockRestore();
+  }
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -227,40 +233,40 @@ const COLLISION_MARKER_FALLBACK = '#dc2626';
 3b. After the `tileAnimations` input (line 58), add:
 
 ```ts
-  /** Per-tile blocking flags used to draw the collision overlay. */
-  blockingById = input<Map<number, boolean>>(new Map());
+/** Per-tile blocking flags used to draw the collision overlay. */
+blockingById = input<Map<number, boolean>>(new Map());
 ```
 
 3c. After the `showGrid` signal (line 80), add:
 
 ```ts
-  /** Whether the collision overlay is visible (persisted for the current session). */
-  showCollision = signal(this.readCollisionVisibility());
+/** Whether the collision overlay is visible (persisted for the current session). */
+showCollision = signal(this.readCollisionVisibility());
 ```
 
 3d. Add `this.blockingById();` and `this.showCollision();` to the first render effect so both trigger a redraw. The effect becomes:
 
 ```ts
-    effect(() => {
-      this.palette();
-      this.tileSize();
-      this.tileFootprints();
-      this.blockingById();
-      this.showCollision();
-      const sources = this.tileImages();
-      void this.rebuildImageCache(sources);
-      this.render();
-      this.ensureLoop();
-    });
+effect(() => {
+  this.palette();
+  this.tileSize();
+  this.tileFootprints();
+  this.blockingById();
+  this.showCollision();
+  const sources = this.tileImages();
+  void this.rebuildImageCache(sources);
+  this.render();
+  this.ensureLoop();
+});
 ```
 
 3e. After the grid-persistence effect (line 155), add:
 
 ```ts
-    /** Persist the collision-overlay visibility choice for the current browser session. */
-    effect(() => {
-      sessionStorage.setItem(COLLISION_VISIBLE_STORAGE_KEY, this.showCollision() ? '1' : '0');
-    });
+/** Persist the collision-overlay visibility choice for the current browser session. */
+effect(() => {
+  sessionStorage.setItem(COLLISION_VISIBLE_STORAGE_KEY, this.showCollision() ? '1' : '0');
+});
 ```
 
 3f. After `readGridVisibility()` (line 164), add:
@@ -278,10 +284,10 @@ const COLLISION_MARKER_FALLBACK = '#dc2626';
 3g. In `render()`, immediately before the grid pass (line 336), add:
 
 ```ts
-    // Collision overlay drawn above every tile but below the grid; edit mode only.
-    if (this.showCollision() && !this.playMode()) {
-      this.drawCollisionOverlay(cell);
-    }
+// Collision overlay drawn above every tile but below the grid; edit mode only.
+if (this.showCollision() && !this.playMode()) {
+  this.drawCollisionOverlay(cell);
+}
 ```
 
 3h. After the `render()` method (line 353), add:
@@ -337,11 +343,13 @@ git commit -m "feature-14: draw the collision/footprint overlay on the map canva
 ### Task 2: Scene-editor wiring (`SceneEditorComponent`)
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/scene-editor.component.ts`
 - Modify: `src/app/features/scene-editor/scene-editor.component.html`
 - Test: `src/app/features/scene-editor/scene-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `MapCanvasComponent.blockingById` and `.showCollision` (Task 1).
 - Produces: `SceneEditorComponent.blockingById` computed (`Map<number, boolean>`), consumed by the template and `enterPlay()`.
 
@@ -350,28 +358,28 @@ git commit -m "feature-14: draw the collision/footprint overlay on the map canva
 Add to `scene-editor.component.spec.ts`:
 
 ```ts
-  it('derives per-tile blocking flags from the project tiles', () => {
-    component.projectTiles.set([
-      { id: 1, properties: { blocking: true } } as unknown as Tile,
-      { id: 2, properties: { blocking: false } } as unknown as Tile,
-    ]);
+it('derives per-tile blocking flags from the project tiles', () => {
+  component.projectTiles.set([
+    { id: 1, properties: { blocking: true } } as unknown as Tile,
+    { id: 2, properties: { blocking: false } } as unknown as Tile,
+  ]);
 
-    expect(component.blockingById().get(1)).toBe(true);
-    expect(component.blockingById().get(2)).toBe(false);
-  });
+  expect(component.blockingById().get(1)).toBe(true);
+  expect(component.blockingById().get(2)).toBe(false);
+});
 
-  it('toggles the collision overlay from the toolbar button', () => {
-    fixture.detectChanges();
-    const button = fixture.nativeElement.querySelector(
-      'button[title="Show collisions"]',
-    ) as HTMLButtonElement | null;
-    expect(button).toBeTruthy();
+it('toggles the collision overlay from the toolbar button', () => {
+  fixture.detectChanges();
+  const button = fixture.nativeElement.querySelector(
+    'button[title="Show collisions"]',
+  ) as HTMLButtonElement | null;
+  expect(button).toBeTruthy();
 
-    button?.click();
-    fixture.detectChanges();
+  button?.click();
+  fixture.detectChanges();
 
-    expect(component.mapCanvasRef()?.showCollision()).toBe(true);
-  });
+  expect(component.mapCanvasRef()?.showCollision()).toBe(true);
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -393,31 +401,31 @@ Expected: FAIL — `blockingById` does not exist and no button with title `Show 
 3b. In `enterPlay()`, replace the local map:
 
 ```ts
-    const blockingById = new Map(this.projectTiles().map((t) => [t.id, t.properties.blocking]));
+const blockingById = new Map(this.projectTiles().map((t) => [t.id, t.properties.blocking]));
 ```
 
 with:
 
 ```ts
-    const blockingById = this.blockingById();
+const blockingById = this.blockingById();
 ```
 
 3c. In `scene-editor.component.html`, after the `tileAnimations` binding (line 40), add:
 
 ```html
-      [blockingById]="blockingById()"
+[blockingById]="blockingById()"
 ```
 
 3d. In `scene-editor.component.html`, after the grid button `</button>` (line 73), add:
 
 ```html
-      <button
-        class="tw-inline-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
-        [title]="mapCanvasRef()?.showCollision() ? 'Hide collisions' : 'Show collisions'"
-        (click)="mapCanvasRef()?.showCollision.set(!mapCanvasRef()?.showCollision())"
-      >
-        <span class="material-symbols" aria-hidden="true">block</span>
-      </button>
+<button
+  class="tw-inline-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-sm tw-bg-card-bg tw-border tw-border-border tw-text-foreground tw-cursor-pointer hover:tw-bg-accent"
+  [title]="mapCanvasRef()?.showCollision() ? 'Hide collisions' : 'Show collisions'"
+  (click)="mapCanvasRef()?.showCollision.set(!mapCanvasRef()?.showCollision())"
+>
+  <span class="material-symbols" aria-hidden="true">block</span>
+</button>
 ```
 
 - [ ] **Step 4: Run the full suite to verify everything passes**
