@@ -16,6 +16,7 @@ import { createEmptySession } from '../../shared/models/session.model';
 import type { Scene } from '../../shared/models/scene.model';
 import type { Tile } from '../../shared/models/tile.model';
 import type { TileFootprintMap } from './map-footprint';
+import type { TileCollision } from './collision';
 import { PlayerController } from './services/play-controller';
 
 // jsdom does not implement HTMLDialogElement methods
@@ -792,16 +793,16 @@ describe('SceneEditorComponent', () => {
     component.enterPlay();
 
     expect(startSpy).toHaveBeenCalledTimes(1);
-    const [, , blockingById, footprints] = startSpy.mock.calls[0] as [
+    const [, , collisionById, footprints] = startSpy.mock.calls[0] as [
       Scene,
       { x: number; y: number },
-      Map<number, boolean>,
+      Map<number, TileCollision>,
       TileFootprintMap,
       Map<number, string>,
     ];
-    expect(blockingById.size).toBe(2);
-    expect(blockingById.get(wallId)).toBe(true);
-    expect(blockingById.get(floorId)).toBe(false);
+    expect(collisionById.size).toBe(2);
+    expect(collisionById.get(wallId)).toEqual({ blocking: true, mask: null });
+    expect(collisionById.get(floorId)).toEqual({ blocking: false, mask: null });
     expect(footprints).toEqual({});
   });
 
@@ -868,7 +869,7 @@ describe('SceneEditorComponent', () => {
     const [, , , , interactableById] = startSpy.mock.calls[0] as [
       Scene,
       { x: number; y: number },
-      Map<number, boolean>,
+      Map<number, TileCollision>,
       TileFootprintMap,
       Map<number, string>,
     ];

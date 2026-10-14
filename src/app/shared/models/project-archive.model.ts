@@ -77,6 +77,11 @@ export interface TileArchiveItem {
    * the anchor feature; the importer derives the default when absent.
    */
   anchor?: TileAnchor;
+  /**
+   * Optional per-pixel collision mask (see `Tile.collisionMask`). Omitted when
+   * the tile has no mask.
+   */
+  collisionMask?: number[][];
 }
 
 /**

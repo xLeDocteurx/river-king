@@ -409,6 +409,29 @@ describe('ProjectIoService', () => {
     expect(imported[0].anchor).toEqual({ x: 0, y: 16 });
   });
 
+  it('round-trips a stored collision mask', async () => {
+    const { projectId, groundId } = await seedProject();
+    const mask = [
+      [1, 0],
+      [0, 1],
+    ];
+    await db.tiles.update(groundId, { collisionMask: mask });
+    const json = await service.exportProject(projectId);
+    const result = await service.importProject(json, { kind: 'new' });
+    const imported = await db.tiles.where('projectId').equals(result.projectId).toArray();
+    const ground = imported.find((t) => t.name === 'Ground');
+    expect(ground?.collisionMask).toEqual(mask);
+  });
+
+  it('drops a malformed collision mask on import', async () => {
+    const json = validJsonOverrides({
+      tiles: [{ ...validTile(), collisionMask: 'nope' as unknown as number[][] }],
+    });
+    const result = await service.importProject(json, { kind: 'new' });
+    const imported = await db.tiles.where('projectId').equals(result.projectId).toArray();
+    expect(imported[0].collisionMask).toBeUndefined();
+  });
+
   function validTile() {
     return {
       sourceId: 1,

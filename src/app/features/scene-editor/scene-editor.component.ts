@@ -39,6 +39,7 @@ import type { Tile } from '../../shared/models/tile.model';
 import type { ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import type { TileFootprintMap } from './map-footprint';
 import { PlayerController } from './services/play-controller';
+import type { TileCollision } from './collision';
 
 /**
  * Main page component for the Scene Editor feature.
@@ -133,6 +134,15 @@ export class SceneEditorComponent implements OnInit {
   readonly blockingById = computed(
     () => new Map(this.projectTiles().map((t) => [t.id, t.properties.blocking])),
   );
+
+  /** @internal Per-tile collision inputs (blocking + mask) for Play mode. */
+  readonly collisionById = computed(() => {
+    const tiles = new Map<number, TileCollision>();
+    for (const t of this.projectTiles()) {
+      tiles.set(t.id, { blocking: t.properties.blocking, mask: t.collisionMask ?? null });
+    }
+    return tiles;
+  });
 
   /** The currently active layer object. */
   readonly activeLayer = computed(() => {
@@ -284,7 +294,6 @@ export class SceneEditorComponent implements OnInit {
   enterPlay(): void {
     const scene = this.selectedScene();
     if (!scene) return;
-    const blockingById = this.blockingById();
     const interactableById = new Map(
       this.projectTiles()
         .filter((t) => t.properties.interactable && !!t.properties.actionId)
@@ -293,7 +302,7 @@ export class SceneEditorComponent implements OnInit {
     this.player.start(
       scene,
       this.resolveSpawn(scene),
-      blockingById,
+      this.collisionById(),
       this.tileFootprints(),
       interactableById,
     );
