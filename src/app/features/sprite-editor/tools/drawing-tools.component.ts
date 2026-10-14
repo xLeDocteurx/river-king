@@ -6,7 +6,7 @@ export type DrawingTool = 'brush' | 'eraser' | 'fill' | 'anchor' | 'collision' |
 /**
  * Drawing tools component for selecting the active tool in the sprite editor.
  *
- * Provides buttons for brush, eraser, fill, anchor, and collision mask tools.
+ * Provides buttons for brush, eraser, fill, and anchor tools.
  */
 @Component({
   selector: 'rk-drawing-tools',
@@ -16,8 +16,11 @@ export type DrawingTool = 'brush' | 'eraser' | 'fill' | 'anchor' | 'collision' |
   styleUrl: './drawing-tools.component.scss',
 })
 export class DrawingToolsComponent {
-  /** Required currently selected drawing tool. */
+  /** Required active drawing tool. */
   tool = input.required<DrawingTool>();
+
+  /** Whether the sprite editor is in collision-mask painting mode. */
+  collisionMode = input(false);
 
   /** Emits the newly selected drawing tool. */
   toolChange = output<DrawingTool>();
