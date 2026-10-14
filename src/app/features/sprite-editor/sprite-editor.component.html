@@ -66,6 +66,8 @@
           [tileSize]="projectTileSize()"
           [anchor]="tileAnchor()"
           (anchorChange)="onAnchorChange($event)"
+          [collisionMask]="collisionMask()"
+          (collisionMaskChange)="onCollisionMaskChange($event)"
         />
         @if (currentTile()?.type === 'animated' && currentFrames().length > 1) {
           <button
@@ -175,6 +177,18 @@
               class="tw-px-2 tw-py-0.5 tw-text-xs tw-rounded-sm tw-border tw-border-border tw-bg-card-bg tw-text-foreground tw-cursor-pointer hover:tw-bg-accent disabled:tw-opacity-40"
             >
               Auto
+            </button>
+          }
+          @if (selectedTool() === 'collision' || selectedTool() === 'collisionErase') {
+            <button
+              type="button"
+              data-testid="reset-collision-mask"
+              (click)="onResetCollisionMask()"
+              [disabled]="!collisionMask()"
+              title="Reset collision mask to full footprint"
+              class="tw-px-2 tw-py-0.5 tw-text-xs tw-rounded-sm tw-border tw-border-border tw-bg-card-bg tw-text-foreground tw-cursor-pointer hover:tw-bg-accent disabled:tw-opacity-40"
+            >
+              Reset
             </button>
           }
         </div>

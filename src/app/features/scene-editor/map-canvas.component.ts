@@ -22,6 +22,10 @@ import { PlayerController } from './services/play-controller';
 
 /** sessionStorage key holding the grid visibility preference for the current session. */
 export const GRID_VISIBLE_STORAGE_KEY = 'rk-scene-editor.show-grid';
+/** sessionStorage key holding the collision-overlay visibility preference for the current session. */
+export const COLLISION_VISIBLE_STORAGE_KEY = 'rk-scene-editor.show-collision';
+/** Fallback marker color used when the `--destructive` token cannot be resolved. */
+const COLLISION_MARKER_FALLBACK = '#dc2626';
 
 /**
  * Canvas-based map renderer for a single scene.
@@ -56,6 +60,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   tileFootprints = input<TileFootprintMap>({});
   /** Animation metadata per tile id (absent for static tiles). */
   tileAnimations = input<Record<number, TileAnimationMeta>>({});
+  /** Per-tile blocking flags, keyed by tile id; used by the collision overlay. */
+  blockingById = input<Map<number, boolean>>(new Map());
   /** Whether Play mode is active; in Play mode a player renders and is followed. */
   playMode = input(false);
   /** Whether the next canvas click should place the spawn point instead of editing. */
@@ -78,6 +84,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   zoom = signal(1);
   /** Whether the grid overlay is visible (persisted for the current session). */
   showGrid = signal(this.readGridVisibility());
+  /** Whether the collision/footprint overlay is visible (persisted for the current session). */
+  showCollision = signal(this.readCollisionVisibility());
   /** Current canvas viewport width in CSS pixels. */
   viewportWidth = signal(0);
   /** Current canvas viewport height in CSS pixels. */
@@ -129,6 +137,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       this.palette();
       this.tileSize();
       this.tileFootprints();
+      this.blockingById();
+      this.showCollision();
       const sources = this.tileImages();
       void this.rebuildImageCache(sources);
       this.render();
@@ -153,6 +163,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       sessionStorage.setItem(GRID_VISIBLE_STORAGE_KEY, this.showGrid() ? '1' : '0');
     });
+
+    /** Persist the collision overlay visibility choice for the current browser session. */
+    effect(() => {
+      sessionStorage.setItem(COLLISION_VISIBLE_STORAGE_KEY, this.showCollision() ? '1' : '0');
+    });
   }
 
   /**
@@ -161,6 +176,14 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
    */
   private readGridVisibility(): boolean {
     return sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY) !== '0';
+  }
+
+  /**
+   * Reads the stored collision overlay visibility for the current session.
+   * @returns True only when the session explicitly stores '1'; the overlay is off by default.
+   */
+  private readCollisionVisibility(): boolean {
+    return sessionStorage.getItem(COLLISION_VISIBLE_STORAGE_KEY) === '1';
   }
 
   /**
@@ -330,6 +353,12 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
       }
     }
 
+    // Collision overlay drawn AFTER tiles but BEFORE the grid so cell
+    // boundaries stay visible over marked footprints. Edit mode only.
+    if (this.showCollision() && !this.playMode()) {
+      this.drawCollisionOverlay(cell);
+    }
+
     // Grid drawn AFTER tiles so cell boundaries stay visible over filled cells.
     // Adaptive spacing (drawGrid) prevents moiré noise, so the grid stays on
     // at any zoom instead of vanishing when zoomed out.
@@ -350,6 +379,39 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     }
 
     ctx.restore();
+  }
+
+  /**
+   * @internal Draws a translucent destructive-colored rectangle over the full
+   * directional footprint of every blocking tile on visible layers. Opacity of
+   * a visible layer is intentionally ignored so hidden-by-opacity blocking
+   * tiles are still surfaced, matching the runtime collision model.
+   * @param cell - Size of one grid cell in pixels.
+   */
+  private drawCollisionOverlay(cell: number): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const blocking = this.blockingById();
+    const footprints = this.tileFootprints();
+    ctx.fillStyle = cssTokenColor(
+      this.canvasRef().nativeElement,
+      '--destructive',
+      COLLISION_MARKER_FALLBACK,
+    );
+    ctx.globalAlpha = 0.3;
+    for (const layer of this.layers()) {
+      if (!layer.visible) continue;
+      for (let y = 0; y < layer.tileData.length; y++) {
+        const row = layer.tileData[y];
+        for (let x = 0; x < row.length; x++) {
+          const tileId = row[x];
+          if (tileId < 0 || blocking.get(tileId) !== true) continue;
+          const rect = footprintRect(x, y, tileId, footprints);
+          ctx.fillRect(rect.x * cell, rect.y * cell, rect.w * cell, rect.h * cell);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   /**

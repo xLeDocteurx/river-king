@@ -7,6 +7,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-14
+
+### Added
+
+- Collision / footprint visibility toggle in the scene editor: a toolbar button overlays the
+  blocking footprint of every blocking tile on every visible layer, with the preference
+  remembered for the session (#14).
+- Pixel-perfect tile collision masks: a blocking tile can store a per-pixel mask, painted with
+  new Collision and Erase-collision tools in the sprite editor, and the runtime player resolves
+  against the mask's solid pixels — falling back to the full footprint when no mask is set (#58).
+
 ## [0.1.1] - 2026-10-14
 
 ### Added

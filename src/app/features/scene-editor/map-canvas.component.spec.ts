@@ -1,5 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MapCanvasComponent, GRID_VISIBLE_STORAGE_KEY } from './map-canvas.component';
+import {
+  MapCanvasComponent,
+  GRID_VISIBLE_STORAGE_KEY,
+  COLLISION_VISIBLE_STORAGE_KEY,
+} from './map-canvas.component';
 import type { Scene, Layer } from '../../shared/models/scene.model';
 import { PlayerController } from './services/play-controller';
 
@@ -14,6 +18,44 @@ class ResizeObserverStub {
 }
 if (typeof globalThis.ResizeObserver === 'undefined') {
   (globalThis as unknown as Record<string, unknown>)['ResizeObserver'] = ResizeObserverStub;
+}
+
+/** A recorded `fillRect` call with the `globalAlpha` active at call time. */
+interface FillCall {
+  args: number[];
+  alpha: number;
+}
+
+/**
+ * Builds a canvas 2D context stub that records every `fillRect` call together
+ * with the `globalAlpha` in effect, so tests can isolate the collision overlay.
+ * @returns The fake context and the list of recorded fills.
+ */
+function makeRecordingCtx(): { ctx: CanvasRenderingContext2D; fills: FillCall[] } {
+  const fills: FillCall[] = [];
+  const ctx: Record<string, unknown> = {
+    imageSmoothingEnabled: true,
+    fillStyle: '',
+    strokeStyle: '',
+    globalAlpha: 1,
+    lineWidth: 1,
+    clearRect: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    strokeRect: vi.fn(),
+    drawImage: vi.fn(),
+    arc: vi.fn(),
+  };
+  ctx['fillRect'] = (x: number, y: number, w: number, h: number) => {
+    fills.push({ args: [x, y, w, h], alpha: Number(ctx['globalAlpha']) });
+  };
+  return { ctx: ctx as unknown as CanvasRenderingContext2D, fills };
 }
 
 function makeDefaultLayer(width: number, height: number): Layer {
@@ -242,6 +284,133 @@ describe('MapCanvasComponent', () => {
     instance.showGrid.set(true);
     await new Promise((r) => setTimeout(r, 50));
     expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('1');
+  });
+
+  it('defaults to hiding the collision overlay when no session preference is stored', () => {
+    setup(makeScene(4, 4));
+    expect(fixture.componentInstance.showCollision()).toBe(false);
+  });
+
+  it('restores the collision overlay visibility from the session when enabled', () => {
+    sessionStorage.setItem(COLLISION_VISIBLE_STORAGE_KEY, '1');
+    setup(makeScene(4, 4));
+    expect(fixture.componentInstance.showCollision()).toBe(true);
+  });
+
+  it('persists collision overlay visibility changes to the session storage', async () => {
+    setup(makeScene(4, 4));
+    const instance = fixture.componentInstance;
+    instance.showCollision.set(true);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(COLLISION_VISIBLE_STORAGE_KEY)).toBe('1');
+    instance.showCollision.set(false);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sessionStorage.getItem(COLLISION_VISIBLE_STORAGE_KEY)).toBe('0');
+  });
+
+  it('marks a blocking tile with a translucent fill over its footprint when enabled', () => {
+    const { ctx, fills } = makeRecordingCtx();
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      const scene = makeScene(4, 4);
+      scene.layers[0].tileData[0][0] = 1;
+      setup(scene);
+      fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
+      fixture.componentInstance.showCollision.set(true);
+      fixture.detectChanges();
+
+      expect(fills).toContainEqual({ args: [0, 0, 16, 16], alpha: 0.3 });
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('does not mark a non-blocking tile', () => {
+    const { ctx, fills } = makeRecordingCtx();
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      const scene = makeScene(4, 4);
+      scene.layers[0].tileData[0][0] = 1;
+      setup(scene);
+      fixture.componentRef.setInput('blockingById', new Map([[1, false]]));
+      fixture.componentInstance.showCollision.set(true);
+      fixture.detectChanges();
+
+      expect(fills.some((f) => f.alpha === 0.3)).toBe(false);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('does not mark blocking tiles on hidden layers', () => {
+    const { ctx, fills } = makeRecordingCtx();
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      const scene = makeScene(4, 4);
+      scene.layers[0].visible = false;
+      scene.layers[0].tileData[0][0] = 1;
+      setup(scene);
+      fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
+      fixture.componentInstance.showCollision.set(true);
+      fixture.detectChanges();
+
+      expect(fills.some((f) => f.alpha === 0.3)).toBe(false);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('marks blocking tiles on a visible opacity-0 layer', () => {
+    const { ctx, fills } = makeRecordingCtx();
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      const scene = makeScene(4, 4);
+      scene.layers[0].opacity = 0;
+      scene.layers[0].tileData[0][0] = 1;
+      setup(scene);
+      fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
+      fixture.componentInstance.showCollision.set(true);
+      fixture.detectChanges();
+
+      expect(fills).toContainEqual({ args: [0, 0, 16, 16], alpha: 0.3 });
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('marks a multi-cell blocking footprint across its full rect', () => {
+    const { ctx, fills } = makeRecordingCtx();
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      const scene = makeScene(4, 4);
+      scene.layers[0].tileData[0][0] = 1;
+      setup(scene, { 1: { left: 0, up: 0, right: 1, down: 0 } });
+      fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
+      fixture.componentInstance.showCollision.set(true);
+      fixture.detectChanges();
+
+      expect(fills).toContainEqual({ args: [0, 0, 32, 16], alpha: 0.3 });
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('does not draw the collision overlay in play mode', () => {
+    const { ctx, fills } = makeRecordingCtx();
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      const scene = makeScene(4, 4);
+      scene.layers[0].tileData[0][0] = 1;
+      setup(scene);
+      fixture.componentRef.setInput('blockingById', new Map([[1, true]]));
+      fixture.componentInstance.showCollision.set(true);
+      fixture.componentRef.setInput('playMode', true);
+      fixture.detectChanges();
+
+      expect(fills.some((f) => f.alpha === 0.3)).toBe(false);
+    } finally {
+      getContextSpy.mockRestore();
+    }
   });
 
   it('emits a spawnPlaced cell when placeSpawnMode is active', () => {

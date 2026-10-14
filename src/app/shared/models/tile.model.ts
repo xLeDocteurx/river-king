@@ -29,6 +29,13 @@ export interface Tile {
    * anchor is derived as bottom-center (see `deriveAnchor`).
    */
   anchor?: TileAnchor | null;
+  /**
+   * Optional per-pixel collision mask shared by all frames (`1` = solid,
+   * `0`/absent = passable; row-major `[y][x]`). Dimensions match the frame
+   * artwork and are scaled onto the tile's grid footprint. When absent or
+   * `null`, the tile blocks its entire footprint.
+   */
+  collisionMask?: number[][] | null;
 }
 
 /**

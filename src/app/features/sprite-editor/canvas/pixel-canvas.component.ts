@@ -62,6 +62,9 @@ export class PixelCanvasComponent implements AfterViewInit {
   /** Stored ground-cell anchor of the current tile, or null when derived. */
   anchor = input<TileAnchor | null>(null);
 
+  /** Optional per-pixel collision mask of the current tile (`1` = solid). */
+  collisionMask = input<number[][] | null>(null);
+
   /** Emits the snapped anchor chosen with the anchor tool. */
   anchorChange = output<TileAnchor>();
 
@@ -79,6 +82,9 @@ export class PixelCanvasComponent implements AfterViewInit {
 
   /** Emits the current zoom factor whenever it changes. */
   zoomChange = output<number>();
+
+  /** Emits the updated collision mask whenever it is painted. */
+  collisionMaskChange = output<number[][]>();
 
   /** Pixel data URI of the previous frame for onion-skin reference, or null. */
   onionSkinPrev = input<string | null>(null);
@@ -121,6 +127,7 @@ export class PixelCanvasComponent implements AfterViewInit {
 
   private isDrawing = false;
   private localPaletteIndices: number[][] = [];
+  private localCollisionMask: number[][] = [];
   private rectCache: DOMRect | null = null;
 
   private readonly onionSkinImages = signal<{
@@ -134,6 +141,7 @@ export class PixelCanvasComponent implements AfterViewInit {
       this.localPaletteIndices = indices.map((row) => [...row]);
       this.gridRows.set(Math.max(1, indices.length));
       this.gridCols.set(Math.max(1, ...indices.map((row) => row.length)));
+      this.syncCollisionMask();
       this.syncCanvasSize();
 
       // Track the anchor inputs so a change re-renders the ground-zone marker.
@@ -260,6 +268,19 @@ export class PixelCanvasComponent implements AfterViewInit {
       ctx.globalAlpha = this.onionSkinNextOpacity();
       ctx.drawImage(nextImg, 0, 0, cols * scale, rows * scale);
       ctx.restore();
+    }
+
+    // Collision mask overlay while a mask tool is active.
+    const maskTool = this.tool() === 'collision' || this.tool() === 'collisionErase';
+    if (maskTool && this.localCollisionMask.length > 0) {
+      ctx.fillStyle = 'rgba(220, 38, 38, 0.35)';
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          if ((this.localCollisionMask[y]?.[x] ?? 0) >= 1) {
+            ctx.fillRect(x * scale, y * scale, scale, scale);
+          }
+        }
+      }
     }
 
     // Ground-zone marker: bright highlight while the anchor tool is active,
@@ -421,6 +442,12 @@ export class PixelCanvasComponent implements AfterViewInit {
       if (targetColor === fillColor) return;
       this.floodFill(x, y, targetColor, fillColor);
       this.emitAndRender();
+    } else if (tool === 'collision' || tool === 'collisionErase') {
+      const value = tool === 'collision' ? 1 : 0;
+      if (this.localCollisionMask[y][x] !== value) {
+        this.localCollisionMask[y][x] = value;
+        this.emitMaskAndRender();
+      }
     }
   }
 
@@ -456,5 +483,31 @@ export class PixelCanvasComponent implements AfterViewInit {
   private emitAndRender() {
     this.indicesChange.emit(this.localPaletteIndices.map((row) => [...row]));
     this.render();
+  }
+
+  /** @internal Emits the updated collision mask and triggers a re-render. */
+  private emitMaskAndRender() {
+    this.collisionMaskChange.emit(this.localCollisionMask.map((row) => [...row]));
+    this.render();
+  }
+
+  /**
+   * @internal Sizes the local collision mask to the sprite grid, filling
+   * missing values with `0` so every cell is paintable.
+   */
+  private syncCollisionMask() {
+    const mask = this.collisionMask();
+    const rows = this.gridRows();
+    const cols = this.gridCols();
+    const result: number[][] = [];
+    for (let y = 0; y < rows; y++) {
+      const sourceRow = mask?.[y];
+      const row: number[] = [];
+      for (let x = 0; x < cols; x++) {
+        row.push(sourceRow?.[x] ?? 0);
+      }
+      result.push(row);
+    }
+    this.localCollisionMask = result;
   }
 }

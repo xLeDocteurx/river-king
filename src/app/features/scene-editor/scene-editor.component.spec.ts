@@ -16,6 +16,7 @@ import { createEmptySession } from '../../shared/models/session.model';
 import type { Scene } from '../../shared/models/scene.model';
 import type { Tile } from '../../shared/models/tile.model';
 import type { TileFootprintMap } from './map-footprint';
+import type { TileCollision } from './collision';
 import { PlayerController } from './services/play-controller';
 
 // jsdom does not implement HTMLDialogElement methods
@@ -792,17 +793,40 @@ describe('SceneEditorComponent', () => {
     component.enterPlay();
 
     expect(startSpy).toHaveBeenCalledTimes(1);
-    const [, , blockingById, footprints] = startSpy.mock.calls[0] as [
+    const [, , collisionById, footprints] = startSpy.mock.calls[0] as [
       Scene,
       { x: number; y: number },
-      Map<number, boolean>,
+      Map<number, TileCollision>,
       TileFootprintMap,
       Map<number, string>,
     ];
-    expect(blockingById.size).toBe(2);
-    expect(blockingById.get(wallId)).toBe(true);
-    expect(blockingById.get(floorId)).toBe(false);
+    expect(collisionById.size).toBe(2);
+    expect(collisionById.get(wallId)).toEqual({ blocking: true, mask: null });
+    expect(collisionById.get(floorId)).toEqual({ blocking: false, mask: null });
     expect(footprints).toEqual({});
+  });
+
+  it('derives per-tile blocking flags from the project tiles', () => {
+    component.projectTiles.set([
+      { id: 1, properties: { blocking: true } } as unknown as Tile,
+      { id: 2, properties: { blocking: false } } as unknown as Tile,
+    ]);
+
+    expect(component.blockingById().get(1)).toBe(true);
+    expect(component.blockingById().get(2)).toBe(false);
+  });
+
+  it('toggles the collision overlay from the toolbar button', () => {
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector(
+      'button[title="Show collisions"]',
+    ) as HTMLButtonElement | null;
+    expect(button).toBeTruthy();
+
+    button?.click();
+    fixture.detectChanges();
+
+    expect(component.mapCanvasRef()?.showCollision()).toBe(true);
   });
 
   it('passes only interactable tiles with an actionId to the player on enterPlay', async () => {
@@ -845,7 +869,7 @@ describe('SceneEditorComponent', () => {
     const [, , , , interactableById] = startSpy.mock.calls[0] as [
       Scene,
       { x: number; y: number },
-      Map<number, boolean>,
+      Map<number, TileCollision>,
       TileFootprintMap,
       Map<number, string>,
     ];
