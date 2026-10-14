@@ -43,8 +43,6 @@ const TOOL_LABELS: Record<DrawingTool, string> = {
   eraser: 'Eraser',
   fill: 'Fill',
   anchor: 'Anchor',
-  collision: 'Collision',
-  collisionErase: 'Erase collision',
 };
 
 /**
@@ -130,6 +128,15 @@ export class SpriteEditorComponent implements OnInit {
   private previousCollisionMask: number[][] | null = null;
   /** @internal Whether the active stroke is editing the collision mask. */
   private collisionStrokeActive = false;
+
+  /** Whether the canvas is editing the current tile's collision mask. */
+  readonly collisionMode = signal(false);
+
+  /** Reference to the pixel canvas so the toolbar can drive its grid toggle. */
+  protected readonly pixelCanvasRef = viewChild(PixelCanvasComponent);
+
+  /** Whether the pixel grid is shown (mirrored from the canvas for the toolbar). */
+  readonly showGrid = computed(() => this.pixelCanvasRef()?.showGrid() ?? true);
 
   /** @internal Handle of the scheduled trailing save timer (null when idle). */
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -270,7 +277,7 @@ export class SpriteEditorComponent implements OnInit {
       this.statusBar.setContext(`${count} sprite${count === 1 ? '' : 's'}`);
       return;
     }
-    const tool = TOOL_LABELS[this.selectedTool()];
+    const tool = this.collisionMode() ? 'Collision' : TOOL_LABELS[this.selectedTool()];
     const colorNumber = this.selectedPaletteIndex() + 1;
     const zoom = this.zoomLevel();
     const zoomPercent = `${Math.round(zoom * 100)}%`;
@@ -282,8 +289,9 @@ export class SpriteEditorComponent implements OnInit {
       this.selectedTool() === 'anchor'
         ? ` | Anchor — ${anchor ? `${anchor.x}, ${anchor.y}` : 'Auto'}`
         : '';
+    const colorSegment = this.collisionMode() ? '' : ` | Color #${colorNumber}`;
     this.statusBar.setContext(
-      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool} | Color #${colorNumber} | Zoom ${zoomPercent}${frameStr}${anchorSuffix}`,
+      `${sprite.name} | ${sprite.width}×${sprite.height} px | ${tool}${colorSegment} | Zoom ${zoomPercent}${frameStr}${anchorSuffix}`,
     );
   });
 
@@ -411,6 +419,7 @@ export class SpriteEditorComponent implements OnInit {
   async selectTile(tileId: number): Promise<void> {
     this.stopPlayback();
     this.onionPanelOpen.set(false);
+    this.collisionMode.set(false);
     this.selectedTileId.set(tileId);
     this.collisionMask.set(this.tiles().find((t) => t.id === tileId)?.collisionMask ?? null);
     const tile = this.tiles().find((t) => t.id === tileId);
@@ -432,6 +441,7 @@ export class SpriteEditorComponent implements OnInit {
     try {
       await this.flushPersist();
       this.onionPanelOpen.set(false);
+      this.collisionMode.set(false);
       this.selectedSpriteId.set(spriteId);
       const sprite = await this.spriteService.getSprite(spriteId);
       this.selectedSprite.set(sprite ?? null);
@@ -485,7 +495,7 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Captures the pixel state before a stroke begins, for undo. */
   onStrokeStart(): void {
-    if (this.selectedTool() === 'collision' || this.selectedTool() === 'collisionErase') {
+    if (this.collisionMode()) {
       this.collisionStrokeActive = true;
       this.previousCollisionMask = this.collisionMask()?.map((row) => [...row]) ?? null;
       return;
@@ -498,7 +508,7 @@ export class SpriteEditorComponent implements OnInit {
 
   /** Pushes an undo action when a stroke ends. */
   onStrokeEnd(finalIndices: number[][]): void {
-    if (this.selectedTool() === 'collision' || this.selectedTool() === 'collisionErase') {
+    if (this.collisionMode()) {
       void this.commitCollisionMask();
       return;
     }
@@ -541,7 +551,7 @@ export class SpriteEditorComponent implements OnInit {
     this.collisionMask.set(mask.map((row) => [...row]));
   }
 
-  /** @internal Persists the painted mask (null when empty) with an undo entry. */
+  /** @internal Persists the painted mask (null when full) with an undo entry. */
   private async commitCollisionMask(): Promise<void> {
     if (!this.collisionStrokeActive) return;
     this.collisionStrokeActive = false;
@@ -549,9 +559,8 @@ export class SpriteEditorComponent implements OnInit {
     this.previousCollisionMask = null;
     const tile = this.currentTile();
     if (!tile) return;
-    const nextMask = this.collisionMask();
-    const next = nextMask && this.maskHasSolid(nextMask) ? nextMask : null;
-    const prev = previous && this.maskHasSolid(previous) ? previous : null;
+    const next = this.storedFromMask(this.collisionMask());
+    const prev = this.storedFromMask(previous);
     if (JSON.stringify(next) === JSON.stringify(prev)) return;
     try {
       await this.tileService.updateTile(tile.id, { collisionMask: next });
@@ -572,30 +581,61 @@ export class SpriteEditorComponent implements OnInit {
   async onResetCollisionMask(): Promise<void> {
     const tile = this.currentTile();
     if (!tile) return;
-    const previous = this.collisionMask();
-    this.collisionMask.set(null);
+    const prevStored = this.storedFromMask(this.collisionMask());
     try {
       await this.tileService.updateTile(tile.id, { collisionMask: null });
-      if (previous && this.maskHasSolid(previous)) {
+      this.collisionMask.set(this.buildFullMask());
+      await this.loadTiles();
+      if (prevStored) {
         this.undo.push({
           label: 'Reset collision mask',
           execute: () => void this.tileService.updateTile(tile.id, { collisionMask: null }),
-          undo: () => void this.tileService.updateTile(tile.id, { collisionMask: previous }),
+          undo: () => void this.tileService.updateTile(tile.id, { collisionMask: prevStored }),
         });
       }
-      await this.loadTiles();
     } catch {
       this.notification.error('Failed to reset the collision mask.');
     }
   }
 
+  /** Toggles collision-mask painting; entering initialises a full mask. */
+  toggleCollisionMode(): void {
+    const next = !this.collisionMode();
+    this.collisionMode.set(next);
+    if (!next) return;
+    if (this.selectedTool() === 'anchor') this.selectedTool.set('brush');
+    if (!this.collisionMask()) this.collisionMask.set(this.buildFullMask());
+  }
+
   /**
-   * @internal Whether a mask has at least one solid pixel.
-   * @param mask - The mask grid to inspect.
-   * @returns True when any cell is >= 1.
+   * @internal A full (all-solid) mask matching the current sprite grid.
+   * @returns A rows×cols grid of `1`.
    */
-  private maskHasSolid(mask: number[][]): boolean {
-    return mask.some((row) => row.some((v) => v >= 1));
+  private buildFullMask(): number[][] {
+    const indices = this.paletteIndices();
+    const rows = indices?.length ?? 0;
+    const cols = rows > 0 ? Math.max(...indices!.map((row) => row.length)) : 0;
+    return Array.from({ length: rows }, () => Array.from({ length: cols }, () => 1));
+  }
+
+  /**
+   * @internal Whether every mask cell is solid.
+   * @param mask - The mask grid to inspect.
+   * @returns True when no cell is empty.
+   */
+  private isFullMask(mask: number[][]): boolean {
+    return mask.every((row) => row.every((v) => v >= 1));
+  }
+
+  /**
+   * @internal Canonical stored value for a working mask: `null` when the mask is
+   * full (the default footprint), otherwise the mask itself — including an
+   * all-zero mask, which is persisted so a blocking tile can be made passable.
+   * @param mask - The working mask, or null.
+   * @returns The value to persist.
+   */
+  private storedFromMask(mask: number[][] | null): number[][] | null {
+    return mask && !this.isFullMask(mask) ? mask : null;
   }
 
   /**

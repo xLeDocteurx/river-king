@@ -321,22 +321,6 @@ describe('PixelCanvasComponent', () => {
     expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('0');
   });
 
-  it('renders a floating grid toggle button reflecting the showGrid state', () => {
-    setupInputs([[0]]);
-    const btn: HTMLButtonElement | null = fixture.nativeElement.querySelector('button');
-    expect(btn).toBeTruthy();
-    expect(btn!.getAttribute('aria-label')).toBe('Hide grid');
-  });
-
-  it('toggles the grid when the floating button is clicked', async () => {
-    setupInputs([[0]]);
-    const btn: HTMLButtonElement | null = fixture.nativeElement.querySelector('button');
-    btn!.click();
-    await new Promise((r) => setTimeout(r, 50));
-    expect(fixture.componentInstance.showGrid()).toBe(false);
-    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('0');
-  });
-
   it('emits a grid-snapped anchor when the anchor tool is clicked', () => {
     setupInputs(Array.from({ length: 32 }, () => Array(32).fill(0)));
     fixture.componentRef.setInput('tool', 'anchor');

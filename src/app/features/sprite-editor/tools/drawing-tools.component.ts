@@ -1,7 +1,7 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 
 /** Supported drawing tool identifiers for the sprite canvas. */
-export type DrawingTool = 'brush' | 'eraser' | 'fill' | 'anchor' | 'collision' | 'collisionErase';
+export type DrawingTool = 'brush' | 'eraser' | 'fill' | 'anchor';
 
 /**
  * Drawing tools component for selecting the active tool in the sprite editor.
