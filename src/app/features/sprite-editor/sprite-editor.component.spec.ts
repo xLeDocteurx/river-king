@@ -1064,7 +1064,7 @@ describe('SpriteEditorComponent', () => {
     ]);
   });
 
-  it('persists a painted collision mask and resets it to null', async () => {
+  it('persists a painted collision mask and resets the visibility to full', async () => {
     await createProjectWithPalette();
     const db = TestBed.inject(DatabaseService);
     await db.tiles.add({
@@ -1091,8 +1091,8 @@ describe('SpriteEditorComponent', () => {
     fixture.detectChanges();
     const component = fixture.componentInstance;
     await component.selectSprite(11);
-    component.selectedTool.set('collision');
 
+    component.toggleCollisionMode();
     component.onStrokeStart();
     component.onCollisionMaskChange([
       [1, 0],
@@ -1110,8 +1110,94 @@ describe('SpriteEditorComponent', () => {
     ]);
 
     await component.onResetCollisionMask();
-
-    expect(component.collisionMask()).toBeNull();
+    expect(component.collisionMask()).toEqual([
+      [1, 1],
+      [1, 1],
+    ]);
     expect((await db.tiles.get(1))!.collisionMask).toBeNull();
+  });
+
+  it('persists an all-zero mask so a blocking tile becomes fully passable', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Wall',
+      type: 'static',
+      spriteIds: [11],
+      animationSpeed: 4,
+      properties: { blocking: true, interactable: false, ySort: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Wall 1',
+      width: 2,
+      height: 2,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    await component.selectSprite(11);
+
+    component.toggleCollisionMode();
+    component.onStrokeStart();
+    component.onCollisionMaskChange([
+      [0, 0],
+      [0, 0],
+    ]);
+    component.onStrokeEnd([
+      [0, 0],
+      [0, 0],
+    ]);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect((await db.tiles.get(1))!.collisionMask).toEqual([
+      [0, 0],
+      [0, 0],
+    ]);
+  });
+
+  it('hides the palette and reports Collision in the status bar in collision mode', async () => {
+    await createProjectWithPalette();
+    const db = TestBed.inject(DatabaseService);
+    await db.tiles.add({
+      id: 1,
+      projectId: 'test-proj',
+      name: 'Wall',
+      type: 'static',
+      spriteIds: [11],
+      animationSpeed: 4,
+      properties: { blocking: true, interactable: false, ySort: false },
+    } as Tile);
+    await db.sprites.add({
+      id: 11,
+      projectId: 'test-proj',
+      tileId: 1,
+      name: 'Wall 1',
+      width: 2,
+      height: 2,
+      pixelData: '',
+      paletteIndices: [],
+    } as Sprite);
+    await setupWithProject();
+    await flushRouteWork();
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    await component.selectSprite(11);
+    const statusBar = TestBed.inject(StatusBarService);
+    const statusBarSpy = vi.spyOn(statusBar, 'setContext');
+
+    component.toggleCollisionMode();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('rk-palette-manager')).toBeNull();
+    expect(statusBarSpy).toHaveBeenCalledWith(expect.stringContaining('Collision'));
   });
 });

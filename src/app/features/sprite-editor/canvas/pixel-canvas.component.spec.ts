@@ -321,22 +321,6 @@ describe('PixelCanvasComponent', () => {
     expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('0');
   });
 
-  it('renders a floating grid toggle button reflecting the showGrid state', () => {
-    setupInputs([[0]]);
-    const btn: HTMLButtonElement | null = fixture.nativeElement.querySelector('button');
-    expect(btn).toBeTruthy();
-    expect(btn!.getAttribute('aria-label')).toBe('Hide grid');
-  });
-
-  it('toggles the grid when the floating button is clicked', async () => {
-    setupInputs([[0]]);
-    const btn: HTMLButtonElement | null = fixture.nativeElement.querySelector('button');
-    btn!.click();
-    await new Promise((r) => setTimeout(r, 50));
-    expect(fixture.componentInstance.showGrid()).toBe(false);
-    expect(sessionStorage.getItem(GRID_VISIBLE_STORAGE_KEY)).toBe('0');
-  });
-
   it('emits a grid-snapped anchor when the anchor tool is clicked', () => {
     setupInputs(Array.from({ length: 32 }, () => Array(32).fill(0)));
     fixture.componentRef.setInput('tool', 'anchor');
@@ -384,9 +368,9 @@ describe('PixelCanvasComponent', () => {
     expect(mockCtx.strokeRect).toHaveBeenCalledWith(128, 0, 128, 128);
   });
 
-  it('paints solid collision pixels with the collision tool', () => {
+  it('paints solid mask pixels with the brush in collision mode', () => {
     setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
-    fixture.componentRef.setInput('tool', 'collision');
+    fixture.componentRef.setInput('collisionMode', true);
     fixture.detectChanges();
     const spy = vi.fn();
     fixture.componentInstance.collisionMaskChange.subscribe(spy);
@@ -398,18 +382,18 @@ describe('PixelCanvasComponent', () => {
     canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
     canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
 
-    expect(spy).toHaveBeenCalled();
     const emitted = spy.mock.calls.at(-1)?.[0] as number[][];
     expect(emitted[0][0]).toBe(1);
   });
 
-  it('clears collision pixels with the erase tool', () => {
+  it('erases mask pixels with the eraser in collision mode', () => {
     setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
     fixture.componentRef.setInput('collisionMask', [
       [1, 1],
       [1, 1],
     ]);
-    fixture.componentRef.setInput('tool', 'collisionErase');
+    fixture.componentRef.setInput('collisionMode', true);
+    fixture.componentRef.setInput('tool', 'eraser');
     fixture.detectChanges();
     const spy = vi.fn();
     fixture.componentInstance.collisionMaskChange.subscribe(spy);
@@ -421,8 +405,36 @@ describe('PixelCanvasComponent', () => {
     canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
     canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
 
-    expect(spy).toHaveBeenCalled();
     const emitted = spy.mock.calls.at(-1)?.[0] as number[][];
     expect(emitted[0][0]).toBe(0);
+  });
+
+  it('does not emit indicesChange while in collision mode', () => {
+    setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
+    fixture.componentRef.setInput('collisionMode', true);
+    fixture.detectChanges();
+    const spy = vi.fn();
+    fixture.componentInstance.indicesChange.subscribe(spy);
+
+    const canvas = fixture.nativeElement.querySelector('canvas');
+    const rect = { left: 0, top: 0, width: 256, height: 256 };
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(rect as DOMRect);
+
+    canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: 4, clientY: 4, bubbles: true }));
+    canvas.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('draws the collision overlay for solid cells in collision mode', () => {
+    setupInputs(Array.from({ length: 2 }, () => Array(2).fill(0)));
+    fixture.componentRef.setInput('collisionMask', [
+      [1, 1],
+      [1, 1],
+    ]);
+    fixture.componentRef.setInput('collisionMode', true);
+    fixture.detectChanges();
+
+    expect(mockCtx.fillRect).toHaveBeenCalledWith(128, 128, 128, 128);
   });
 });

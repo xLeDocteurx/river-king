@@ -75,4 +75,19 @@ describe('DrawingToolsComponent', () => {
     const anchorBtn = fixture.nativeElement.querySelector('[data-testid="tool-anchor"]');
     expect(anchorBtn.classList.contains('tw-bg-primary/10')).toBe(true);
   });
+
+  it('does not render the collision tool buttons', () => {
+    fixture.componentRef.setInput('tool', 'brush');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="tool-collision"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="tool-collision-erase"]')).toBeNull();
+  });
+
+  it('hides the anchor tool while collision mode is on', () => {
+    fixture.componentRef.setInput('tool', 'brush');
+    fixture.componentRef.setInput('collisionMode', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="tool-anchor"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="tool-brush"]')).toBeTruthy();
+  });
 });
