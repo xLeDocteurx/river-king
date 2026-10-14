@@ -55,6 +55,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * Validates a collision mask read from an archive, dropping malformed values.
+ * @param value - Raw value from the archive tile item.
+ * @returns A row-major numeric grid, or undefined when the shape is invalid.
+ */
+function normalizeCollisionMask(value: unknown): number[][] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  if (!value.every((row) => Array.isArray(row))) return undefined;
+  return value as number[][];
+}
+
+/**
  * Owns project serialization: exports a project to a `.rkproj` JSON string,
  * validates archives, and imports them with full atomic id remapping.
  */
@@ -100,6 +111,7 @@ export class ProjectIoService {
         properties: { ...t.properties },
         folderPath: t.folderPath ?? '',
         anchor: t.anchor ?? undefined,
+        collisionMask: t.collisionMask ?? undefined,
       })),
       sprites: sprites.map((s): SpriteArchiveItem => ({
         sourceId: s.id,
@@ -196,6 +208,7 @@ export class ProjectIoService {
             properties: { ...t.properties },
             folderPath: t.folderPath,
             anchor: t.anchor,
+            collisionMask: normalizeCollisionMask(t.collisionMask),
           } as Tile);
           tileIdMap.set(t.sourceId, newId);
         }
