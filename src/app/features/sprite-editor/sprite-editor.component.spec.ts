@@ -1115,4 +1115,3 @@ describe('SpriteEditorComponent', () => {
     expect((await db.tiles.get(1))!.collisionMask).toBeNull();
   });
 });
-

@@ -25,12 +25,14 @@
 ### Task 1: Tile model + project archive persistence
 
 **Files:**
+
 - Modify: `src/app/shared/models/tile.model.ts`
 - Modify: `src/app/shared/models/project-archive.model.ts`
 - Modify: `src/app/core/services/project-io.service.ts`
 - Test: `src/app/core/services/project-io.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: existing `Tile`, `TileArchiveItem`, `ProjectIoService.exportProject/importProject`.
 - Produces: `Tile.collisionMask?: number[][] | null`; `TileArchiveItem.collisionMask?: number[][]`.
 
@@ -39,28 +41,28 @@
 Add these two tests to `src/app/core/services/project-io.service.spec.ts` immediately after the `'round-trips a stored anchor'` test (around line 384):
 
 ```ts
-  it('round-trips a stored collision mask', async () => {
-    const { projectId, groundId } = await seedProject();
-    const mask = [
-      [1, 0],
-      [0, 1],
-    ];
-    await db.tiles.update(groundId, { collisionMask: mask });
-    const json = await service.exportProject(projectId);
-    const result = await service.importProject(json, { kind: 'new' });
-    const imported = await db.tiles.where('projectId').equals(result.projectId).toArray();
-    const ground = imported.find((t) => t.name === 'Ground');
-    expect(ground?.collisionMask).toEqual(mask);
-  });
+it('round-trips a stored collision mask', async () => {
+  const { projectId, groundId } = await seedProject();
+  const mask = [
+    [1, 0],
+    [0, 1],
+  ];
+  await db.tiles.update(groundId, { collisionMask: mask });
+  const json = await service.exportProject(projectId);
+  const result = await service.importProject(json, { kind: 'new' });
+  const imported = await db.tiles.where('projectId').equals(result.projectId).toArray();
+  const ground = imported.find((t) => t.name === 'Ground');
+  expect(ground?.collisionMask).toEqual(mask);
+});
 
-  it('drops a malformed collision mask on import', async () => {
-    const json = validJsonOverrides({
-      tiles: [{ ...validTile(), collisionMask: 'nope' as unknown as number[][] }],
-    });
-    const result = await service.importProject(json, { kind: 'new' });
-    const imported = await db.tiles.where('projectId').equals(result.projectId).toArray();
-    expect(imported[0].collisionMask).toBeUndefined();
+it('drops a malformed collision mask on import', async () => {
+  const json = validJsonOverrides({
+    tiles: [{ ...validTile(), collisionMask: 'nope' as unknown as number[][] }],
   });
+  const result = await service.importProject(json, { kind: 'new' });
+  const imported = await db.tiles.where('projectId').equals(result.projectId).toArray();
+  expect(imported[0].collisionMask).toBeUndefined();
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -142,10 +144,12 @@ git commit -m "feature-58: persist the tile collision mask through the project a
 ### Task 2: Collision field + masked resolver
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/collision.ts`
 - Test: `src/app/features/scene-editor/collision.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `getFootprint`, `TileFootprintMap`, `Layer`.
 - Produces: `CellRect`, `TileCollision`, `CollisionField`, `buildCollisionField(width,height,layers,tiles,footprints)`, and `resolveCollision(pos, move, half, grid, bounds, sub?)`.
 - The existing `buildBlockingGrid` signature is unchanged (now delegates).
@@ -204,7 +208,18 @@ describe('buildCollisionField', () => {
       1,
       1,
       [layer([[1]])],
-      new Map([[1, { blocking: true, mask: [[0, 0], [0, 0]] }]]),
+      new Map([
+        [
+          1,
+          {
+            blocking: true,
+            mask: [
+              [0, 0],
+              [0, 0],
+            ],
+          },
+        ],
+      ]),
       {},
     );
     expect(field.full[0][0]).toBe(false);
@@ -516,11 +531,13 @@ git commit -m "feature-58: resolve collisions against per-pixel tile masks"
 ### Task 3: Play controller + scene editor wiring
 
 **Files:**
+
 - Modify: `src/app/features/scene-editor/services/play-controller.ts`
 - Modify: `src/app/features/scene-editor/scene-editor.component.ts`
 - Test: `src/app/features/scene-editor/services/play-controller.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `buildCollisionField`, `CollisionField`, `TileCollision`, `resolveCollision` from Task 2.
 - Produces: `PlayerController.start(scene, spawn, collisionById: Map<number, TileCollision>, footprints, interactableById)`.
 
@@ -535,20 +552,18 @@ import type { TileCollision } from '../collision';
 Add one behaviour test (adapt the factory/helper names to the file's existing style):
 
 ```ts
-  it('lets the player cross a masked cell where the mask is empty', () => {
-    const controller = new PlayerController();
-    controller.speed = 5;
-    const layers = [{ id: 'l', name: 'l', visible: true, opacity: 1, tileData: [[1, -1]] }];
-    const collision = new Map<number, TileCollision>([
-      [1, { blocking: true, mask: [[0]] }],
-    ]);
-    controller.start({ width: 2, height: 1 }, { x: 0, y: 0 }, collision, {}, new Map());
-    // Cross the masked (but empty) cell to the right.
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }));
-    for (let i = 0; i < 20; i++) controller.update(0.05);
-    expect(controller.x()).toBeGreaterThan(1);
-    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'd' }));
-  });
+it('lets the player cross a masked cell where the mask is empty', () => {
+  const controller = new PlayerController();
+  controller.speed = 5;
+  const layers = [{ id: 'l', name: 'l', visible: true, opacity: 1, tileData: [[1, -1]] }];
+  const collision = new Map<number, TileCollision>([[1, { blocking: true, mask: [[0]] }]]);
+  controller.start({ width: 2, height: 1 }, { x: 0, y: 0 }, collision, {}, new Map());
+  // Cross the masked (but empty) cell to the right.
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }));
+  for (let i = 0; i < 20; i++) controller.update(0.05);
+  expect(controller.x()).toBeGreaterThan(1);
+  window.dispatchEvent(new KeyboardEvent('keyup', { key: 'd' }));
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -610,18 +625,17 @@ Update `start` — change the `@param` JSDoc line, the `blockingById` parameter 
   }
 ```
 
-
 (In the `update` method) replace the `resolveCollision` call:
 
 ```ts
-      const resolved = resolveCollision(
-        { x: this.x(), y: this.y() },
-        { x: dx * this.speed * dt, y: dy * this.speed * dt },
-        HALF_CELL_HITBOX,
-        this.collisionField.full,
-        { width: this.sceneWidth, height: this.sceneHeight },
-        this.collisionField.sub,
-      );
+const resolved = resolveCollision(
+  { x: this.x(), y: this.y() },
+  { x: dx * this.speed * dt, y: dy * this.speed * dt },
+  HALF_CELL_HITBOX,
+  this.collisionField.full,
+  { width: this.sceneWidth, height: this.sceneHeight },
+  this.collisionField.sub,
+);
 ```
 
 - [ ] **Step 3b: Wire the scene editor**
@@ -644,13 +658,13 @@ Add the import: `import type { TileCollision } from './collision';`
 In `enterPlay`, change the `player.start` call's third argument from `this.blockingById()` to `this.collisionById()`:
 
 ```ts
-    this.player.start(
-      scene,
-      this.resolveSpawn(scene),
-      this.collisionById(),
-      this.tileFootprints(),
-      interactableById,
-    );
+this.player.start(
+  scene,
+  this.resolveSpawn(scene),
+  this.collisionById(),
+  this.tileFootprints(),
+  interactableById,
+);
 ```
 
 - [ ] **Step 4: Run the tests to verify they pass**
@@ -670,12 +684,14 @@ git commit -m "feature-58: feed the collision field into the play controller"
 ### Task 4: Collision tools + pixel canvas mask painting
 
 **Files:**
+
 - Modify: `src/app/features/sprite-editor/tools/drawing-tools.component.ts`
 - Modify: `src/app/features/sprite-editor/tools/drawing-tools.component.html`
 - Modify: `src/app/features/sprite-editor/canvas/pixel-canvas.component.ts`
 - Test: `src/app/features/sprite-editor/canvas/pixel-canvas.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `DrawingTool` union.
 - Produces: `DrawingTool` gains `'collision' | 'collisionErase'`; `PixelCanvasComponent.collisionMask = input<number[][] | null>(null)` and `collisionMaskChange = output<number[][]>()`.
 
@@ -684,28 +700,24 @@ git commit -m "feature-58: feed the collision field into the play controller"
 In `src/app/features/sprite-editor/canvas/pixel-canvas.component.spec.ts`, follow the file's existing setup helper and add:
 
 ```ts
-  it('paints solid collision pixels with the collision tool', () => {
-    setup();
-    fixture.componentRef.setInput('tool', 'collision');
-    fixture.detectChanges();
-    fixture.componentInstance.onMouseDown(
-      new MouseEvent('mousedown', { clientX: 4, clientY: 4 }),
-    );
-    const emitted = emitSpy.mock.calls.at(-1)?.[0] as number[][];
-    expect(emitted[0][0]).toBe(1);
-  });
+it('paints solid collision pixels with the collision tool', () => {
+  setup();
+  fixture.componentRef.setInput('tool', 'collision');
+  fixture.detectChanges();
+  fixture.componentInstance.onMouseDown(new MouseEvent('mousedown', { clientX: 4, clientY: 4 }));
+  const emitted = emitSpy.mock.calls.at(-1)?.[0] as number[][];
+  expect(emitted[0][0]).toBe(1);
+});
 
-  it('clears collision pixels with the erase tool', () => {
-    setup();
-    fixture.componentRef.setInput('collisionMask', [[1, 1]]);
-    fixture.componentRef.setInput('tool', 'collisionErase');
-    fixture.detectChanges();
-    fixture.componentInstance.onMouseDown(
-      new MouseEvent('mousedown', { clientX: 4, clientY: 4 }),
-    );
-    const emitted = emitSpy.mock.calls.at(-1)?.[0] as number[][];
-    expect(emitted[0][0]).toBe(0);
-  });
+it('clears collision pixels with the erase tool', () => {
+  setup();
+  fixture.componentRef.setInput('collisionMask', [[1, 1]]);
+  fixture.componentRef.setInput('tool', 'collisionErase');
+  fixture.detectChanges();
+  fixture.componentInstance.onMouseDown(new MouseEvent('mousedown', { clientX: 4, clientY: 4 }));
+  const emitted = emitSpy.mock.calls.at(-1)?.[0] as number[][];
+  expect(emitted[0][0]).toBe(0);
+});
 ```
 
 > Adapt `setup()`/`emitSpy` to the helpers already defined in the spec (subscribe to `collisionMaskChange` into a spy array named `emitSpy` if not present).
@@ -721,13 +733,7 @@ In `src/app/features/sprite-editor/tools/drawing-tools.component.ts`:
 
 ```ts
 /** Tools available on the sprite/tile canvas. */
-export type DrawingTool =
-  | 'brush'
-  | 'eraser'
-  | 'fill'
-  | 'anchor'
-  | 'collision'
-  | 'collisionErase';
+export type DrawingTool = 'brush' | 'eraser' | 'fill' | 'anchor' | 'collision' | 'collisionErase';
 ```
 
 - [ ] **Step 3b: Add the two tool buttons**
@@ -735,28 +741,28 @@ export type DrawingTool =
 In `src/app/features/sprite-editor/tools/drawing-tools.component.html`, inside the button row (after the anchor button), add:
 
 ```html
-      <button
-        type="button"
-        data-testid="tool-collision"
-        title="Collision"
-        (click)="selectTool('collision')"
-        [class.tw-bg-primary/10]="tool() === 'collision'"
-        [class.tw-border-primary]="tool() === 'collision'"
-        class="tw-p-1.5 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
-      >
-        <span class="material-symbols" aria-hidden="true">check_box</span>
-      </button>
-      <button
-        type="button"
-        data-testid="tool-collision-erase"
-        title="Erase collision"
-        (click)="selectTool('collisionErase')"
-        [class.tw-bg-primary/10]="tool() === 'collisionErase'"
-        [class.tw-border-primary]="tool() === 'collisionErase'"
-        class="tw-p-1.5 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
-      >
-        <span class="material-symbols" aria-hidden="true">check_box_outline_blank</span>
-      </button>
+<button
+  type="button"
+  data-testid="tool-collision"
+  title="Collision"
+  (click)="selectTool('collision')"
+  [class.tw-bg-primary/10]="tool() === 'collision'"
+  [class.tw-border-primary]="tool() === 'collision'"
+  class="tw-p-1.5 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
+>
+  <span class="material-symbols" aria-hidden="true">check_box</span>
+</button>
+<button
+  type="button"
+  data-testid="tool-collision-erase"
+  title="Erase collision"
+  (click)="selectTool('collisionErase')"
+  [class.tw-bg-primary/10]="tool() === 'collisionErase'"
+  [class.tw-border-primary]="tool() === 'collisionErase'"
+  class="tw-p-1.5 tw-rounded-sm tw-border tw-border-border tw-transition hover:tw-bg-muted"
+>
+  <span class="material-symbols" aria-hidden="true">check_box_outline_blank</span>
+</button>
 ```
 
 - [ ] **Step 3c: Add mask input/output, editing, and overlay to the pixel canvas**
@@ -766,15 +772,15 @@ In `src/app/features/sprite-editor/canvas/pixel-canvas.component.ts`:
 Add to the inputs (after `anchor`):
 
 ```ts
-  /** Optional per-pixel collision mask of the current tile (`1` = solid). */
-  collisionMask = input<number[][] | null>(null);
+/** Optional per-pixel collision mask of the current tile (`1` = solid). */
+collisionMask = input<number[][] | null>(null);
 ```
 
 Add to the outputs (after `zoomChange`):
 
 ```ts
-  /** Emits the updated collision mask whenever it is painted. */
-  collisionMaskChange = output<number[][]>();
+/** Emits the updated collision mask whenever it is painted. */
+collisionMaskChange = output<number[][]>();
 ```
 
 Add internal state next to `localPaletteIndices`:
@@ -786,7 +792,7 @@ Add internal state next to `localPaletteIndices`:
 In the main effect (after `this.gridRows/gridCols` are set and before `this.syncCanvasSize()`), sync the mask:
 
 ```ts
-      this.localCollisionMask = this.normalizeMask(this.collisionMask());
+this.localCollisionMask = this.normalizeMask(this.collisionMask());
 ```
 
 Add the helper:
@@ -813,18 +819,18 @@ Add the helper:
 In `render()`, after the "3. Next onion skin" block and before the ground-zone marker, draw the overlay:
 
 ```ts
-    // Collision mask overlay while a mask tool is active.
-    const maskTool = this.tool() === 'collision' || this.tool() === 'collisionErase';
-    if (maskTool && this.localCollisionMask.length > 0) {
-      ctx.fillStyle = 'rgba(220, 38, 38, 0.35)';
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          if ((this.localCollisionMask[y]?.[x] ?? 0) >= 1) {
-            ctx.fillRect(x * scale, y * scale, scale, scale);
-          }
-        }
+// Collision mask overlay while a mask tool is active.
+const maskTool = this.tool() === 'collision' || this.tool() === 'collisionErase';
+if (maskTool && this.localCollisionMask.length > 0) {
+  ctx.fillStyle = 'rgba(220, 38, 38, 0.35)';
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      if ((this.localCollisionMask[y]?.[x] ?? 0) >= 1) {
+        ctx.fillRect(x * scale, y * scale, scale, scale);
       }
     }
+  }
+}
 ```
 
 In `applyTool`, add a branch before the closing brace:
@@ -866,11 +872,13 @@ git commit -m "feature-58: paint collision masks on the pixel canvas"
 ### Task 5: Sprite editor integration
 
 **Files:**
+
 - Modify: `src/app/features/sprite-editor/sprite-editor.component.ts`
 - Modify: `src/app/features/sprite-editor/sprite-editor.component.html`
 - Test: `src/app/features/sprite-editor/sprite-editor.component.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `TileService.updateTile`, `UndoService`, `PixelCanvasComponent.collisionMask/collisionMaskChange`.
 - Produces: `SpriteEditorComponent.collisionMask` signal, `onCollisionMaskChange(mask)`, `onResetCollisionMask()`.
 
@@ -879,31 +887,31 @@ git commit -m "feature-58: paint collision masks on the pixel canvas"
 In `src/app/features/sprite-editor/sprite-editor.component.spec.ts`, add:
 
 ```ts
-  it('loads the current tile collision mask on selection', async () => {
-    // select a tile whose collisionMask is set in the DB
-    await component.selectTile(tileId);
-    expect(component.collisionMask()).toEqual(storedMask);
-  });
+it('loads the current tile collision mask on selection', async () => {
+  // select a tile whose collisionMask is set in the DB
+  await component.selectTile(tileId);
+  expect(component.collisionMask()).toEqual(storedMask);
+});
 
-  it('persists a collision mask on onChange and can reset it to null', async () => {
-    await component.selectTile(tileId);
-    component.onCollisionMaskChange([
-      [1, 0],
-      [0, 0],
-    ]);
-    await component.onStrokeEnd([
-      [0, 0],
-      [0, 0],
-    ]);
-    const stored = await db.tiles.get(tileId);
-    expect(stored?.collisionMask).toEqual([
-      [1, 0],
-      [0, 0],
-    ]);
-    await component.onResetCollisionMask();
-    expect(component.collisionMask()).toBeNull();
-    expect((await db.tiles.get(tileId))?.collisionMask).toBeNull();
-  });
+it('persists a collision mask on onChange and can reset it to null', async () => {
+  await component.selectTile(tileId);
+  component.onCollisionMaskChange([
+    [1, 0],
+    [0, 0],
+  ]);
+  await component.onStrokeEnd([
+    [0, 0],
+    [0, 0],
+  ]);
+  const stored = await db.tiles.get(tileId);
+  expect(stored?.collisionMask).toEqual([
+    [1, 0],
+    [0, 0],
+  ]);
+  await component.onResetCollisionMask();
+  expect(component.collisionMask()).toBeNull();
+  expect((await db.tiles.get(tileId))?.collisionMask).toBeNull();
+});
 ```
 
 > Adapt variable names (`tileId`, `storedMask`, `db`) to the spec's existing fixtures.
@@ -944,7 +952,7 @@ Add near `paletteIndices` (line ~121):
 In `selectTile(tileId)` (lines ~402-410), after `selectedTileId.set(tileId)`:
 
 ```ts
-    this.collisionMask.set(this.tiles().find((t) => t.id === tileId)?.collisionMask ?? null);
+this.collisionMask.set(this.tiles().find((t) => t.id === tileId)?.collisionMask ?? null);
 ```
 
 - [ ] **Step 3c: Handle mask edits, stroke ends, and reset**
@@ -965,11 +973,11 @@ In `onStrokeStart()` add an early branch:
 At the start of `onStrokeEnd(finalIndices)` add:
 
 ```ts
-    const tool = this.selectedTool();
-    if (tool === 'collision' || tool === 'collisionErase') {
-      void this.commitCollisionMask();
-      return;
-    }
+const tool = this.selectedTool();
+if (tool === 'collision' || tool === 'collisionErase') {
+  void this.commitCollisionMask();
+  return;
+}
 ```
 
 Add the handler and helpers:
@@ -1045,24 +1053,23 @@ Add the handler and helpers:
 In `src/app/features/sprite-editor/sprite-editor.component.html`, on `rk-pixel-canvas` add (after the `[anchor]` binding):
 
 ```html
-        [collisionMask]="collisionMask()"
-        (collisionMaskChange)="onCollisionMaskChange($event)"
+[collisionMask]="collisionMask()" (collisionMaskChange)="onCollisionMaskChange($event)"
 ```
 
 After the `@if (selectedTool() === 'anchor') { ... }` Auto-button block, add:
 
 ```html
-        @if (selectedTool() === 'collision' || selectedTool() === 'collisionErase') {
-          <button
-            data-testid="reset-collision-mask"
-            (click)="onResetCollisionMask()"
-            [disabled]="!collisionMask()"
-            title="Reset collision mask to full footprint"
-            class="tw-px-2 tw-py-0.5 tw-text-xs tw-rounded-sm tw-border tw-border-border tw-bg-card-bg tw-text-foreground tw-cursor-pointer hover:tw-bg-accent disabled:tw-opacity-40"
-          >
-            Reset
-          </button>
-        }
+@if (selectedTool() === 'collision' || selectedTool() === 'collisionErase') {
+<button
+  data-testid="reset-collision-mask"
+  (click)="onResetCollisionMask()"
+  [disabled]="!collisionMask()"
+  title="Reset collision mask to full footprint"
+  class="tw-px-2 tw-py-0.5 tw-text-xs tw-rounded-sm tw-border tw-border-border tw-bg-card-bg tw-text-foreground tw-cursor-pointer hover:tw-bg-accent disabled:tw-opacity-40"
+>
+  Reset
+</button>
+}
 ```
 
 - [ ] **Step 4: Run the tests to verify they pass**

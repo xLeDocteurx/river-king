@@ -1,6 +1,6 @@
 # Tile Collision Masks — Design
 
-> **Issue:** #58 — *Runtime: pixel-perfect tile collision masks*
+> **Issue:** #58 — _Runtime: pixel-perfect tile collision masks_
 > **Status:** Approved (autonomous run; user review waived)
 > **Related:** #14 (collision/footprint visibility toggle), #51 (cell-level blocking collision)
 
@@ -181,9 +181,9 @@ two ids: `'collision'` and `'collisionErase'`. Two buttons are added to
 `drawing-tools.component.html` (Material Symbols, same styling as the existing buttons,
 with `data-testid="tool-collision"` / `data-testid="tool-collision-erase"`):
 
-| Tool id | Icon | Title |
-| --- | --- | --- |
-| `collision` | `check_box` | Collision |
+| Tool id          | Icon                      | Title           |
+| ---------------- | ------------------------- | --------------- |
+| `collision`      | `check_box`               | Collision       |
 | `collisionErase` | `check_box_outline_blank` | Erase collision |
 
 `TOOL_LABELS` in the sprite editor gains `collision: 'Collision'` and

@@ -220,7 +220,18 @@ describe('buildCollisionField', () => {
       1,
       1,
       [layer([[1]])],
-      new Map([[1, { blocking: true, mask: [[0, 0], [0, 0]] }]]),
+      new Map([
+        [
+          1,
+          {
+            blocking: true,
+            mask: [
+              [0, 0],
+              [0, 0],
+            ],
+          },
+        ],
+      ]),
       {},
     );
     expect(field.full[0][0]).toBe(false);
@@ -242,9 +253,9 @@ describe('resolveCollision with masked sub-rects', () => {
 
   it('lets the hitbox pass a masked cell where the mask is empty', () => {
     // Player center y=0.75 -> span [0.5,1] which misses the solid rect [0,0.5].
-    expect(resolveCollision({ x: 0.5, y: 0.75 }, { x: 1, y: 0 }, half, emptyGrid(), bounds, subGrid())).toEqual(
-      { x: 1.5, y: 0.75 },
-    );
+    expect(
+      resolveCollision({ x: 0.5, y: 0.75 }, { x: 1, y: 0 }, half, emptyGrid(), bounds, subGrid()),
+    ).toEqual({ x: 1.5, y: 0.75 });
   });
 
   it('stops the hitbox at a masked cell where the mask is solid', () => {
@@ -268,4 +279,3 @@ describe('resolveCollision with masked sub-rects', () => {
     });
   });
 });
-
