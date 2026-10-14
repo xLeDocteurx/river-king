@@ -65,6 +65,9 @@ export class PixelCanvasComponent implements AfterViewInit {
   /** Optional per-pixel collision mask of the current tile (`1` = solid). */
   collisionMask = input<number[][] | null>(null);
 
+  /** Whether the canvas is in collision-mask painting mode. */
+  collisionMode = input(false);
+
   /** Emits the snapped anchor chosen with the anchor tool. */
   anchorChange = output<TileAnchor>();
 
@@ -147,6 +150,9 @@ export class PixelCanvasComponent implements AfterViewInit {
       // Track the anchor inputs so a change re-renders the ground-zone marker.
       this.tileSize();
       this.anchor();
+
+      // Track collision mode so toggling it repaints the overlay.
+      this.collisionMode();
 
       // Track onion-skin inputs so load + re-render happens when they change.
       this.onionSkinPrev();
@@ -270,9 +276,8 @@ export class PixelCanvasComponent implements AfterViewInit {
       ctx.restore();
     }
 
-    // Collision mask overlay while a mask tool is active.
-    const maskTool = this.tool() === 'collision' || this.tool() === 'collisionErase';
-    if (maskTool && this.localCollisionMask.length > 0) {
+    // Collision mask overlay while editing collisions.
+    if (this.collisionMode() && this.localCollisionMask.length > 0) {
       ctx.fillStyle = 'rgba(220, 38, 38, 0.35)';
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
@@ -286,7 +291,11 @@ export class PixelCanvasComponent implements AfterViewInit {
     // Ground-zone marker: bright highlight while the anchor tool is active,
     // otherwise a subtle dashed outline of the stored zone.
     const ts = this.tileSize();
-    const zone = this.tool() === 'anchor' ? (this.hoverZone() ?? this.anchor()) : this.anchor();
+    const zone = this.collisionMode()
+      ? null
+      : this.tool() === 'anchor'
+        ? (this.hoverZone() ?? this.anchor())
+        : this.anchor();
     if (zone) {
       ctx.save();
       ctx.strokeStyle = this.tool() === 'anchor' ? '#ffffff' : '#555555';
@@ -418,10 +427,15 @@ export class PixelCanvasComponent implements AfterViewInit {
     this.render();
   }
 
-  /** @internal Dispatches brush, eraser, or fill for the given mouse event. */
+  /** @internal Dispatches the active tool for the given mouse event. */
   private applyTool(event: MouseEvent) {
     const { x, y } = this.getPixelCoordinates(event);
     if (x < 0 || x >= this.gridCols() || y < 0 || y >= this.gridRows()) return;
+
+    if (this.collisionMode()) {
+      this.applyMaskTool(x, y);
+      return;
+    }
 
     const current = this.localPaletteIndices[y][x];
     const tool = this.tool();
@@ -442,12 +456,56 @@ export class PixelCanvasComponent implements AfterViewInit {
       if (targetColor === fillColor) return;
       this.floodFill(x, y, targetColor, fillColor);
       this.emitAndRender();
-    } else if (tool === 'collision' || tool === 'collisionErase') {
-      const value = tool === 'collision' ? 1 : 0;
-      if (this.localCollisionMask[y][x] !== value) {
-        this.localCollisionMask[y][x] = value;
-        this.emitMaskAndRender();
-      }
+    }
+  }
+
+  /**
+   * @internal Applies the active tool to the collision mask: brush paints solid,
+   * eraser clears, fill floods solid.
+   * @param x - Grid column.
+   * @param y - Grid row.
+   */
+  private applyMaskTool(x: number, y: number) {
+    const tool = this.tool();
+    if (tool === 'fill') {
+      const target = this.localCollisionMask[y][x];
+      if (target === 1) return;
+      this.floodFillMask(x, y, target, 1);
+      this.emitMaskAndRender();
+      return;
+    }
+    const value = tool === 'eraser' ? 0 : 1;
+    if (this.localCollisionMask[y][x] !== value) {
+      this.localCollisionMask[y][x] = value;
+      this.emitMaskAndRender();
+    }
+  }
+
+  /**
+   * @internal Stack-based flood fill over the collision mask.
+   * @param startX - Starting column.
+   * @param startY - Starting row.
+   * @param target - Mask value to replace.
+   * @param fill - Mask value to write.
+   */
+  private floodFillMask(startX: number, startY: number, target: number, fill: number) {
+    const stack: [number, number][] = [[startX, startY]];
+    const visited = new Set<string>();
+    const key = (x: number, y: number) => `${x},${y}`;
+
+    while (stack.length > 0) {
+      const [x, y] = stack.pop()!;
+      if (x < 0 || x >= this.gridCols() || y < 0 || y >= this.gridRows()) continue;
+      if (visited.has(key(x, y))) continue;
+      visited.add(key(x, y));
+      if (this.localCollisionMask[y][x] !== target) continue;
+
+      this.localCollisionMask[y][x] = fill;
+
+      stack.push([x + 1, y]);
+      stack.push([x - 1, y]);
+      stack.push([x, y + 1]);
+      stack.push([x, y - 1]);
     }
   }
 
