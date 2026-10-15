@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { ActivatedRoute, provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { SceneEditorComponent } from './scene-editor.component';
 import { AppDummyComponent } from '../../app-dummy.component';
 import { SceneService } from './services/scene.service';
-import { GRID_VISIBLE_STORAGE_KEY } from './map-canvas.component';
+import { GRID_VISIBLE_STORAGE_KEY, MapCanvasComponent } from './map-canvas.component';
 import { DatabaseService } from '../../core/services/database.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { SessionService } from '../../core/services/session.service';
@@ -964,5 +965,59 @@ describe('SceneEditorComponent', () => {
     expect(byTitle('Enter play mode')).toBeTruthy();
     expect(byTitle('Place spawn point')).toBeTruthy();
     expect(byTitle('Hide grid')).toBeTruthy();
+  });
+
+  it('passes the project viewport resolution to the map canvas', async () => {
+    await db.projects.add({
+      id: 'p1',
+      name: 'Viewport',
+      createdAt: 1,
+      updatedAt: 1,
+      palette: ['#000000'],
+      tileSize: 16,
+      mapWidth: 4,
+      mapHeight: 4,
+      viewWidth: 320,
+      viewHeight: 180,
+    });
+    fixture.detectChanges();
+    await component.loadProjectData();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const canvas = fixture.debugElement.query(By.directive(MapCanvasComponent))
+      .componentInstance as MapCanvasComponent;
+    expect(canvas.viewWidth()).toBe(320);
+    expect(canvas.viewHeight()).toBe(180);
+  });
+
+  it('shows the view resolution in the status bar during play', async () => {
+    await db.projects.add({
+      id: 'p1',
+      name: 'Viewport',
+      createdAt: 1,
+      updatedAt: 1,
+      palette: ['#000000'],
+      tileSize: 16,
+      mapWidth: 4,
+      mapHeight: 4,
+      viewWidth: 320,
+      viewHeight: 180,
+    });
+    fixture.detectChanges();
+    await component.loadProjectData();
+    const scene = await sceneService.createScene('p1', 'Forest', 10, 10);
+    await component.loadScenes();
+    await component.selectScene(scene.id);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const statusBar = TestBed.inject(StatusBarService);
+    const spy = vi.spyOn(statusBar, 'setContext');
+    component.playMode.set(true);
+    fixture.detectChanges();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('View 320×180'));
   });
 });

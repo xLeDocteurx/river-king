@@ -18,6 +18,11 @@ import {
 } from '../../core/services/keyboard-shortcuts.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ProjectService } from '../dashboard/services/project.service';
+import {
+  resolveViewport,
+  DEFAULT_VIEW_WIDTH,
+  DEFAULT_VIEW_HEIGHT,
+} from '../../shared/models/viewport';
 import { SessionService } from '../../core/services/session.service';
 import { StatusBarService } from '../../core/services/status-bar.service';
 import { UndoService } from '../../core/services/undo.service';
@@ -112,6 +117,10 @@ export class SceneEditorComponent implements OnInit {
   tileFootprints = signal<TileFootprintMap>({});
   /** Size of one grid cell in pixels, from the project settings. */
   projectTileSize = signal<number>(16);
+  /** Play-viewport width in game pixels of the current project. */
+  projectViewWidth = signal(DEFAULT_VIEW_WIDTH);
+  /** Play-viewport height in game pixels of the current project. */
+  projectViewHeight = signal(DEFAULT_VIEW_HEIGHT);
   /** Id of the scene pending deletion confirmation. */
   pendingDeleteSceneId = signal<string | null>(null);
   /** Folder path pending deletion confirmation. */
@@ -152,6 +161,45 @@ export class SceneEditorComponent implements OnInit {
     return layers.find((l) => l.id === id) ?? null;
   });
 
+  /** Viewport width fed to the minimap, adjusted for the scaled Play view. */
+  readonly minimapViewportWidth = computed(() => {
+    const canvas = this.mapCanvasRef();
+    if (!canvas) return 0;
+    return this.playMode()
+      ? this.projectViewWidth() * canvas.playScale()
+      : canvas.viewportWidth();
+  });
+
+  /** Viewport height fed to the minimap, adjusted for the scaled Play view. */
+  readonly minimapViewportHeight = computed(() => {
+    const canvas = this.mapCanvasRef();
+    if (!canvas) return 0;
+    return this.playMode()
+      ? this.projectViewHeight() * canvas.playScale()
+      : canvas.viewportHeight();
+  });
+
+  /** Camera X fed to the minimap, offset by the Play letterbox. */
+  readonly minimapCameraX = computed(() => {
+    const canvas = this.mapCanvasRef();
+    if (!canvas) return 0;
+    return this.playMode() ? canvas.cameraX() - canvas.playOffsetX() : canvas.cameraX();
+  });
+
+  /** Camera Y fed to the minimap, offset by the Play letterbox. */
+  readonly minimapCameraY = computed(() => {
+    const canvas = this.mapCanvasRef();
+    if (!canvas) return 0;
+    return this.playMode() ? canvas.cameraY() - canvas.playOffsetY() : canvas.cameraY();
+  });
+
+  /** Zoom fed to the minimap (the Play integer scale while playing). */
+  readonly minimapZoom = computed(() => {
+    const canvas = this.mapCanvasRef();
+    if (!canvas) return 1;
+    return this.playMode() ? canvas.playScale() : canvas.zoom();
+  });
+
   /** Effect that updates the global status bar with scene and camera info. */
   statusBarEffect = effect(() => {
     const scene = this.selectedScene();
@@ -171,15 +219,13 @@ export class SceneEditorComponent implements OnInit {
     const tileCount = activeLayerData
       ? activeLayerData.reduce((sum, row) => sum + row.filter((cell) => cell !== -1).length, 0)
       : 0;
-    const parts = [
-      scene.name,
-      `${scene.width}×${scene.height}`,
-      layerName,
-      `Cam: ${x},${y}`,
-      `Zoom: ${zoom}%`,
-      `${layerCount} layer${layerCount === 1 ? '' : 's'}`,
-      `${tileCount} tile${tileCount === 1 ? '' : 's'}`,
-    ];
+    const parts = [scene.name, `${scene.width}×${scene.height}`, layerName];
+    if (!this.playMode()) parts.push(`Cam: ${x},${y}`);
+    const zoomPart = this.playMode()
+      ? `View ${this.projectViewWidth()}×${this.projectViewHeight()}`
+      : `Zoom: ${zoom}%`;
+    parts.push(zoomPart, `${layerCount} layer${layerCount === 1 ? '' : 's'}`);
+    parts.push(`${tileCount} tile${tileCount === 1 ? '' : 's'}`);
     if (cursorStr) parts.push(cursorStr);
     this.statusBar.setContext(parts.join(' | '));
   });
@@ -366,6 +412,9 @@ export class SceneEditorComponent implements OnInit {
       if (project) {
         this.projectPalette.set(project.palette);
         this.projectTileSize.set(project.tileSize ?? 16);
+        const view = resolveViewport(project);
+        this.projectViewWidth.set(view.width);
+        this.projectViewHeight.set(view.height);
       }
       const tiles = await this.db.tiles.where('projectId').equals(this.projectId()).toArray();
       this.projectTiles.set(tiles);
