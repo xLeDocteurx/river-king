@@ -15,7 +15,7 @@ zoom the user set with the mouse wheel:
   "screen". `followPlayer()` simply centers the player using `canvas.width / 2`.
 
 A game view should be a fixed, authored resolution. We add a **per-project viewport
-resolution** (in *game pixels*) and render Play at that resolution, integer-scaled to fill the
+resolution** (in _game pixels_) and render Play at that resolution, integer-scaled to fill the
 available canvas.
 
 ## Goals
@@ -50,7 +50,11 @@ viewHeight?: number;
 New module `src/app/shared/models/viewport.ts`:
 
 ```ts
-export interface ViewPreset { label: string; width: number; height: number; }
+export interface ViewPreset {
+  label: string;
+  width: number;
+  height: number;
+}
 export const DEFAULT_VIEW_WIDTH = 256;
 export const DEFAULT_VIEW_HEIGHT = 144;
 export const VIEW_PRESETS: ViewPreset[] = [
@@ -60,7 +64,10 @@ export const VIEW_PRESETS: ViewPreset[] = [
   { label: '256×224 (SNES 4:3)', width: 256, height: 224 },
 ];
 /** Resolves a project's viewport, falling back to the default. */
-export function resolveViewport(p: Pick<Project, 'viewWidth' | 'viewHeight'>): { width: number; height: number };
+export function resolveViewport(p: Pick<Project, 'viewWidth' | 'viewHeight'>): {
+  width: number;
+  height: number;
+};
 ```
 
 - New projects always store `viewWidth` / `viewHeight`.
@@ -83,8 +90,8 @@ In Play mode, on every render/frame:
 2. Destination rect centered: `destX = floor((canvasW - viewW * scale) / 2)`,
    `destY = floor((canvasH - viewH * scale) / 2)`.
 3. Render: `ctx.save(); ctx.beginPath(); ctx.rect(destX, destY, viewW*scale, viewH*scale);
-   ctx.clip(); ctx.translate(cameraX, cameraY); ctx.scale(scale, scale); <draw world as today>;
-   ctx.restore();`
+ctx.clip(); ctx.translate(cameraX, cameraY); ctx.scale(scale, scale); <draw world as today>;
+ctx.restore();`
 
 The camera stays in **screen pixels** exactly as today, and Play simply uses `scale` as the
 effective zoom. Because the dest rect is centered, its center equals the canvas center, so
@@ -99,7 +106,7 @@ background (`clearRect` + parent `bg-background`).
   `left = (destX - cameraX) / scale` (world-space left edge shown by the dest rect).
   - if `scenePx >= view`: clamp `left` to `[0, scenePx - view]`;
   - else: `left = (scenePx - view) / 2` (center the scene, negative → margins on both sides).
-  Then `cameraX = destX - left * scale` (same for Y).
+    Then `cameraX = destX - left * scale` (same for Y).
 - Expose `playScale`, `playOffsetX`, `playOffsetY` (0 in edit mode) so consumers can map the
   fixed view.
 

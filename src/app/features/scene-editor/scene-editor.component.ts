@@ -165,9 +165,7 @@ export class SceneEditorComponent implements OnInit {
   readonly minimapViewportWidth = computed(() => {
     const canvas = this.mapCanvasRef();
     if (!canvas) return 0;
-    return this.playMode()
-      ? this.projectViewWidth() * canvas.playScale()
-      : canvas.viewportWidth();
+    return this.playMode() ? this.projectViewWidth() * canvas.playScale() : canvas.viewportWidth();
   });
 
   /** Viewport height fed to the minimap, adjusted for the scaled Play view. */

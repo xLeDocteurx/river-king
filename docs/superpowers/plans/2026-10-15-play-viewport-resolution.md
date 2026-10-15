@@ -75,7 +75,10 @@ describe('viewport', () => {
   });
 
   it('resolves explicit dimensions', () => {
-    expect(resolveViewport({ viewWidth: 320, viewHeight: 180 })).toEqual({ width: 320, height: 180 });
+    expect(resolveViewport({ viewWidth: 320, viewHeight: 180 })).toEqual({
+      width: 320,
+      height: 180,
+    });
   });
 
   it('falls back to the default when dimensions are absent', () => {
@@ -133,9 +136,10 @@ export const VIEW_PRESETS: readonly ViewPreset[] = [
  * @param project - Any object carrying optional `viewWidth` / `viewHeight`.
  * @returns The resolved width and height in game pixels.
  */
-export function resolveViewport(
-  project: Pick<Project, 'viewWidth' | 'viewHeight'>,
-): { width: number; height: number } {
+export function resolveViewport(project: Pick<Project, 'viewWidth' | 'viewHeight'>): {
+  width: number;
+  height: number;
+} {
   const width = project.viewWidth && project.viewWidth > 0 ? project.viewWidth : DEFAULT_VIEW_WIDTH;
   const height =
     project.viewHeight && project.viewHeight > 0 ? project.viewHeight : DEFAULT_VIEW_HEIGHT;
@@ -174,31 +178,31 @@ Expected: 5 passing. Commit: `feature-107: add viewport resolution model and pre
 Add to `project.service.spec.ts` (inside the existing `describe`):
 
 ```ts
-  it('stores the chosen play viewport resolution', async () => {
-    const project = await service.create({
-      name: 'P',
-      palette: ['#000000'],
-      tileSize: 16,
-      mapWidth: 10,
-      mapHeight: 10,
-      viewWidth: 320,
-      viewHeight: 180,
-    });
-    expect(project.viewWidth).toBe(320);
-    expect(project.viewHeight).toBe(180);
+it('stores the chosen play viewport resolution', async () => {
+  const project = await service.create({
+    name: 'P',
+    palette: ['#000000'],
+    tileSize: 16,
+    mapWidth: 10,
+    mapHeight: 10,
+    viewWidth: 320,
+    viewHeight: 180,
   });
+  expect(project.viewWidth).toBe(320);
+  expect(project.viewHeight).toBe(180);
+});
 
-  it('defaults the play viewport when not provided', async () => {
-    const project = await service.create({
-      name: 'P',
-      palette: ['#000000'],
-      tileSize: 16,
-      mapWidth: 10,
-      mapHeight: 10,
-    });
-    expect(project.viewWidth).toBe(256);
-    expect(project.viewHeight).toBe(144);
+it('defaults the play viewport when not provided', async () => {
+  const project = await service.create({
+    name: 'P',
+    palette: ['#000000'],
+    tileSize: 16,
+    mapWidth: 10,
+    mapHeight: 10,
   });
+  expect(project.viewWidth).toBe(256);
+  expect(project.viewHeight).toBe(144);
+});
 ```
 
 (Adapt the constructor/setup to match the existing spec: it uses `TestBed` with an in-memory
@@ -260,20 +264,20 @@ Commit: `feature-107: persist viewport resolution on project creation`.
 Add to the dialog spec:
 
 ```ts
-  it('defaults to the 256x144 viewport preset', () => {
-    component.open();
-    expect(component.selectedView()).toEqual({ label: '256 × 144 (16:9)', width: 256, height: 144 });
-  });
+it('defaults to the 256x144 viewport preset', () => {
+  component.open();
+  expect(component.selectedView()).toEqual({ label: '256 × 144 (16:9)', width: 256, height: 144 });
+});
 
-  it('passes the selected viewport to the project service on create', async () => {
-    component.open();
-    component.projectName.set('Game');
-    component.selectedViewIndex.set(1); // 320x180
-    await component.createProject(new Event('submit'));
-    expect(createSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ viewWidth: 320, viewHeight: 180 }),
-    );
-  });
+it('passes the selected viewport to the project service on create', async () => {
+  component.open();
+  component.projectName.set('Game');
+  component.selectedViewIndex.set(1); // 320x180
+  await component.createProject(new Event('submit'));
+  expect(createSpy).toHaveBeenCalledWith(
+    expect.objectContaining({ viewWidth: 320, viewHeight: 180 }),
+  );
+});
 ```
 
 (Reuse the existing spec's service spy; rename to match.)
@@ -310,18 +314,18 @@ In `project-create-dialog.component.html`, add a fieldset between the Tile Size 
 Palette fieldset:
 
 ```html
-      <label class="tw-flex tw-flex-col tw-gap-1">
-        <span class="tw-text-sm tw-font-medium">Play Resolution</span>
-        <select
-          [value]="selectedViewIndex()"
-          (change)="selectedViewIndex.set(+$any($event.target).value)"
-          class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
-        >
-          @for (preset of viewPresets; track preset.label; let i = $index) {
-            <option [value]="i" [selected]="i === selectedViewIndex()">{{ preset.label }}</option>
-          }
-        </select>
-      </label>
+<label class="tw-flex tw-flex-col tw-gap-1">
+  <span class="tw-text-sm tw-font-medium">Play Resolution</span>
+  <select
+    [value]="selectedViewIndex()"
+    (change)="selectedViewIndex.set(+$any($event.target).value)"
+    class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
+  >
+    @for (preset of viewPresets; track preset.label; let i = $index) {
+    <option [value]="i" [selected]="i === selectedViewIndex()">{{ preset.label }}</option>
+    }
+  </select>
+</label>
 ```
 
 ### 3.3 Verify
@@ -345,15 +349,15 @@ Commit: `feature-107: pick the play viewport resolution when creating a project`
 In `project-io.service.spec.ts` add:
 
 ```ts
-  it('round-trips the viewport resolution through export and import', async () => {
-    // create a project with viewWidth/viewHeight, export, import into a new project
-    // and assert the imported project keeps 320x180.
-  });
+it('round-trips the viewport resolution through export and import', async () => {
+  // create a project with viewWidth/viewHeight, export, import into a new project
+  // and assert the imported project keeps 320x180.
+});
 
-  it('imports an archive without viewport fields using the defaults', async () => {
-    // build an archive object, delete project.viewWidth/viewHeight, import,
-    // assert the stored project has viewWidth 256 and viewHeight 144.
-  });
+it('imports an archive without viewport fields using the defaults', async () => {
+  // build an archive object, delete project.viewWidth/viewHeight, import,
+  // assert the stored project has viewWidth 256 and viewHeight 144.
+});
 ```
 
 (Fill them using the file's existing fixtures/helpers.)
@@ -395,19 +399,19 @@ In `exportProject`, extend the `project` literal:
 In `importProject`, compute once and store on the row:
 
 ```ts
-    const view = resolveViewport(archive.project);
-    const projectRow = {
-      id: projectId,
-      name: archive.project.name,
-      createdAt: now,
-      updatedAt: now,
-      palette: [...archive.project.palette],
-      tileSize: archive.project.tileSize,
-      mapWidth: archive.project.mapWidth,
-      mapHeight: archive.project.mapHeight,
-      viewWidth: view.width,
-      viewHeight: view.height,
-    };
+const view = resolveViewport(archive.project);
+const projectRow = {
+  id: projectId,
+  name: archive.project.name,
+  createdAt: now,
+  updatedAt: now,
+  palette: [...archive.project.palette],
+  tileSize: archive.project.tileSize,
+  mapWidth: archive.project.mapWidth,
+  mapHeight: archive.project.mapHeight,
+  viewWidth: view.width,
+  viewHeight: view.height,
+};
 ```
 
 Import `resolveViewport` from `../../shared/models/viewport`.
@@ -418,12 +422,12 @@ In `validate`, after the existing `archive.project` shape checks (they stay as-i
 is optional), add:
 
 ```ts
-    if (
-      (p.viewWidth !== undefined && (typeof p.viewWidth !== 'number' || p.viewWidth <= 0)) ||
-      (p.viewHeight !== undefined && (typeof p.viewHeight !== 'number' || p.viewHeight <= 0))
-    ) {
-      throw new ProjectImportError('This file has an invalid viewport resolution.');
-    }
+if (
+  (p.viewWidth !== undefined && (typeof p.viewWidth !== 'number' || p.viewWidth <= 0)) ||
+  (p.viewHeight !== undefined && (typeof p.viewHeight !== 'number' || p.viewHeight <= 0))
+) {
+  throw new ProjectImportError('This file has an invalid viewport resolution.');
+}
 ```
 
 ### 4.5 Demo project
@@ -463,61 +467,61 @@ Commit: `feature-107: carry the viewport resolution in project archives`.
 Add to `map-canvas.component.spec.ts`:
 
 ```ts
-  it('ignores wheel zoom in play mode', () => {
-    setup(makeScene());
-    const instance = fixture.componentInstance;
-    fixture.componentRef.setInput('playMode', true);
-    const before = instance.zoom();
-    instance.onWheel(new WheelEvent('wheel', { deltaY: -100 }));
-    expect(instance.zoom()).toBe(before);
-  });
+it('ignores wheel zoom in play mode', () => {
+  setup(makeScene());
+  const instance = fixture.componentInstance;
+  fixture.componentRef.setInput('playMode', true);
+  const before = instance.zoom();
+  instance.onWheel(new WheelEvent('wheel', { deltaY: -100 }));
+  expect(instance.zoom()).toBe(before);
+});
 
-  it('still zooms with the wheel in edit mode', () => {
-    setup(makeScene());
-    const instance = fixture.componentInstance;
-    const before = instance.zoom();
-    instance.onWheel(new WheelEvent('wheel', { deltaY: -100 }));
-    expect(instance.zoom()).toBeGreaterThan(before);
-  });
+it('still zooms with the wheel in edit mode', () => {
+  setup(makeScene());
+  const instance = fixture.componentInstance;
+  const before = instance.zoom();
+  instance.onWheel(new WheelEvent('wheel', { deltaY: -100 }));
+  expect(instance.zoom()).toBeGreaterThan(before);
+});
 
-  it('exposes an integer play scale and centered offsets', () => {
-    setup(makeScene());
-    const instance = fixture.componentInstance;
-    instance.viewportWidth.set(800);
-    instance.viewportHeight.set(600);
-    fixture.componentRef.setInput('viewWidth', 256);
-    fixture.componentRef.setInput('viewHeight', 144);
-    fixture.componentRef.setInput('playMode', true);
-    // floor(min(800/256, 600/144)) = floor(min(3.125, 4.16)) = 3
-    expect(instance.playScale()).toBe(3);
-    expect(instance.playOffsetX()).toBe(Math.floor((800 - 256 * 3) / 2)); // 16
-    expect(instance.playOffsetY()).toBe(Math.floor((600 - 144 * 3) / 2)); // 84
-  });
+it('exposes an integer play scale and centered offsets', () => {
+  setup(makeScene());
+  const instance = fixture.componentInstance;
+  instance.viewportWidth.set(800);
+  instance.viewportHeight.set(600);
+  fixture.componentRef.setInput('viewWidth', 256);
+  fixture.componentRef.setInput('viewHeight', 144);
+  fixture.componentRef.setInput('playMode', true);
+  // floor(min(800/256, 600/144)) = floor(min(3.125, 4.16)) = 3
+  expect(instance.playScale()).toBe(3);
+  expect(instance.playOffsetX()).toBe(Math.floor((800 - 256 * 3) / 2)); // 16
+  expect(instance.playOffsetY()).toBe(Math.floor((600 - 144 * 3) / 2)); // 84
+});
 
-  it('keeps the play scale at 1 in edit mode', () => {
-    setup(makeScene());
-    const instance = fixture.componentInstance;
-    expect(instance.playScale()).toBe(1);
-    expect(instance.playOffsetX()).toBe(0);
-  });
+it('keeps the play scale at 1 in edit mode', () => {
+  setup(makeScene());
+  const instance = fixture.componentInstance;
+  expect(instance.playScale()).toBe(1);
+  expect(instance.playOffsetX()).toBe(0);
+});
 
-  it('clamps the play camera so the viewport stays inside the scene', () => {
-    setup(makeScene()); // 4x4 scene, tileSize 16 -> 64x64 px
-    const instance = fixture.componentInstance;
-    instance.viewportWidth.set(64);
-    instance.viewportHeight.set(64);
-    fixture.componentRef.setInput('tileSize', 16);
-    fixture.componentRef.setInput('viewWidth', 16);
-    fixture.componentRef.setInput('viewHeight', 16);
-    const player = fixture.debugElement.injector.get(PlayerController);
-    player.start({ width: 4, height: 4, layers: [] }, { x: 0, y: 0 }, new Map(), {}, new Map());
-    fixture.componentRef.setInput('playMode', true);
-    instance['followPlayer']();
-    instance['snapCameraToPlayer']();
-    // camera must not reveal anything left/above the scene origin
-    const left = (instance.playOffsetX() - instance.cameraX()) / instance.playScale();
-    expect(left).toBeGreaterThanOrEqual(-0.001);
-  });
+it('clamps the play camera so the viewport stays inside the scene', () => {
+  setup(makeScene()); // 4x4 scene, tileSize 16 -> 64x64 px
+  const instance = fixture.componentInstance;
+  instance.viewportWidth.set(64);
+  instance.viewportHeight.set(64);
+  fixture.componentRef.setInput('tileSize', 16);
+  fixture.componentRef.setInput('viewWidth', 16);
+  fixture.componentRef.setInput('viewHeight', 16);
+  const player = fixture.debugElement.injector.get(PlayerController);
+  player.start({ width: 4, height: 4, layers: [] }, { x: 0, y: 0 }, new Map(), {}, new Map());
+  fixture.componentRef.setInput('playMode', true);
+  instance['followPlayer']();
+  instance['snapCameraToPlayer']();
+  // camera must not reveal anything left/above the scene origin
+  const left = (instance.playOffsetX() - instance.cameraX()) / instance.playScale();
+  expect(left).toBeGreaterThanOrEqual(-0.001);
+});
 ```
 
 (Adjust `makeScene()`/`setup()` usage to the existing helpers; the file already imports
@@ -531,10 +535,10 @@ Add to the imports: `computed`, and
 After `playMode` input:
 
 ```ts
-  /** Play-mode viewport width in game pixels (ignored in edit mode). */
-  viewWidth = input(DEFAULT_VIEW_WIDTH);
-  /** Play-mode viewport height in game pixels (ignored in edit mode). */
-  viewHeight = input(DEFAULT_VIEW_HEIGHT);
+/** Play-mode viewport width in game pixels (ignored in edit mode). */
+viewWidth = input(DEFAULT_VIEW_WIDTH);
+/** Play-mode viewport height in game pixels (ignored in edit mode). */
+viewHeight = input(DEFAULT_VIEW_HEIGHT);
 ```
 
 After the `viewportHeight` signal:
@@ -573,7 +577,7 @@ After the `viewportHeight` signal:
 At the top of `onWheel`, right after `event.preventDefault();`:
 
 ```ts
-    if (this.playMode()) return;
+if (this.playMode()) return;
 ```
 
 ### 5.4 Clip + scale in `render`
@@ -581,28 +585,28 @@ At the top of `onWheel`, right after `event.preventDefault();`:
 Replace (in `render`):
 
 ```ts
-    ctx.save();
-    ctx.translate(this.cameraX(), this.cameraY());
-    ctx.scale(this.zoom(), this.zoom());
+ctx.save();
+ctx.translate(this.cameraX(), this.cameraY());
+ctx.scale(this.zoom(), this.zoom());
 ```
 
 with:
 
 ```ts
-    ctx.save();
-    if (this.playMode()) {
-      const scale = this.playScale();
-      const destX = this.playOffsetX();
-      const destY = this.playOffsetY();
-      ctx.beginPath();
-      ctx.rect(destX, destY, this.viewWidth() * scale, this.viewHeight() * scale);
-      ctx.clip();
-      ctx.translate(this.cameraX(), this.cameraY());
-      ctx.scale(scale, scale);
-    } else {
-      ctx.translate(this.cameraX(), this.cameraY());
-      ctx.scale(this.zoom(), this.zoom());
-    }
+ctx.save();
+if (this.playMode()) {
+  const scale = this.playScale();
+  const destX = this.playOffsetX();
+  const destY = this.playOffsetY();
+  ctx.beginPath();
+  ctx.rect(destX, destY, this.viewWidth() * scale, this.viewHeight() * scale);
+  ctx.clip();
+  ctx.translate(this.cameraX(), this.cameraY());
+  ctx.scale(scale, scale);
+} else {
+  ctx.translate(this.cameraX(), this.cameraY());
+  ctx.scale(this.zoom(), this.zoom());
+}
 ```
 
 The single `ctx.restore()` at the end of `render` still closes the block.
@@ -704,18 +708,18 @@ Add to `scene-editor.component.spec.ts` (reuse the file's existing project fixtu
 project has `viewWidth: 320, viewHeight: 180`):
 
 ```ts
-  it('passes the project viewport resolution to the map canvas', async () => {
-    // after load, query rk-map-canvas debug element
-    const canvas = fixture.debugElement.query(By.directive(MapCanvasComponent)).componentInstance;
-    expect(canvas.viewWidth()).toBe(320);
-    expect(canvas.viewHeight()).toBe(180);
-  });
+it('passes the project viewport resolution to the map canvas', async () => {
+  // after load, query rk-map-canvas debug element
+  const canvas = fixture.debugElement.query(By.directive(MapCanvasComponent)).componentInstance;
+  expect(canvas.viewWidth()).toBe(320);
+  expect(canvas.viewHeight()).toBe(180);
+});
 
-  it('shows the view resolution in the status bar during play', async () => {
-    component.playMode.set(true);
-    await fixture.whenStable();
-    expect(statusBar.setContext).toHaveBeenCalledWith(expect.stringContaining('View 320×180'));
-  });
+it('shows the view resolution in the status bar during play', async () => {
+  component.playMode.set(true);
+  await fixture.whenStable();
+  expect(statusBar.setContext).toHaveBeenCalledWith(expect.stringContaining('View 320×180'));
+});
 ```
 
 ### 6.2 Component
@@ -725,18 +729,18 @@ Import: `import { resolveViewport, DEFAULT_VIEW_WIDTH, DEFAULT_VIEW_HEIGHT } fro
 Add signals near `projectTileSize`:
 
 ```ts
-  /** Play-viewport width in game pixels of the current project. */
-  projectViewWidth = signal(DEFAULT_VIEW_WIDTH);
-  /** Play-viewport height in game pixels of the current project. */
-  projectViewHeight = signal(DEFAULT_VIEW_HEIGHT);
+/** Play-viewport width in game pixels of the current project. */
+projectViewWidth = signal(DEFAULT_VIEW_WIDTH);
+/** Play-viewport height in game pixels of the current project. */
+projectViewHeight = signal(DEFAULT_VIEW_HEIGHT);
 ```
 
 Set them in `loadProjectData` (inside the `if (project)` block):
 
 ```ts
-        const view = resolveViewport(project);
-        this.projectViewWidth.set(view.width);
-        this.projectViewHeight.set(view.height);
+const view = resolveViewport(project);
+this.projectViewWidth.set(view.width);
+this.projectViewHeight.set(view.height);
 ```
 
 Add minimap computeds (after `activeLayer` or near the other computeds):
@@ -785,21 +789,21 @@ Add minimap computeds (after `activeLayer` or near the other computeds):
 In `statusBarEffect`, replace the zoom part with a Play-aware segment:
 
 ```ts
-    const zoomPart = this.playMode()
-      ? `View ${this.projectViewWidth()}×${this.projectViewHeight()}`
-      : `Zoom: ${zoom}%`;
+const zoomPart = this.playMode()
+  ? `View ${this.projectViewWidth()}×${this.projectViewHeight()}`
+  : `Zoom: ${zoom}%`;
 ```
 
 and use `zoomPart` in the `parts` array instead of the `` `Zoom: ${zoom}%` `` entry, and drop
 `Cam: …` while playing:
 
 ```ts
-    const parts = [scene.name, `${scene.width}×${scene.height}`, layerName];
-    if (!this.playMode()) parts.push(`Cam: ${x},${y}`);
-    parts.push(zoomPart, `${layerCount} layer${layerCount === 1 ? '' : 's'}`);
-    parts.push(`${tileCount} tile${tileCount === 1 ? '' : 's'}`);
-    if (cursorStr) parts.push(cursorStr);
-    this.statusBar.setContext(parts.join(' | '));
+const parts = [scene.name, `${scene.width}×${scene.height}`, layerName];
+if (!this.playMode()) parts.push(`Cam: ${x},${y}`);
+parts.push(zoomPart, `${layerCount} layer${layerCount === 1 ? '' : 's'}`);
+parts.push(`${tileCount} tile${tileCount === 1 ? '' : 's'}`);
+if (cursorStr) parts.push(cursorStr);
+this.statusBar.setContext(parts.join(' | '));
 ```
 
 ### 6.3 Template
@@ -807,18 +811,14 @@ and use `zoomPart` in the `parts` array instead of the `` `Zoom: ${zoom}%` `` en
 On `<rk-map-canvas>` add:
 
 ```html
-      [viewWidth]="projectViewWidth()"
-      [viewHeight]="projectViewHeight()"
+[viewWidth]="projectViewWidth()" [viewHeight]="projectViewHeight()"
 ```
 
 On `<rk-scene-minimap>` replace the four viewport/camera bindings and zoom:
 
 ```html
-        [viewportWidth]="minimapViewportWidth()"
-        [viewportHeight]="minimapViewportHeight()"
-        [cameraX]="minimapCameraX()"
-        [cameraY]="minimapCameraY()"
-        [zoom]="minimapZoom()"
+[viewportWidth]="minimapViewportWidth()" [viewportHeight]="minimapViewportHeight()"
+[cameraX]="minimapCameraX()" [cameraY]="minimapCameraY()" [zoom]="minimapZoom()"
 ```
 
 ### 6.4 Verify

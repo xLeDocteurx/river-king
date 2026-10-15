@@ -32,9 +32,10 @@ export const VIEW_PRESETS: readonly ViewPreset[] = [
  * @param project - Any object carrying optional `viewWidth` / `viewHeight`.
  * @returns The resolved width and height in game pixels.
  */
-export function resolveViewport(
-  project: Pick<Project, 'viewWidth' | 'viewHeight'>,
-): { width: number; height: number } {
+export function resolveViewport(project: Pick<Project, 'viewWidth' | 'viewHeight'>): {
+  width: number;
+  height: number;
+} {
   const width = project.viewWidth && project.viewWidth > 0 ? project.viewWidth : DEFAULT_VIEW_WIDTH;
   const height =
     project.viewHeight && project.viewHeight > 0 ? project.viewHeight : DEFAULT_VIEW_HEIGHT;

@@ -18,7 +18,10 @@ describe('viewport', () => {
   });
 
   it('resolves explicit dimensions', () => {
-    expect(resolveViewport({ viewWidth: 320, viewHeight: 180 })).toEqual({ width: 320, height: 180 });
+    expect(resolveViewport({ viewWidth: 320, viewHeight: 180 })).toEqual({
+      width: 320,
+      height: 180,
+    });
   });
 
   it('falls back to the default when dimensions are absent', () => {
