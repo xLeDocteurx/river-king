@@ -28,6 +28,8 @@ Centralized list of feature ideas, UX improvements, and technical debt for the R
 - [ ] **Textes d'aide UI homogénéisés** — Systématiser les textes d'aide (hints inline / tooltips) sur les contrôles de l'interface dans toute l'app : convention commune (quand, formulation, densité, placement), puis audit des éditeurs (tile properties, sprite editor, scene editor) pour poser un hint là où le label ne suffit pas. Né de la convention "Overhanging (Y-sort)" de #53. → [#67](https://github.com/xLeDocteurx/river-king/issues/67)
 - [x] **Projet de démonstration au premier lancement** — Au boot, si la base ne contient aucun projet et que le marqueur localStorage `rk-demo-seeded` est absent : seed d'un projet « Demo » dans le vrai IndexedDB (carte du dashboard, ouvrable comme un projet normal, supprimable à jamais). Contenu minimal : sprites procéduraux générés par canvas (grass statique, water 2 frames, tree `ySort:true`, case `blocking`, case `interactable`) — showcase du moteur sans asset binaire. Marqueur posé dès le 1er check (seedée OU base déjà peuplée). → [#70](https://github.com/xLeDocteurx/river-king/issues/70)
 
+- [ ] **Play : résolution de vue fixe (viewport)** — En mode Play, interdire le zoom (molette ignorée) et rendre la vue à une résolution fixe définie par projet (en pixels-jeu), mise à l'échelle **entière** et centrée (letterbox). Résolution réglée à la création via presets (défaut `256×144`, 16:9). Caméra suit le joueur et est clampée aux bords de la scène. Édition inchangée. → [#107](https://github.com/xLeDocteurx/river-king/issues/107)
+
 ## Lower Priority
 
 - [ ] **Project rename/settings** — Renommer un projet après création. Reste au backlog (P2/M), non bloqué. → [#19](https://github.com/xLeDocteurx/river-king/issues/19)
