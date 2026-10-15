@@ -31,6 +31,18 @@
           }
         </div>
       </fieldset>
+      <label class="tw-flex tw-flex-col tw-gap-1">
+        <span class="tw-text-sm tw-font-medium">Play Resolution</span>
+        <select
+          [value]="selectedViewIndex()"
+          (change)="selectedViewIndex.set(+$any($event.target).value)"
+          class="tw-px-3 tw-py-2 tw-rounded-sm tw-border tw-border-input tw-bg-background tw-text-foreground"
+        >
+          @for (preset of viewPresets; track preset.label; let i = $index) {
+            <option [value]="i" [selected]="i === selectedViewIndex()">{{ preset.label }}</option>
+          }
+        </select>
+      </label>
       <fieldset class="tw-flex tw-flex-col tw-gap-1">
         <legend class="tw-text-sm tw-font-medium tw-mb-1">Palette</legend>
         @for (p of palettes; track p.id) {
