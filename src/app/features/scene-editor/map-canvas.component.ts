@@ -4,7 +4,9 @@ import {
   output,
   viewChild,
   signal,
+  computed,
   effect,
+  untracked,
   inject,
   ChangeDetectionStrategy,
   AfterViewInit,
@@ -13,6 +15,7 @@ import {
 } from '@angular/core';
 import type { Scene } from '../../shared/models/scene.model';
 import type { Layer } from '../../shared/models/scene.model';
+import { DEFAULT_VIEW_HEIGHT, DEFAULT_VIEW_WIDTH } from '../../shared/models/viewport';
 import { footprintRect, getFootprint } from './map-footprint';
 import type { TileFootprintMap } from './map-footprint';
 import { cssTokenColor, gridStrokeColor } from './grid-color';
@@ -64,6 +67,10 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   blockingById = input<Map<number, boolean>>(new Map());
   /** Whether Play mode is active; in Play mode a player renders and is followed. */
   playMode = input(false);
+  /** Play-mode viewport width in game pixels (ignored in edit mode). */
+  viewWidth = input(DEFAULT_VIEW_WIDTH);
+  /** Play-mode viewport height in game pixels (ignored in edit mode). */
+  viewHeight = input(DEFAULT_VIEW_HEIGHT);
   /** Whether the next canvas click should place the spawn point instead of editing. */
   placeSpawnMode = input(false);
   /** Explicit player spawn cell; drawn as a marker in Edit mode. Null hides the marker. */
@@ -90,6 +97,33 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
   viewportWidth = signal(0);
   /** Current canvas viewport height in CSS pixels. */
   viewportHeight = signal(0);
+
+  /**
+   * Integer scale applied to the fixed Play viewport so it fits the canvas while
+   * preserving its aspect ratio. Always `1` in edit mode.
+   */
+  readonly playScale = computed(() => {
+    if (!this.playMode()) return 1;
+    const vw = Math.max(1, this.viewWidth());
+    const vh = Math.max(1, this.viewHeight());
+    const cw = this.viewportWidth();
+    const ch = this.viewportHeight();
+    return Math.max(1, Math.floor(Math.min(cw / vw, ch / vh)));
+  });
+
+  /** Horizontal offset in device pixels of the centered Play viewport rect (`0` in edit mode). */
+  readonly playOffsetX = computed(() =>
+    this.playMode()
+      ? Math.floor((this.viewportWidth() - this.viewWidth() * this.playScale()) / 2)
+      : 0,
+  );
+
+  /** Vertical offset in device pixels of the centered Play viewport rect (`0` in edit mode). */
+  readonly playOffsetY = computed(() =>
+    this.playMode()
+      ? Math.floor((this.viewportHeight() - this.viewHeight() * this.playScale()) / 2)
+      : 0,
+  );
 
   /** @internal Canvas 2D rendering context. */
   private ctx: CanvasRenderingContext2D | null = null;
@@ -167,6 +201,11 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     /** Persist the collision overlay visibility choice for the current browser session. */
     effect(() => {
       sessionStorage.setItem(COLLISION_VISIBLE_STORAGE_KEY, this.showCollision() ? '1' : '0');
+    });
+
+    /** Snap the Play camera onto the player the moment Play mode begins. */
+    effect(() => {
+      if (this.playMode()) untracked(() => this.snapCameraToPlayer());
     });
   }
 
@@ -283,8 +322,19 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const cell = this.tileSize();
 
     ctx.save();
-    ctx.translate(this.cameraX(), this.cameraY());
-    ctx.scale(this.zoom(), this.zoom());
+    if (this.playMode()) {
+      const scale = this.playScale();
+      const destX = this.playOffsetX();
+      const destY = this.playOffsetY();
+      ctx.beginPath();
+      ctx.rect(destX, destY, this.viewWidth() * scale, this.viewHeight() * scale);
+      ctx.clip();
+      ctx.translate(this.cameraX(), this.cameraY());
+      ctx.scale(scale, scale);
+    } else {
+      ctx.translate(this.cameraX(), this.cameraY());
+      ctx.scale(this.zoom(), this.zoom());
+    }
 
     const tileImages = this.loadedImages();
     const layers = this.layers();
@@ -487,7 +537,8 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
 
   /**
    * Moves the camera toward the player cell using a damped lerp so the view
-   * follows smoothly regardless of frame rate.
+   * follows smoothly regardless of frame rate. In Play mode the fixed viewport
+   * scale is used and the camera is clamped to the scene bounds.
    */
   private followPlayer(): void {
     const canvas = this.canvasRef()?.nativeElement;
@@ -495,12 +546,52 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
     const cell = this.tileSize();
     const px = this.player.x() * cell;
     const py = this.player.y() * cell;
-    const z = this.zoom();
+    const z = this.playMode() ? this.playScale() : this.zoom();
     const targetX = -(px * z) + canvas.width / 2;
     const targetY = -(py * z) + canvas.height / 2;
     const k = 0.12;
     this.cameraX.update((v) => v + (targetX - v) * k);
     this.cameraY.update((v) => v + (targetY - v) * k);
+    if (this.playMode()) this.clampPlayCamera();
+  }
+
+  /**
+   * @internal Snaps the camera so the player sits at the viewport center, then
+   * clamps it. Used on the first Play frame so the run does not start with a pan.
+   */
+  private snapCameraToPlayer(): void {
+    const canvas = this.canvasRef()?.nativeElement;
+    if (!canvas) return;
+    const cell = this.tileSize();
+    const z = this.playScale();
+    this.cameraX.set(-(this.player.x() * cell * z) + canvas.width / 2);
+    this.cameraY.set(-(this.player.y() * cell * z) + canvas.height / 2);
+    this.clampPlayCamera();
+  }
+
+  /**
+   * @internal Clamps the Play camera so the fixed viewport never shows outside
+   * the scene; axes where the scene is smaller than the viewport are centered.
+   */
+  private clampPlayCamera(): void {
+    const scene = this.scene();
+    if (!scene) return;
+    const tile = this.tileSize();
+    const scale = this.playScale();
+    const viewW = this.viewWidth();
+    const viewH = this.viewHeight();
+    const destX = this.playOffsetX();
+    const destY = this.playOffsetY();
+    const sceneW = scene.width * tile;
+    const sceneH = scene.height * tile;
+
+    let left = (destX - this.cameraX()) / scale;
+    let top = (destY - this.cameraY()) / scale;
+    left = sceneW >= viewW ? Math.min(Math.max(left, 0), sceneW - viewW) : (sceneW - viewW) / 2;
+    top = sceneH >= viewH ? Math.min(Math.max(top, 0), sceneH - viewH) : (sceneH - viewH) / 2;
+
+    this.cameraX.set(destX - left * scale);
+    this.cameraY.set(destY - top * scale);
   }
 
   /** Cleans up the animation loop and resize observer on component destruction. */
@@ -705,6 +796,7 @@ export class MapCanvasComponent implements AfterViewInit, OnDestroy {
    */
   onWheel(event: WheelEvent): void {
     event.preventDefault();
+    if (this.playMode()) return;
     const canvas = this.canvasRef().nativeElement;
     if (!canvas) return;
 
