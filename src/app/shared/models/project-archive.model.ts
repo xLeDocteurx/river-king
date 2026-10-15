@@ -37,6 +37,16 @@ export interface ProjectArchiveProjectData {
    * Default map height in tiles.
    */
   mapHeight: number;
+  /**
+   * Play-viewport width in game pixels. Absent in archives created before this
+   * feature; the importer falls back to the default when missing.
+   */
+  viewWidth?: number;
+  /**
+   * Play-viewport height in game pixels. Absent in archives created before this
+   * feature; the importer falls back to the default when missing.
+   */
+  viewHeight?: number;
 }
 
 /**

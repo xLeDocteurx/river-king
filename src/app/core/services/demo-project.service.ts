@@ -7,6 +7,7 @@ import { DatabaseService } from './database.service';
 import { NotificationService } from './notification.service';
 import { LOSPEC_PALETTES } from '../palettes/lospec-palettes';
 import { encodePixelData } from '../../shared/utils/pixel-data';
+import { DEFAULT_VIEW_HEIGHT, DEFAULT_VIEW_WIDTH } from '../../shared/models/viewport';
 import { DEMO_ACTION_ID } from '../actions/game-actions';
 import {
   DEMO_PROJECT_NAME,
@@ -139,6 +140,8 @@ export class DemoProjectService {
           tileSize: DEMO_TILE_SIZE,
           mapWidth: DEMO_WIDTH,
           mapHeight: DEMO_HEIGHT,
+          viewWidth: DEFAULT_VIEW_WIDTH,
+          viewHeight: DEFAULT_VIEW_HEIGHT,
         } satisfies Project);
 
         const frame = (name: string) =>
