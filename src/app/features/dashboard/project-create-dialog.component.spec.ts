@@ -118,4 +118,28 @@ describe('ProjectCreateDialogComponent', () => {
     const dto = createSpy.mock.calls[0][0];
     expect(dto.palette).toEqual(['#2c2137', '#446176', '#3fac95', '#a1ef8c']);
   });
+
+  it('defaults the play resolution preset to 256x144 and resets on open', () => {
+    const instance = fixture.componentInstance;
+    instance.selectedViewIndex.set(2);
+    instance.open();
+
+    expect(instance.selectedViewIndex()).toBe(0);
+    expect(instance.selectedView()).toEqual({ label: '256 × 144 (16:9)', width: 256, height: 144 });
+  });
+
+  it('creates the project with the chosen viewport resolution', async () => {
+    const createSpy = vi
+      .spyOn(TestBed.inject(ProjectService), 'create')
+      .mockResolvedValue({ id: 'p1' } as Project);
+    fixture.componentInstance.open();
+    setName('Test');
+    fixture.componentInstance.selectedViewIndex.set(1);
+
+    await fixture.componentInstance.createProject(new Event('submit'));
+
+    const dto = createSpy.mock.calls[0][0];
+    expect(dto.viewWidth).toBe(320);
+    expect(dto.viewHeight).toBe(180);
+  });
 });

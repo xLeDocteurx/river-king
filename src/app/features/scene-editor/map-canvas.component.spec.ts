@@ -45,6 +45,8 @@ function makeRecordingCtx(): { ctx: CanvasRenderingContext2D; fills: FillCall[] 
     translate: vi.fn(),
     scale: vi.fn(),
     beginPath: vi.fn(),
+    rect: vi.fn(),
+    clip: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     stroke: vi.fn(),
@@ -188,6 +190,8 @@ describe('MapCanvasComponent', () => {
       translate: vi.fn(),
       scale: vi.fn(),
       beginPath: vi.fn(),
+      rect: vi.fn(),
+      clip: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
@@ -446,6 +450,8 @@ describe('MapCanvasComponent', () => {
       translate: vi.fn(),
       scale: vi.fn(),
       beginPath: vi.fn(),
+      rect: vi.fn(),
+      clip: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
@@ -474,6 +480,8 @@ describe('MapCanvasComponent', () => {
       translate: vi.fn(),
       scale: vi.fn(),
       beginPath: vi.fn(),
+      rect: vi.fn(),
+      clip: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
@@ -521,6 +529,8 @@ describe('MapCanvasComponent', () => {
       translate: vi.fn(),
       scale: vi.fn(),
       beginPath: vi.fn(),
+      rect: vi.fn(),
+      clip: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
@@ -565,6 +575,8 @@ describe('MapCanvasComponent', () => {
       translate: vi.fn(),
       scale: vi.fn(),
       beginPath: vi.fn(),
+      rect: vi.fn(),
+      clip: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
@@ -593,6 +605,8 @@ describe('MapCanvasComponent', () => {
       translate: vi.fn(),
       scale: vi.fn(),
       beginPath: vi.fn(),
+      rect: vi.fn(),
+      clip: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
@@ -633,6 +647,8 @@ describe('MapCanvasComponent', () => {
       translate: vi.fn(),
       scale: vi.fn(),
       beginPath: vi.fn(),
+      rect: vi.fn(),
+      clip: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
@@ -657,6 +673,149 @@ describe('MapCanvasComponent', () => {
     } finally {
       getContextSpy.mockRestore();
     }
+  });
+
+  it('ignores wheel zoom in play mode', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    fixture.componentRef.setInput('playMode', true);
+    const before = instance.zoom();
+    instance.onWheel(new WheelEvent('wheel', { deltaY: -100 }));
+    expect(instance.zoom()).toBe(before);
+  });
+
+  it('still zooms with the wheel in edit mode', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    const before = instance.zoom();
+    instance.onWheel(new WheelEvent('wheel', { deltaY: -100 }));
+    expect(instance.zoom()).toBeGreaterThan(before);
+  });
+
+  it('exposes an integer play scale and centered offsets', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    instance.viewportWidth.set(800);
+    instance.viewportHeight.set(600);
+    fixture.componentRef.setInput('viewWidth', 256);
+    fixture.componentRef.setInput('viewHeight', 144);
+    fixture.componentRef.setInput('playMode', true);
+    // floor(min(800/256, 600/144)) = floor(min(3.125, 4.16)) = 3
+    expect(instance.playScale()).toBe(3);
+    expect(instance.playOffsetX()).toBe(Math.floor((800 - 256 * 3) / 2)); // 16
+    expect(instance.playOffsetY()).toBe(Math.floor((600 - 144 * 3) / 2)); // 84
+  });
+
+  it('keeps the play scale at 1 in edit mode', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    expect(instance.playScale()).toBe(1);
+    expect(instance.playOffsetX()).toBe(0);
+    expect(instance.playOffsetY()).toBe(0);
+  });
+
+  it('clamps the play camera so the viewport stays inside the scene', () => {
+    setup(makeScene()); // 4x4 scene, tileSize 16 -> 64x64 px
+    const instance = fixture.componentInstance;
+    instance.viewportWidth.set(64);
+    instance.viewportHeight.set(64);
+    fixture.componentRef.setInput('tileSize', 16);
+    fixture.componentRef.setInput('viewWidth', 16);
+    fixture.componentRef.setInput('viewHeight', 16);
+    const player = fixture.debugElement.injector.get(PlayerController);
+    player.start({ width: 4, height: 4, layers: [] }, { x: 0, y: 0 }, new Map(), {}, new Map());
+    fixture.componentRef.setInput('playMode', true);
+    instance['clampPlayCamera']();
+    // camera must not reveal anything left/above the scene origin
+    const left = (instance.playOffsetX() - instance.cameraX()) / instance.playScale();
+    expect(left).toBeGreaterThanOrEqual(-0.001);
+  });
+
+  it('draws the play view clipped to the centered viewport rect', () => {
+    const rect = vi.fn();
+    const clip = vi.fn();
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      rect,
+      clip,
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      const instance = fixture.componentInstance;
+      instance.viewportWidth.set(800);
+      instance.viewportHeight.set(600);
+      fixture.componentRef.setInput('viewWidth', 256);
+      fixture.componentRef.setInput('viewHeight', 144);
+      fixture.componentRef.setInput('playMode', true);
+      instance.render();
+
+      expect(rect).toHaveBeenCalledWith(16, 84, 768, 432);
+      expect(clip).toHaveBeenCalled();
+      expect(ctx.scale).toHaveBeenCalledWith(3, 3);
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('does not clip or letterbox the edit view', () => {
+    const clip = vi.fn();
+    const ctx = {
+      imageSmoothingEnabled: true,
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      beginPath: vi.fn(),
+      rect: vi.fn(),
+      clip,
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      fillRect: vi.fn(),
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D;
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    try {
+      setup(makeScene());
+      fixture.componentInstance.render();
+      expect(clip).not.toHaveBeenCalled();
+    } finally {
+      getContextSpy.mockRestore();
+    }
+  });
+
+  it('snaps the camera to the player when play mode begins', () => {
+    setup(makeScene());
+    const instance = fixture.componentInstance;
+    const player = fixture.debugElement.injector.get(PlayerController);
+    player.start({ width: 4, height: 4, layers: [] }, { x: 2, y: 2 }, new Map(), {}, new Map());
+    instance.viewportWidth.set(64);
+    instance.viewportHeight.set(64);
+    fixture.componentRef.setInput('tileSize', 16);
+    fixture.componentRef.setInput('viewWidth', 16);
+    fixture.componentRef.setInput('viewHeight', 16);
+    fixture.componentRef.setInput('playMode', true);
+    fixture.detectChanges();
+    // jsdom canvas is 0x0; camera centers the player then clamps inside the scene.
+    expect(instance.cameraX()).toBeLessThanOrEqual(0);
+    expect(instance.cameraY()).toBeLessThanOrEqual(0);
+    const left = (instance.playOffsetX() - instance.cameraX()) / instance.playScale();
+    expect(left).toBeGreaterThanOrEqual(-0.001);
   });
 
   it('disconnects the ResizeObserver on destroy', () => {

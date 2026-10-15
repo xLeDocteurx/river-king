@@ -21,4 +21,8 @@ export interface Project {
   mapWidth: number;
   /** Map height in tiles (default `30`). */
   mapHeight: number;
+  /** Play-viewport width in game pixels (default `256`, see `viewport.ts`). */
+  viewWidth?: number;
+  /** Play-viewport height in game pixels (default `144`, see `viewport.ts`). */
+  viewHeight?: number;
 }

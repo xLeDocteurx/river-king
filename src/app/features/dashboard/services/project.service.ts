@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { DatabaseService } from '../../../core/services/database.service';
 import type { Project } from '../../../shared/models/project.model';
+import { resolveViewport } from '../../../shared/models/viewport';
 
 /**
  * Data-transfer object for creating a new project.
@@ -18,6 +19,10 @@ export interface CreateProjectDto {
   mapWidth: number;
   /** Map height in tiles. */
   mapHeight: number;
+  /** Play-viewport width in game pixels (defaults to `256`). */
+  viewWidth?: number;
+  /** Play-viewport height in game pixels (defaults to `144`). */
+  viewHeight?: number;
 }
 
 /**
@@ -59,9 +64,12 @@ export class ProjectService {
    */
   async create(dto: CreateProjectDto): Promise<Project> {
     const now = Date.now();
+    const view = resolveViewport(dto);
     const project: Project = {
       id: crypto.randomUUID(),
       ...dto,
+      viewWidth: view.width,
+      viewHeight: view.height,
       createdAt: now,
       updatedAt: now,
     };

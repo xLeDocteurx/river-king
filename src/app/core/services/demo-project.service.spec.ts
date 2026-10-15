@@ -18,6 +18,7 @@ import {
   SIGN_CELL,
 } from './demo-art';
 import { DEMO_ACTION_ID } from '../actions/game-actions';
+import { DEFAULT_VIEW_HEIGHT, DEFAULT_VIEW_WIDTH } from '../../shared/models/viewport';
 
 describe('DemoProjectService', () => {
   let service: DemoProjectService;
@@ -48,6 +49,8 @@ describe('DemoProjectService', () => {
     expect(project.tileSize).toBe(DEMO_TILE_SIZE);
     expect(project.mapWidth).toBe(DEMO_WIDTH);
     expect(project.mapHeight).toBe(DEMO_HEIGHT);
+    expect(project.viewWidth).toBe(DEFAULT_VIEW_WIDTH);
+    expect(project.viewHeight).toBe(DEFAULT_VIEW_HEIGHT);
     expect(project.palette.length).toBe(16);
     expect(project.palette.every((c) => c.startsWith('#'))).toBe(true);
 

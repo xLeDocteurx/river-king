@@ -1,6 +1,15 @@
-import { Component, ChangeDetectionStrategy, inject, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { DialogComponent } from '../../shared/components/dialog/dialog.component';
+import { VIEW_PRESETS } from '../../shared/models/viewport';
+import type { ViewPreset } from '../../shared/models/viewport';
 import { LOSPEC_PALETTES } from '../../core/palettes/lospec-palettes';
 import { NotificationService } from '../../core/services/notification.service';
 import { ProjectService } from './services/project.service';
@@ -49,6 +58,15 @@ export class ProjectCreateDialogComponent {
   /** Tile size selected in the picker (16 by default). */
   readonly selectedTileSize = signal(16);
 
+  /** Viewport presets offered at creation time. */
+  readonly viewPresets = VIEW_PRESETS;
+
+  /** Index of the selected viewport preset. */
+  readonly selectedViewIndex = signal(0);
+
+  /** The currently selected viewport preset. */
+  readonly selectedView = computed<ViewPreset>(() => VIEW_PRESETS[this.selectedViewIndex()]);
+
   /**
    * Selects a palette in the picker.
    * @param id - Palette id chosen by the user.
@@ -69,6 +87,7 @@ export class ProjectCreateDialogComponent {
     this.projectName.set('');
     this.selectedTileSize.set(16);
     this.selectedPaletteId.set('sweetie-16');
+    this.selectedViewIndex.set(0);
     this.dialogRef().open();
   }
 
@@ -89,6 +108,8 @@ export class ProjectCreateDialogComponent {
         tileSize: this.selectedTileSize(),
         mapWidth: 40,
         mapHeight: 30,
+        viewWidth: this.selectedView().width,
+        viewHeight: this.selectedView().height,
       });
       this.dialogRef().close();
       await this.router.navigate(['/project', project.id]);

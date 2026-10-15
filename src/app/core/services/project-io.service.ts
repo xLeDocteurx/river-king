@@ -12,6 +12,7 @@ import {
   type TileArchiveItem,
 } from '../../shared/models/project-archive.model';
 import { clampAnchor } from '../../shared/models/tile-anchor';
+import { resolveViewport } from '../../shared/models/viewport';
 
 /**
  * Import target choice: a brand-new project or an in-place replacement.
@@ -91,6 +92,7 @@ export class ProjectIoService {
     if (!project) {
       throw new Error(`Project ${projectId} not found`);
     }
+    const view = resolveViewport(project);
     const archive: ProjectArchive = {
       format: PROJECT_ARCHIVE_FORMAT,
       formatVersion: PROJECT_ARCHIVE_VERSION,
@@ -101,6 +103,8 @@ export class ProjectIoService {
         tileSize: project.tileSize,
         mapWidth: project.mapWidth,
         mapHeight: project.mapHeight,
+        viewWidth: view.width,
+        viewHeight: view.height,
       },
       tiles: tiles.map((t): TileArchiveItem => ({
         sourceId: t.id,
@@ -162,6 +166,7 @@ export class ProjectIoService {
     const archive = this.validate(fileText);
     const projectId = mode.kind === 'new' ? crypto.randomUUID() : mode.targetProjectId;
     const now = Date.now();
+    const view = resolveViewport(archive.project);
     const projectRow = {
       id: projectId,
       name: archive.project.name,
@@ -171,6 +176,8 @@ export class ProjectIoService {
       tileSize: archive.project.tileSize,
       mapWidth: archive.project.mapWidth,
       mapHeight: archive.project.mapHeight,
+      viewWidth: view.width,
+      viewHeight: view.height,
     };
 
     const tileIdMap = new Map<number, number>();
@@ -344,6 +351,12 @@ export class ProjectIoService {
       typeof p.mapHeight !== 'number'
     ) {
       throw new ProjectImportError('This file is missing required data.');
+    }
+    if (
+      (p.viewWidth !== undefined && (typeof p.viewWidth !== 'number' || p.viewWidth <= 0)) ||
+      (p.viewHeight !== undefined && (typeof p.viewHeight !== 'number' || p.viewHeight <= 0))
+    ) {
+      throw new ProjectImportError('This file has an invalid viewport resolution.');
     }
     if (!Array.isArray(archive.tiles) || !Array.isArray(archive.sprites)) {
       throw new ProjectImportError('This file is missing required data.');

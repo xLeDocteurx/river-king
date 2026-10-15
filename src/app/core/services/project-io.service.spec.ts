@@ -179,6 +179,41 @@ describe('ProjectIoService', () => {
     return { archive, result };
   }
 
+  it('round-trips an explicit viewport resolution through export and import', async () => {
+    const { projectId } = await seedProject();
+    await db.projects.update(projectId, { viewWidth: 320, viewHeight: 180 });
+
+    const json = await service.exportProject(projectId);
+    const exported = JSON.parse(json) as ProjectArchive;
+    expect(exported.project.viewWidth).toBe(320);
+    expect(exported.project.viewHeight).toBe(180);
+
+    const result = await service.importProject(json, { kind: 'new' });
+    const imported = await db.projects.get(result.projectId);
+    expect(imported?.viewWidth).toBe(320);
+    expect(imported?.viewHeight).toBe(180);
+  });
+
+  it('exports the default viewport resolution when the project has none', async () => {
+    const { projectId } = await seedProject();
+    const json = await service.exportProject(projectId);
+    const exported = JSON.parse(json) as ProjectArchive;
+    expect(exported.project.viewWidth).toBe(256);
+    expect(exported.project.viewHeight).toBe(144);
+  });
+
+  it('imports an archive without viewport fields using the defaults', async () => {
+    const { projectId } = await seedProject();
+    const archive = JSON.parse(await service.exportProject(projectId)) as ProjectArchive;
+    delete archive.project.viewWidth;
+    delete archive.project.viewHeight;
+
+    const result = await service.importProject(JSON.stringify(archive), { kind: 'new' });
+    const imported = await db.projects.get(result.projectId);
+    expect(imported?.viewWidth).toBe(256);
+    expect(imported?.viewHeight).toBe(144);
+  });
+
   it('imports as a new project with remapped ids and preserved content', async () => {
     const { archive, result } = await importFresh();
 
@@ -521,6 +556,20 @@ describe('ProjectIoService', () => {
 
     const noTiles = validJsonOverrides({ tiles: undefined });
     await expectImportRejected(noTiles, 'This file is missing required data.');
+  });
+
+  it('rejects an archive with a non-positive viewport resolution', async () => {
+    const json = validJsonOverrides({
+      project: {
+        name: 'Heroes',
+        palette: ['#ff0000'],
+        tileSize: 16,
+        mapWidth: 40,
+        mapHeight: 30,
+        viewWidth: -4,
+      },
+    });
+    await expectImportRejected(json, 'This file has an invalid viewport resolution.');
   });
 
   it('rejects sprites referencing a missing tile', async () => {

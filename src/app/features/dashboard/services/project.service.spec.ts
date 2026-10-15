@@ -156,4 +156,30 @@ describe('ProjectService', () => {
     expect(await db.folders.where('projectId').equals(doomed.id).count()).toBe(0);
     expect(await db.folders.where('projectId').equals(survivor.id).count()).toBe(1);
   });
+
+  it('stores the chosen play viewport resolution', async () => {
+    const project = await service.create({
+      name: 'P',
+      palette: ['#000000'],
+      tileSize: 16,
+      mapWidth: 10,
+      mapHeight: 10,
+      viewWidth: 320,
+      viewHeight: 180,
+    });
+    expect(project.viewWidth).toBe(320);
+    expect(project.viewHeight).toBe(180);
+  });
+
+  it('defaults the play viewport when not provided', async () => {
+    const project = await service.create({
+      name: 'P',
+      palette: ['#000000'],
+      tileSize: 16,
+      mapWidth: 10,
+      mapHeight: 10,
+    });
+    expect(project.viewWidth).toBe(256);
+    expect(project.viewHeight).toBe(144);
+  });
 });
